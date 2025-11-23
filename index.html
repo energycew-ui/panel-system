@@ -7,60 +7,83 @@
 body {
     font-family: Arial, sans-serif;
     background: #f2f4f7;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     margin: 0;
-}
-.container {
-    background: white;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    padding: 0;
     text-align: center;
-    width: 90%;
-    max-width: 400px;
 }
-h1 {
-    margin-bottom: 20px;
-    color: #333;
-}
-button {
-    display: block;
-    width: 100%;
-    padding: 15px;
-    margin: 10px 0;
-    font-size: 18px;
+
+.header {
+    background: #111;
+    color: #ffc800;
+    padding: 20px;
+    font-size: 26px;
     font-weight: bold;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
 }
+
+.container {
+    margin-top: 60px;
+}
+
+button {
+    width: 220px;
+    padding: 15px;
+    margin: 20px;
+    font-size: 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
+}
+
+/* Visitor Button */
 .visitor-btn {
     background: #007bff;
-    color: white;
 }
+
+/* Electrician Button */
 .elec-btn {
-    background: #aaa;
-    color: white;
+    background: #c40000;
 }
 </style>
 
 </head>
 <body>
 
-<div class="container">
-    <h1>Panel Access</h1>
+<div class="header">
+    Panel Access
+</div>
 
-    <button class="visitor-btn" onclick="location.href='panel.html?id=' + getID()">Visitor</button>
-    <button class="elec-btn" disabled>Electrician (Coming Soon)</button>
+<div class="container">
+    <button class="visitor-btn" onclick="goVisitor()">Visitor</button>
+
+    <button class="elec-btn" onclick="goElectrician()">Electrician</button>
 </div>
 
 <script>
-function getID() {
-    const url = new URLSearchParams(window.location.search);
-    return url.get("id");
+// Extract panel ID from URL (?id=DB-01)
+function getPanelID() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("id");
+}
+
+// Visitor button → open panel.html
+function goVisitor() {
+    const id = getPanelID();
+    if (!id) {
+        alert("Invalid Panel ID");
+        return;
+    }
+    location.href = "panel.html?id=" + id;
+}
+
+// Electrician button → open PIN page
+function goElectrician() {
+    const id = getPanelID();
+    if (!id) {
+        alert("Invalid Panel ID");
+        return;
+    }
+    location.href = "eleclogin.html?id=" + id;
 }
 </script>
 
