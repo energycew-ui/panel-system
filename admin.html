@@ -1,19 +1,80 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin Panel</title>
+  <title>Admin Dashboard</title>
 
-  <!-- Firebase SDK v8 -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- Your Firebase helper (contains firebaseConfig + initializeApp + savePanelToFirebase etc.) -->
+  <!-- Your Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
   <script src="data.js"></script>
+
+  <!-- QR Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 30px;
+      margin: 0;
+      background: #f2f4f7;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      background: #111;
+      color: #ffc800;
+      padding: 16px 24px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      background: #1e1e1e;
+      padding: 8px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      background: #333;
+      color: #eee;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .tab-btn:hover {
+      background: #444;
+      transform: translateY(-1px);
+    }
+
+    .tab-btn.active {
+      background: #ffc800;
+      color: #111;
+      font-weight: bold;
+    }
+
+    .tab-wrapper {
+      padding: 20px;
+      max-width: 1100px;
+      margin: 0 auto 40px auto;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
     }
 
     /* LOGIN */
@@ -47,6 +108,10 @@
       margin-top: 15px;
       font-size: 16px;
       cursor: pointer;
+      background: #c40000;
+      border: none;
+      color: #fff;
+      border-radius: 6px;
     }
     #loginError {
       color: red;
@@ -54,7 +119,20 @@
       margin-top: 8px;
     }
 
-    /* FORM */
+    /* CARD STYLE FOR EACH TAB SECTION */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      margin-bottom: 20px;
+    }
+
+    h2, h3 {
+      margin-top: 0;
+    }
+
+    /* FORM ELEMENTS (ENTRY TAB) */
     label {
       display: block;
       margin-top: 12px;
@@ -67,10 +145,12 @@
       font-size: 16px;
     }
     button {
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 8px 16px;
+      font-size: 14px;
       cursor: pointer;
-      margin-top: 15px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: none;
     }
 
     #previewImage {
@@ -81,14 +161,16 @@
       display: none;
     }
 
-    /* CIRCUITS */
+    /* CIRCUITS (ENTRY TAB) */
     .circuit-row {
       display: flex;
       gap: 8px;
       margin-top: 8px;
+      flex-wrap: wrap;
     }
     .circuit-row input {
-      width: 100%;
+      flex: 1;
+      min-width: 120px;
     }
     .circuit-remove-btn {
       background: #c40000;
@@ -125,19 +207,60 @@
       color: #111;
     }
 
-    /* TABLE */
+    /* TABLES (REPORT TABS) */
     table {
-      border-collapse: collapse;
-      margin-top: 20px;
       width: 100%;
-      max-width: 900px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px 10px;
+      margin-top: 20px;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 14px;
     }
     th {
-      background: #eee;
+      background: #333;
+      color: white;
+      padding: 8px;
+    }
+    td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+    tr:nth-child(even) { background: #f9f9f9; }
+
+    .photo-btn {
+      background: #007bff;
+      color: white;
+      padding: 4px 6px;
+      border-radius: 5px;
+      cursor: pointer;
+      border: none;
+      font-size: 12px;
+    }
+
+    .filterBox {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .filterBox input, .filterBox select {
+      padding: 6px 8px;
+      font-size: 14px;
+    }
+
+    .primary-btn {
+      background:#007bff;
+      color:#fff;
+    }
+    .danger-btn {
+      background:#c40000;
+      color:#fff;
+    }
+    .secondary-btn {
+      background:#555;
+      color:#fff;
     }
   </style>
 </head>
@@ -154,68 +277,128 @@
   </div>
 </div>
 
-<!-- MAIN ADMIN CONTENT -->
-<div id="adminContent" style="display:none;">
+<!-- MAIN ADMIN DASHBOARD -->
+<div id="adminWrapper" style="display:none;">
 
-  <h2>Admin – Panel Data</h2>
+  <div class="topbar">Admin Dashboard – Electrical Panels</div>
 
-  <label>DB Number</label>
-  <input id="db" type="text">
-
-  <label>Voltage Rating</label>
-  <input id="volt" type="text">
-
-  <label>Main Breaker Capacity</label>
-  <input id="breaker" type="text">
-
-  <label>Main Cable Size</label>
-  <input id="cable" type="text">
-
-  <label>Earth Status</label>
-  <input id="earth" type="text">
-
-  <label>Location</label>
-  <input id="location" type="text">
-
-  <label>Purpose</label>
-  <input id="purpose" type="text">
-
-  <label>Upload Panel Picture (Optional)</label>
-  <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
-  <img id="previewImage">
-  <button type="button" onclick="removeImage()">Remove Picture</button>
-
-  <h3>Circuits (Name / Breaker / Load)</h3>
-  <div id="circuitsContainer"></div>
-  <button type="button" onclick="addCircuitRow()">Add Circuit</button>
-
-  <br><br>
-  <button onclick="savePanel()">Save Data (to Firebase)</button>
-
-  <h3>Generate QR Code</h3>
-  <button onclick="generateQR()">Generate QR Code</button>
-
-  <!-- On-screen QR + banner preview -->
-  <div id="qrPreview">
-    <div class="dangerBanner">
-      ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
-    </div>
-    <canvas id="qrCanvas" width="250" height="250"></canvas>
-    <div id="qrDBname"></div>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-target="tab-entry">DB Entry</button>
+    <button class="tab-btn" data-target="tab-inspections">Inspection Reports</button>
+    <button class="tab-btn" data-target="tab-faults">Fault Reports</button>
+    <button class="tab-btn" data-target="tab-master">Master DB Report</button>
   </div>
 
-  <button id="downloadQR" style="display:none;" onclick="downloadQR()">Download QR Sheet</button>
+  <div class="tab-wrapper">
 
-  <hr>
+    <!-- TAB 1: DB ENTRY (original admin.html content) -->
+    <div class="tab-content active" id="tab-entry">
+      <div class="card">
+        <h2>DB Entry / Panel Data</h2>
 
-  <h2>All Panels</h2>
-  <button onclick="showPanels()">Show All Panels</button>
-  <div id="panelList"></div>
+        <label>DB Number</label>
+        <input id="db" type="text">
 
+        <label>Voltage Rating</label>
+        <input id="volt" type="text">
+
+        <label>Main Breaker Capacity</label>
+        <input id="breaker" type="text">
+
+        <label>Main Cable Size</label>
+        <input id="cable" type="text">
+
+        <label>Earth Status</label>
+        <input id="earth" type="text">
+
+        <label>Location</label>
+        <input id="location" type="text">
+
+        <label>Purpose</label>
+        <input id="purpose" type="text">
+
+        <label>Upload Panel Picture (Optional)</label>
+        <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
+        <br>
+        <img id="previewImage">
+        <br>
+        <button type="button" class="secondary-btn" onclick="removeImage()">Remove Picture</button>
+
+        <h3 style="margin-top:20px;">Circuits (Name / Breaker / Load)</h3>
+        <div id="circuitsContainer"></div>
+        <button type="button" class="secondary-btn" onclick="addCircuitRow()">Add Circuit</button>
+
+        <br><br>
+        <button class="primary-btn" onclick="savePanel()">Save Data (to Firebase)</button>
+
+        <hr>
+
+        <h3>Generate QR Code</h3>
+        <button class="secondary-btn" onclick="generateQR()">Generate QR Code</button>
+
+        <!-- On-screen QR + banner preview -->
+        <div id="qrPreview">
+          <div class="dangerBanner">
+            ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
+          </div>
+          <canvas id="qrCanvas" width="250" height="250"></canvas>
+          <div id="qrDBname"></div>
+        </div>
+
+        <button id="downloadQR" style="display:none;" class="primary-btn" onclick="downloadQR()">Download QR Sheet</button>
+      </div>
+
+      <div class="card">
+        <h2>All Panels</h2>
+        <button class="secondary-btn" onclick="showPanels()">Refresh Panel List</button>
+        <div id="panelList" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2: INSPECTION REPORTS -->
+    <div class="tab-content" id="tab-inspections">
+      <div class="card">
+        <h2>Inspection Reports</h2>
+
+        <div class="filterBox">
+          <input type="text" id="filterDB_i" placeholder="Filter by DB Number">
+          <input type="text" id="filterElec_i" placeholder="Filter by Electrician">
+          <input type="date" id="filterDate_i">
+          <button class="secondary-btn" onclick="applyInspectionFilters()">Apply Filters</button>
+        </div>
+
+        <div id="inspectionTable"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: FAULT REPORTS -->
+    <div class="tab-content" id="tab-faults">
+      <div class="card">
+        <h2>Fault Reports</h2>
+
+        <div class="filterBox">
+          <input type="text" id="filterDB_f" placeholder="Filter by DB Number">
+          <input type="text" id="filterElec_f" placeholder="Filter by Electrician">
+          <input type="date" id="filterDate_f">
+          <button class="secondary-btn" onclick="applyFaultFilters()">Apply Filters</button>
+        </div>
+
+        <div id="faultTable"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: MASTER DB REPORT -->
+    <div class="tab-content" id="tab-master">
+      <div class="card">
+        <h2>Master DB Report (All DBs & Circuits)</h2>
+        <button class="secondary-btn" onclick="loadMasterReport()">Reload Data</button>
+        <div id="masterContainer" style="margin-top:15px;"></div>
+      </div>
+    </div>
+
+  </div>
 </div>
-
-<!-- QR Library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
 /* ------------ LOGIN ------------ */
@@ -226,24 +409,51 @@ function checkLogin() {
   const error = document.getElementById("loginError");
 
   if (pwd === ADMIN_PASSWORD) {
-    sessionStorage.setItem("adminLoggedIn", "true");
+    sessionStorage.setItem("adminDashboardLogged", "true");
     document.getElementById("loginOverlay").style.display = "none";
-    document.getElementById("adminContent").style.display = "block";
-    renderCircuits(null);
+    document.getElementById("adminWrapper").style.display = "block";
+    afterLoginInit();
   } else {
     error.textContent = "Incorrect password.";
   }
 }
 
 window.addEventListener("load", () => {
-  if (sessionStorage.getItem("adminLoggedIn") === "true") {
+  if (sessionStorage.getItem("adminDashboardLogged") === "true") {
     document.getElementById("loginOverlay").style.display = "none";
-    document.getElementById("adminContent").style.display = "block";
-    renderCircuits(null);
+    document.getElementById("adminWrapper").style.display = "block";
+    afterLoginInit();
   }
 });
 
-/* ------------ IMAGE HANDLING ------------ */
+/* ------------ AFTER LOGIN INIT ------------ */
+function afterLoginInit() {
+  initTabs();
+  renderCircuits(null);       // at least one circuit row
+  showPanels();               // load panel list
+  loadReports();              // inspections + faults
+  loadMasterReport();         // master DB report
+}
+
+/* ------------ TABS HANDLING ------------ */
+function initTabs() {
+  const buttons = document.querySelectorAll(".tab-btn");
+  const tabs = document.querySelectorAll(".tab-content");
+
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-target");
+
+      buttons.forEach(b => b.classList.remove("active"));
+      tabs.forEach(t => t.classList.remove("active"));
+
+      btn.classList.add("active");
+      document.getElementById(targetId).classList.add("active");
+    });
+  });
+}
+
+/* ------------ IMAGE HANDLING (ENTRY TAB) ------------ */
 let uploadedImage = null;
 
 function previewAndCompress(event) {
@@ -275,9 +485,10 @@ function previewAndCompress(event) {
 function removeImage() {
   uploadedImage = null;
   document.getElementById("previewImage").style.display = "none";
+  document.getElementById("imageInput").value = "";
 }
 
-/* ------------ CIRCUITS ------------ */
+/* ------------ CIRCUITS (ENTRY TAB) ------------ */
 function addCircuitRow(name = "", breaker = "", load = "") {
   const container = document.getElementById("circuitsContainer");
   const row = document.createElement("div");
@@ -316,7 +527,7 @@ function collectCircuitsFromForm() {
   return circuits.length ? circuits : null;
 }
 
-/* ------------ SAVE PANEL ------------ */
+/* ------------ SAVE PANEL (ENTRY TAB) ------------ */
 function savePanel() {
   const id = document.getElementById("db").value.trim();
   if (!id) {
@@ -336,13 +547,13 @@ function savePanel() {
     circuits: collectCircuitsFromForm()
   };
 
-  // Helper from data.js
   savePanelToFirebase(id, data, () => {
     alert("Panel saved to Firebase successfully!");
+    showPanels();
   });
 }
 
-/* ------------ EDIT / DELETE / LIST PANELS ------------ */
+/* ------------ EDIT / DELETE / LIST PANELS (ENTRY TAB) ------------ */
 function editPanel(id) {
   loadPanelFromFirebase(id, p => {
     if (!p) {
@@ -368,13 +579,15 @@ function editPanel(id) {
     }
 
     renderCircuits(p.circuits || null);
+
+    // switch to Entry tab automatically
+    document.querySelector('.tab-btn[data-target="tab-entry"]').click();
     window.scrollTo(0, 0);
   });
 }
 
 function deletePanel(id) {
   if (!confirm("Are you sure you want to delete panel " + id + " ?")) return;
-  // Delete entire node (including image + circuits)
   firebase.database().ref("panels/" + id).remove().then(() => {
     alert("Panel " + id + " deleted.");
     showPanels();
@@ -397,8 +610,8 @@ function showPanels() {
           <td>${p.location || ""}</td>
           <td>${p.purpose || ""}</td>
           <td>
-            <button onclick="editPanel('${id}')">Edit</button>
-            <button onclick="deletePanel('${id}')">Delete</button>
+            <button class="secondary-btn" onclick="editPanel('${id}')">Edit</button>
+            <button class="danger-btn" onclick="deletePanel('${id}')">Delete</button>
           </td>
         </tr>
       `;
@@ -408,7 +621,7 @@ function showPanels() {
   });
 }
 
-/* ------------ QR PREVIEW ------------ */
+/* ------------ QR PREVIEW + DOWNLOAD (ENTRY TAB) ------------ */
 let qr;
 
 function generateQR() {
@@ -431,14 +644,11 @@ function generateQR() {
   document.getElementById("downloadQR").style.display = "inline-block";
 }
 
-/* ------------ DOWNLOAD QR SHEET ------------ */
 function downloadQR() {
   const id = document.getElementById("db").value.trim();
   if (!id) return;
 
   const qrCanvasEl = document.getElementById("qrCanvas");
-
-  // Create canvas for full sheet
   const W = 700, H = 900;
   const finalCanvas = document.createElement("canvas");
   finalCanvas.width = W;
@@ -450,31 +660,26 @@ function downloadQR() {
   ctx.fillRect(0, 0, W, H);
 
   const logo = new Image();
-  logo.src = "logo.png"; // upload your full logo as logo.png in the same folder as admin.html
+  logo.src = "logo.png";
 
   logo.onload = () => {
-    // ---- LOGO ----
     const logoW = 420;
     const logoH = (logo.height / logo.width) * logoW;
     ctx.drawImage(logo, (W - logoW) / 2, 40, logoW, logoH);
 
-    // ---- DANGER BANNER ----
     ctx.fillStyle = "#c40000";
-ctx.fillRect(45, 200, W - 80, 70);   // Wider banner (40px margin each side)
+    ctx.fillRect(45, 200, W - 80, 70);
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 24px Arial";
     ctx.textAlign = "center";
     ctx.fillText("DANGER–ELECTRICAL PANEL–DO NOT TOUCH", W / 2, 245);
 
-    // ---- QR CODE ----
     ctx.drawImage(qrCanvasEl, (W - 300) / 2, 300, 300, 300);
 
-    // ---- DB NUMBER ----
     ctx.fillStyle = "#000000";
     ctx.font = "bold 36px Arial";
     ctx.fillText(id, W / 2, 640);
 
-    // ---- SIGNATURE ----
     ctx.font = "20px Arial";
     ctx.textAlign = "left";
     ctx.fillText("Technician Signature:", 80, 720);
@@ -485,17 +690,14 @@ ctx.fillRect(45, 200, W - 80, 70);   // Wider banner (40px margin each side)
     ctx.strokeStyle = "#000000";
     ctx.stroke();
 
-    // ---- DOWNLOAD PNG ----
     const link = document.createElement("a");
     link.download = id + "_QR_sheet.png";
     link.href = finalCanvas.toDataURL();
     link.click();
   };
 
-  // If logo fails to load, still generate sheet without it
   logo.onerror = () => {
     alert("Logo not found (logo.png). QR sheet will be generated without logo.");
-    // simple fallback: draw without logo
     ctx.fillStyle = "#c40000";
     ctx.fillRect(80, 80, W - 160, 70);
     ctx.fillStyle = "#ffffff";
@@ -512,6 +714,222 @@ ctx.fillRect(45, 200, W - 80, 70);   // Wider banner (40px margin each side)
     link.href = finalCanvas.toDataURL();
     link.click();
   };
+}
+
+/* ------------ REPORTS (INSPECTIONS + FAULTS) ------------ */
+
+let inspectionsGlobal = [];
+let faultsGlobal = [];
+
+function loadReports() {
+  // INSPECTIONS
+  firebase.database().ref("inspections").once("value", snap => {
+    let data = snap.val() || {};
+    inspectionsGlobal = convertInspectionData(data);
+    renderInspectionTable(inspectionsGlobal);
+  });
+
+  // FAULTS
+  firebase.database().ref("faults").once("value", snap => {
+    let data = snap.val() || {};
+    faultsGlobal = convertFaultData(data);
+    renderFaultTable(faultsGlobal);
+  });
+}
+
+function convertInspectionData(data) {
+  let list = [];
+  for (let db in data) {
+    for (let key in data[db]) {
+      list.push({
+        dbId: db,
+        ...data[db][key]
+      });
+    }
+  }
+  return list;
+}
+
+function convertFaultData(data) {
+  let list = [];
+  for (let db in data) {
+    for (let key in data[db]) {
+      list.push({
+        dbId: db,
+        ...data[db][key]
+      });
+    }
+  }
+  return list;
+}
+
+/* RENDER INSPECTIONS TABLE (TAB 2) */
+function renderInspectionTable(list) {
+  let html = `
+    <table>
+    <tr>
+        <th>Date</th>
+        <th>DB</th>
+        <th>Electrician</th>
+        <th>Breaker</th>
+        <th>Clean</th>
+        <th>Locked</th>
+        <th>Covered</th>
+        <th>Comments</th>
+        <th>Photos</th>
+    </tr>
+  `;
+
+  list.forEach(r => {
+    html += `
+      <tr>
+        <td>${r.timestamp ? new Date(r.timestamp).toLocaleString() : ""}</td>
+        <td>${r.dbId}</td>
+        <td>${r.electricianName || ""}</td>
+        <td>${r.breakerStatus || ""}</td>
+        <td>${r.cleanStatus || ""}</td>
+        <td>${r.lockedStatus || ""}</td>
+        <td>${r.coveredStatus || ""}</td>
+        <td>${r.comments || ""}</td>
+        <td>
+            ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
+            ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
+            ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+  document.getElementById("inspectionTable").innerHTML = html;
+}
+
+/* RENDER FAULTS TABLE (TAB 3) */
+function renderFaultTable(list) {
+  let html = `
+    <table>
+    <tr>
+        <th>Date</th>
+        <th>DB</th>
+        <th>Electrician</th>
+        <th>Fault Type</th>
+        <th>Description</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Downtime</th>
+        <th>Production Loss</th>
+        <th>Photos</th>
+    </tr>
+  `;
+
+  list.forEach(r => {
+    html += `
+      <tr>
+        <td>${r.timestamp ? new Date(r.timestamp).toLocaleString() : ""}</td>
+        <td>${r.dbId}</td>
+        <td>${r.electricianName || ""}</td>
+        <td>${r.faultType || ""}</td>
+        <td>${r.description || ""}</td>
+        <td>${r.startTime || ""}</td>
+        <td>${r.endTime || ""}</td>
+        <td>${(r.downtimeMinutes || "") + (r.downtimeMinutes != null ? " min" : "")}</td>
+        <td>${r.productionLoss || ""}<br>${r.productionLossDesc || ""}</td>
+        <td>
+            ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
+            ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
+            ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+  document.getElementById("faultTable").innerHTML = html;
+}
+
+/* PHOTO VIEWER */
+function openPhoto(src) {
+  let win = window.open();
+  win.document.write(`<img src="${src}" style="width:100%;">`);
+}
+
+/* FILTERS: INSPECTIONS */
+function applyInspectionFilters() {
+  let fDB = document.getElementById("filterDB_i").value.toLowerCase();
+  let fElec = document.getElementById("filterElec_i").value.toLowerCase();
+  let fDate = document.getElementById("filterDate_i").value;
+
+  let filtered = inspectionsGlobal.filter(r =>
+      (fDB === "" || r.dbId.toLowerCase().includes(fDB)) &&
+      (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec)) &&
+      (fDate === "" || (r.timestamp || "").startsWith(fDate))
+  );
+
+  renderInspectionTable(filtered);
+}
+
+/* FILTERS: FAULTS */
+function applyFaultFilters() {
+  let fDB = document.getElementById("filterDB_f").value.toLowerCase();
+  let fElec = document.getElementById("filterElec_f").value.toLowerCase();
+  let fDate = document.getElementById("filterDate_f").value;
+
+  let filtered = faultsGlobal.filter(r =>
+      (fDB === "" || r.dbId.toLowerCase().includes(fDB)) &&
+      (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec)) &&
+      (fDate === "" || (r.timestamp || "").startsWith(fDate))
+  );
+
+  renderFaultTable(filtered);
+}
+
+/* ------------ MASTER DB REPORT (TAB 4) ------------ */
+
+function loadMasterReport() {
+  const container = document.getElementById("masterContainer");
+  container.innerHTML = "Loading...";
+
+  loadAllPanels(function(all) {
+    if (!all) {
+      container.innerHTML = "<p>No panels found.</p>";
+      return;
+    }
+
+    let html = "";
+    Object.keys(all).forEach(id => {
+      let p = all[id];
+
+      html += `
+        <div class="card" style="margin-bottom:15px;">
+          <h3>DB: ${p.dbNumber || id}</h3>
+          <p><b>Voltage:</b> ${p.voltage || ""}</p>
+          <p><b>Main Breaker:</b> ${p.mainBreaker || ""}</p>
+          <p><b>Cable Size:</b> ${p.cableSize || ""}</p>
+          <p><b>Earth Status:</b> ${p.earthStatus || ""}</p>
+          <p><b>Location:</b> ${p.location || ""}</p>
+          <p><b>Purpose:</b> ${p.purpose || ""}</p>
+          <h4>Circuits</h4>
+      `;
+
+      if (p.circuits && Array.isArray(p.circuits) && p.circuits.length) {
+        p.circuits.forEach(c => {
+          html += `
+            <div style="background:#fafafa;border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:6px;">
+              <b>${c.name || ""}</b><br>
+              Breaker: ${c.breaker || ""}<br>
+              Load: ${c.load || ""}
+            </div>
+          `;
+        });
+      } else {
+        html += "<p>No circuits recorded.</p>";
+      }
+
+      html += "</div>";
+    });
+
+    container.innerHTML = html;
+  });
 }
 </script>
 
