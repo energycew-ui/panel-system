@@ -100,7 +100,7 @@ button {
     color: white;
 }
 
-/* Circuits in electrician view */
+/* Circuits edit */
 .spec-circuit-row {
     display: flex;
     gap: 8px;
@@ -139,7 +139,7 @@ button {
 
     <hr>
 
-    <!-- DB SPECIFICATION EDIT (WILL UPDATE MAIN DB) -->
+    <!-- DB SPECIFICATION EDIT -->
     <div class="section-title">DB Specification (Editable – updates main DB)</div>
 
     <label>Voltage Rating</label>
@@ -209,6 +209,9 @@ button {
     <label>Comments / Notes</label>
     <textarea id="comments" placeholder="Any observations, issues, notes..."></textarea>
 
+    <div class="section-title">Extra Inspection Questions</div>
+    <div id="inspExtraQuestions"></div>
+
     <div class="section-title">Inspection Photos (optional, up to 3)</div>
 
     <div class="photo-row">
@@ -243,10 +246,10 @@ let photo1Data = null;
 let photo2Data = null;
 let photo3Data = null;
 
-// store full panel object so we can update & keep image etc
 let panelObj = null;
+let inspQuestions = {};
 
-// Load panel data from Firebase
+// Load panel data
 if (dbId) {
     loadPanelFromFirebase(dbId, function(p) {
         if (!p) {
@@ -255,7 +258,6 @@ if (dbId) {
         }
         panelObj = p;
 
-        // summary
         document.getElementById("dbNum").innerText = p.dbNumber || dbId;
         document.getElementById("volt").innerText = p.voltage || "";
         document.getElementById("breaker").innerText = p.mainBreaker || "";
@@ -264,7 +266,6 @@ if (dbId) {
         document.getElementById("location").innerText = p.location || "";
         document.getElementById("purpose").innerText = p.purpose || "";
 
-        // editable spec fields
         document.getElementById("specVoltage").value = p.voltage || "";
         document.getElementById("specBreaker").value = p.mainBreaker || "";
         document.getElementById("specCable").value = p.cableSize || "";
@@ -272,8 +273,8 @@ if (dbId) {
         document.getElementById("specLocation").value = p.location || "";
         document.getElementById("specPurpose").value = p.purpose || "";
 
-        // circuits
         renderSpecCircuits(p.circuits || null);
+        loadInspectionQuestions();
     });
 } else {
     document.body.innerHTML = "<h2 style='text-align:center;color:red;margin-top:40px;'>No panel ID provided.</h2>";
@@ -326,7 +327,7 @@ function collectSpecCircuits() {
     return circuits.length ? circuits : null;
 }
 
-/*********** SAVE DB SPEC (UPDATE MAIN DB) ***********/
+/*********** SAVE DB SPEC ***********/
 function saveDbSpec() {
     if (!dbId || !panelObj) {
         alert("Panel data not loaded yet.");
@@ -370,6 +371,79 @@ function handlePhoto(inputElem, previewId, index) {
     reader.readAsDataURL(file);
 }
 
+/*********** DYNAMIC INSPECTION QUESTIONS ***********/
+function loadInspectionQuestions() {
+  firebase.database().ref("questions").once("value", snap => {
+    inspQuestions = snap.val() || {};
+    renderInspectionQuestions();
+  });
+}
+
+function renderInspectionQuestions() {
+  const container = document.getElementById("inspExtraQuestions");
+  if (!container) return;
+
+  const entries = Object.entries(inspQuestions)
+    .filter(([id, q]) => q.applyInspection && q.active !== false);
+
+  if (!entries.length) {
+    container.innerHTML = "<p style='font-size:13px;color:#666;'>No extra inspection questions defined.</p>";
+    return;
+  }
+
+  let html = "";
+  entries.forEach(([id, q]) => {
+    html += renderInspectionQuestionField(id, q);
+  });
+  container.innerHTML = html;
+}
+
+function renderInspectionQuestionField(id, q) {
+  const baseId = `q_insp_${id}`;
+  let fieldHtml = "";
+
+  if (q.type === "text") {
+    fieldHtml = `<input type="text" id="${baseId}" style="width:100%;">`;
+  } else if (q.type === "number") {
+    fieldHtml = `<input type="number" id="${baseId}" style="width:150px;">`;
+  } else if (q.type === "yesno") {
+    fieldHtml = `
+      <select id="${baseId}">
+        <option value=""></option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    `;
+  } else if (q.type === "dropdown") {
+    const opts = (q.options || []);
+    const optionsHtml = ['<option value=""></option>']
+      .concat(opts.map(o => `<option value="${o}">${o}</option>`))
+      .join("");
+    fieldHtml = `<select id="${baseId}">${optionsHtml}</select>`;
+  } else {
+    fieldHtml = `<input type="text" id="${baseId}" style="width:100%;">`;
+  }
+
+  return `
+    <div style="margin-top:10px;">
+      <label style="font-weight:bold;">${q.text}</label><br>
+      ${fieldHtml}
+    </div>
+  `;
+}
+
+function collectInspectionExtras() {
+  const result = {};
+  Object.entries(inspQuestions).forEach(([id, q]) => {
+    if (!q.applyInspection || q.active === false) return;
+    const input = document.getElementById(`q_insp_${id}`);
+    if (!input) return;
+    const val = (input.value || "").toString().trim();
+    if (val) result[id] = val;
+  });
+  return Object.keys(result).length ? result : null;
+}
+
 /*********** SAVE INSPECTION ***********/
 function saveInspection() {
     if (!dbId) {
@@ -394,6 +468,7 @@ function saveInspection() {
         photo1: photo1Data || null,
         photo2: photo2Data || null,
         photo3: photo3Data || null,
+        extraAnswers: collectInspectionExtras(),
         timestamp: new Date().toISOString()
     };
 

@@ -61,6 +61,12 @@ button {
     border-radius: 6px;
     display: none;
 }
+.section-title {
+    font-size: 18px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
 </style>
 </head>
 
@@ -90,7 +96,6 @@ button {
     <label>Fault Description</label>
     <textarea id="desc" placeholder="Describe the fault in detail"></textarea>
 
-    <!-- FAULT TIMINGS -->
     <label>Start Date & Time</label>
     <input type="datetime-local" id="startTime">
 
@@ -108,6 +113,9 @@ button {
         <label>Production Loss Description</label>
         <textarea id="lossDesc" placeholder="Details about production loss"></textarea>
     </div>
+
+    <div class="section-title">Extra Fault Questions</div>
+    <div id="faultExtraQuestions"></div>
 
     <label>Upload Photos (up to 3)</label>
     <input type="file" accept="image/*" onchange="previewPhoto(this, 'p1', 1)">
@@ -130,15 +138,14 @@ const dbId = params.get("id");
 document.getElementById("dbIdHeader").innerText = dbId;
 
 let photo1 = null, photo2 = null, photo3 = null;
+let faultQuestions = {};
 
-// Show/hide production loss description
 function toggleLossDesc() {
     document.getElementById("lossDescBox").style.display =
         document.getElementById("prodLoss").value === "Yes"
         ? "block" : "none";
 }
 
-// Preview photos
 function previewPhoto(input, previewId, index) {
     const file = input.files[0];
     if (!file) return;
@@ -155,6 +162,79 @@ function previewPhoto(input, previewId, index) {
     reader.readAsDataURL(file);
 }
 
+/* DYNAMIC FAULT QUESTIONS */
+function loadFaultQuestions() {
+  firebase.database().ref("questions").once("value", snap => {
+    faultQuestions = snap.val() || {};
+    renderFaultQuestions();
+  });
+}
+
+function renderFaultQuestions() {
+  const container = document.getElementById("faultExtraQuestions");
+  if (!container) return;
+
+  const entries = Object.entries(faultQuestions)
+    .filter(([id, q]) => q.applyFault && q.active !== false);
+
+  if (!entries.length) {
+    container.innerHTML = "<p style='font-size:13px;color:#666;'>No extra fault questions defined.</p>";
+    return;
+  }
+
+  let html = "";
+  entries.forEach(([id, q]) => {
+    html += renderFaultQuestionField(id, q);
+  });
+  container.innerHTML = html;
+}
+
+function renderFaultQuestionField(id, q) {
+  const baseId = `q_fault_${id}`;
+  let fieldHtml = "";
+
+  if (q.type === "text") {
+    fieldHtml = `<input type="text" id="${baseId}" style="width:100%;">`;
+  } else if (q.type === "number") {
+    fieldHtml = `<input type="number" id="${baseId}" style="width:150px;">`;
+  } else if (q.type === "yesno") {
+    fieldHtml = `
+      <select id="${baseId}">
+        <option value=""></option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    `;
+  } else if (q.type === "dropdown") {
+    const opts = (q.options || []);
+    const optionsHtml = ['<option value=""></option>']
+      .concat(opts.map(o => `<option value="${o}">${o}</option>`))
+      .join("");
+    fieldHtml = `<select id="${baseId}">${optionsHtml}</select>`;
+  } else {
+    fieldHtml = `<input type="text" id="${baseId}" style="width:100%;">`;
+  }
+
+  return `
+    <div style="margin-top:10px;">
+      <label style="font-weight:bold;">${q.text}</label><br>
+      ${fieldHtml}
+    </div>
+  `;
+}
+
+function collectFaultExtras() {
+  const result = {};
+  Object.entries(faultQuestions).forEach(([id, q]) => {
+    if (!q.applyFault || q.active === false) return;
+    const input = document.getElementById(`q_fault_${id}`);
+    if (!input) return;
+    const val = (input.value || "").toString().trim();
+    if (val) result[id] = val;
+  });
+  return Object.keys(result).length ? result : null;
+}
+
 function saveFault() {
     const name = document.getElementById("elecName").value;
     const faultTypeVal = document.getElementById("faultType").value;
@@ -169,7 +249,6 @@ function saveFault() {
         return;
     }
 
-    // Downtime calculation (in minutes)
     let downMinutes = null;
     try {
         const startDate = new Date(start);
@@ -193,6 +272,7 @@ function saveFault() {
         photo1,
         photo2,
         photo3,
+        extraAnswers: collectFaultExtras(),
         timestamp: new Date().toISOString()
     };
 
@@ -203,6 +283,8 @@ function saveFault() {
             else alert("Fault Report Submitted Successfully.");
         });
 }
+
+loadFaultQuestions();
 </script>
 
 </body>
