@@ -460,11 +460,11 @@ function downloadQR() {
 
     // ---- DANGER BANNER ----
     ctx.fillStyle = "#c40000";
-    ctx.fillRect(80, 200, W - 160, 70);
+ctx.fillRect(40, 200, W - 80, 70);   // Wider banner (40px margin each side)
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 24px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("⚠️DANGER–ELECTRICAL PANEL–DO NOT TOUCH⚠️", W / 2, 295);
+    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️", W / 2, 245);
 
     // ---- QR CODE ----
     ctx.drawImage(qrCanvasEl, (W - 300) / 2, 300, 300, 300);
@@ -497,11 +497,11 @@ function downloadQR() {
     alert("Logo not found (logo.png). QR sheet will be generated without logo.");
     // simple fallback: draw without logo
     ctx.fillStyle = "#c40000";
-    ctx.fillRect(90, 200, W - 160, 70);
+    ctx.fillRect(80, 80, W - 160, 70);
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 24px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("⚠️DANGER–ELECTRICAL PANEL–DO NOT TOUCH⚠️", W / 2, 245);
+    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️", W / 2, 245);
     ctx.drawImage(qrCanvasEl, (W - 300) / 2, 220, 300, 300);
     ctx.fillStyle = "#000000";
     ctx.font = "bold 36px Arial";
