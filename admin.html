@@ -7,7 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- Your Firebase helper -->
+  <!-- Your Firebase helper (contains firebaseConfig + initializeApp + savePanelToFirebase etc.) -->
   <script src="data.js"></script>
 
   <style>
@@ -45,6 +45,7 @@
       width: 100%;
       padding: 10px;
       margin-top: 15px;
+      font-size: 16px;
       cursor: pointer;
     }
     #loginError {
@@ -80,7 +81,7 @@
       display: none;
     }
 
-    /* Circuits */
+    /* CIRCUITS */
     .circuit-row {
       display: flex;
       gap: 8px;
@@ -97,7 +98,7 @@
       cursor: pointer;
     }
 
-    /* QR preview block */
+    /* QR PREVIEW */
     #qrPreview {
       text-align: center;
       margin-top: 20px;
@@ -108,7 +109,7 @@
       padding: 10px 12px;
       font-weight: bold;
       border-radius: 8px;
-      max-width: 420px;
+      max-width: 460px;
       margin: 0 auto 15px auto;
       font-size: 16px;
     }
@@ -124,7 +125,7 @@
       color: #111;
     }
 
-    /* Table */
+    /* TABLE */
     table {
       border-collapse: collapse;
       margin-top: 20px;
@@ -194,7 +195,7 @@
   <h3>Generate QR Code</h3>
   <button onclick="generateQR()">Generate QR Code</button>
 
-  <!-- QR + Banner + DB Name preview -->
+  <!-- On-screen QR + banner preview -->
   <div id="qrPreview">
     <div class="dangerBanner">
       ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
@@ -217,7 +218,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
-/* ---------- LOGIN ---------- */
+/* ------------ LOGIN ------------ */
 const ADMIN_PASSWORD = "1234";
 
 function checkLogin() {
@@ -242,7 +243,7 @@ window.addEventListener("load", () => {
   }
 });
 
-/* ---------- IMAGE HANDLING ---------- */
+/* ------------ IMAGE HANDLING ------------ */
 let uploadedImage = null;
 
 function previewAndCompress(event) {
@@ -276,7 +277,7 @@ function removeImage() {
   document.getElementById("previewImage").style.display = "none";
 }
 
-/* ---------- CIRCUITS ---------- */
+/* ------------ CIRCUITS ------------ */
 function addCircuitRow(name = "", breaker = "", load = "") {
   const container = document.getElementById("circuitsContainer");
   const row = document.createElement("div");
@@ -315,7 +316,7 @@ function collectCircuitsFromForm() {
   return circuits.length ? circuits : null;
 }
 
-/* ---------- SAVE PANEL TO FIREBASE ---------- */
+/* ------------ SAVE PANEL ------------ */
 function savePanel() {
   const id = document.getElementById("db").value.trim();
   if (!id) {
@@ -335,36 +336,13 @@ function savePanel() {
     circuits: collectCircuitsFromForm()
   };
 
+  // Helper from data.js
   savePanelToFirebase(id, data, () => {
     alert("Panel saved to Firebase successfully!");
   });
 }
 
-/* ---------- LIST / EDIT PANELS ---------- */
-function showPanels() {
-  loadAllPanels(all => {
-    const div = document.getElementById("panelList");
-    if (!all) {
-      div.innerHTML = "<p>No panels in database.</p>";
-      return;
-    }
-    let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
-    Object.keys(all).forEach(id => {
-      const p = all[id];
-      html += `
-        <tr>
-          <td>${p.dbNumber || id}</td>
-          <td>${p.location || ""}</td>
-          <td>${p.purpose || ""}</td>
-          <td><button onclick="editPanel('${id}')">Edit</button></td>
-        </tr>
-      `;
-    });
-    html += "</table>";
-    div.innerHTML = html;
-  });
-}
-
+/* ------------ EDIT / DELETE / LIST PANELS ------------ */
 function editPanel(id) {
   loadPanelFromFirebase(id, p => {
     if (!p) {
@@ -394,7 +372,43 @@ function editPanel(id) {
   });
 }
 
-/* ---------- QR GENERATION PREVIEW ---------- */
+function deletePanel(id) {
+  if (!confirm("Are you sure you want to delete panel " + id + " ?")) return;
+  // Delete entire node (including image + circuits)
+  firebase.database().ref("panels/" + id).remove().then(() => {
+    alert("Panel " + id + " deleted.");
+    showPanels();
+  });
+}
+
+function showPanels() {
+  loadAllPanels(all => {
+    const div = document.getElementById("panelList");
+    if (!all) {
+      div.innerHTML = "<p>No panels in database.</p>";
+      return;
+    }
+    let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+    Object.keys(all).forEach(id => {
+      const p = all[id];
+      html += `
+        <tr>
+          <td>${p.dbNumber || id}</td>
+          <td>${p.location || ""}</td>
+          <td>${p.purpose || ""}</td>
+          <td>
+            <button onclick="editPanel('${id}')">Edit</button>
+            <button onclick="deletePanel('${id}')">Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+    html += "</table>";
+    div.innerHTML = html;
+  });
+}
+
+/* ------------ QR PREVIEW ------------ */
 let qr;
 
 function generateQR() {
@@ -417,64 +431,87 @@ function generateQR() {
   document.getElementById("downloadQR").style.display = "inline-block";
 }
 
-/* ---------- LOAD LOGO FOR PRINT SHEET ---------- */
-const logoImg = new Image();
-logoImg.src = "logo.png"; // upload your logo as logo.png in repo
-
-/* ---------- DOWNLOAD QR PRINT SHEET ---------- */
+/* ------------ DOWNLOAD QR SHEET ------------ */
 function downloadQR() {
   const id = document.getElementById("db").value.trim();
   if (!id) return;
 
-  const qrCanvas = document.getElementById("qrCanvas");
-  const W = 700, H = 900;          // size of final sheet
+  const qrCanvasEl = document.getElementById("qrCanvas");
+
+  // Create canvas for full sheet
+  const W = 700, H = 900;
   const finalCanvas = document.createElement("canvas");
   finalCanvas.width = W;
   finalCanvas.height = H;
   const ctx = finalCanvas.getContext("2d");
 
-  // background
+  // White background
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
 
-  // company logo (if loaded)
-  if (logoImg.complete) {
-    const logoSize = 120;
-    ctx.drawImage(logoImg, (W - logoSize) / 2, 40, logoSize, logoSize);
-  }
+  const logo = new Image();
+  logo.src = "logo.png"; // upload your full logo as logo.png in the same folder as admin.html
 
-  // danger banner
-  ctx.fillStyle = "#c40000";
-  ctx.fillRect(50, 190, W - 100, 70);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 22px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️", W / 2, 230);
+  logo.onload = () => {
+    // ---- LOGO ----
+    const logoW = 420;
+    const logoH = (logo.height / logo.width) * logoW;
+    ctx.drawImage(logo, (W - logoW) / 2, 40, logoW, logoH);
 
-  // QR code
-  ctx.drawImage(qrCanvas, (W - 280) / 2, 280, 280, 280);
+    // ---- DANGER BANNER ----
+    ctx.fillStyle = "#c40000";
+    ctx.fillRect(80, 200, W - 160, 70);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️", W / 2, 245);
 
-  // DB name
-  ctx.fillStyle = "#000000";
-  ctx.font = "bold 32px Arial";
-  ctx.fillText(id, W / 2, 600);
+    // ---- QR CODE ----
+    ctx.drawImage(qrCanvasEl, (W - 300) / 2, 300, 300, 300);
 
-  // technician signature line
-  ctx.font = "18px Arial";
-  ctx.textAlign = "left";
-  ctx.fillText("Technician Signature:", 80, 680);
-  ctx.beginPath();
-  ctx.moveTo(80, 700);
-  ctx.lineTo(W - 80, 700);
-  ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 2;
-  ctx.stroke();
+    // ---- DB NUMBER ----
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 36px Arial";
+    ctx.fillText(id, W / 2, 640);
 
-  // download
-  const link = document.createElement("a");
-  link.download = id + "_QR_sheet.png";
-  link.href = finalCanvas.toDataURL();
-  link.click();
+    // ---- SIGNATURE ----
+    ctx.font = "20px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText("Technician Signature:", 80, 720);
+    ctx.beginPath();
+    ctx.moveTo(80, 745);
+    ctx.lineTo(W - 80, 745);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#000000";
+    ctx.stroke();
+
+    // ---- DOWNLOAD PNG ----
+    const link = document.createElement("a");
+    link.download = id + "_QR_sheet.png";
+    link.href = finalCanvas.toDataURL();
+    link.click();
+  };
+
+  // If logo fails to load, still generate sheet without it
+  logo.onerror = () => {
+    alert("Logo not found (logo.png). QR sheet will be generated without logo.");
+    // simple fallback: draw without logo
+    ctx.fillStyle = "#c40000";
+    ctx.fillRect(80, 80, W - 160, 70);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️", W / 2, 125);
+    ctx.drawImage(qrCanvasEl, (W - 300) / 2, 220, 300, 300);
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 36px Arial";
+    ctx.fillText(id, W / 2, 590);
+
+    const link = document.createElement("a");
+    link.download = id + "_QR_sheet.png";
+    link.href = finalCanvas.toDataURL();
+    link.click();
+  };
 }
 </script>
 
