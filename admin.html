@@ -37,91 +37,73 @@ body {
     text-align: center;
 }
 
-#loginBox input {
-    width: 100%;
-    padding: 10px;
-    margin-top: 10px;
+#loginError { color:red; }
+
+/* HEADER */
+.headerBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-#loginBox button {
-    width: 100%;
-    padding: 10px;
-    margin-top: 15px;
+#companyLogo {
+    width: 120px;
+    height: auto;
 }
 
-#loginError {
-    color: red;
-}
-
-/* FORM STYLES */
+/* FORM */
 label {
-    display: block;
-    margin-top: 12px;
-    font-weight: bold;
+    display:block;
+    margin-top:12px;
+    font-weight:bold;
 }
 
 input {
-    width: 300px;
-    padding: 8px;
-    font-size: 16px;
+    width:300px;
+    padding:8px;
 }
 
-button {
-    padding: 10px 18px;
-    margin-top: 15px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-#previewImage {
-    width: 200px;
-    margin-top: 10px;
-    display: none;
-    border: 2px solid #333;
-    border-radius: 6px;
-}
-
-/* Danger Banner */
-.dangerBanner {
-    background: #c40000;
-    color: white;
-    font-weight: bold;
-    padding: 12px;
-    text-align: center;
-    margin-top: 20px;
-    border-radius: 8px;
-    font-size: 20px;
-}
-
-/* Circuits section */
+/* CIRCUITS */
 .circuit-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
+    display:flex;
+    gap:10px;
+    margin-top:8px;
 }
-
-.circuit-row input {
-    width: 100%;
-}
-
 .circuit-remove-btn {
-    padding: 0 8px;
-    background: #c40000;
-    color: white;
-    border-radius: 4px;
+    background:#c40000;
+    color:white;
+    padding:5px 10px;
+    border-radius:4px;
+    cursor:pointer;
 }
 
-/* QR container */
+/* QR BANNER */
+.dangerBanner {
+    background:#c40000;
+    color:white;
+    padding:12px;
+    text-align:center;
+    margin-top:20px;
+    border-radius:6px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+/* QR WRAPPER */
 #qrFinalWrapper {
-    margin-top: 20px;
-    text-align: center;
+    text-align:center;
+    margin-top:20px;
+}
+#qrCanvas {
+    border:1px solid #ccc;
+    margin-top:10px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN PAGE -->
+<!-- LOGIN -->
 <div id="loginOverlay">
     <div id="loginBox">
         <h2>Admin Login</h2>
@@ -132,10 +114,14 @@ button {
 </div>
 
 
-<!-- MAIN ADMIN PAGE -->
 <div id="adminContent" style="display:none;">
 
-<h2>Admin – Panel Data (Firebase)</h2>
+<div class="headerBar">
+    <h2>Admin – Panel Data</h2>
+
+    <!-- LOGO AREA (YOU CAN PLACE YOUR LOGO HERE) -->
+    <img id="companyLogo" src="YOUR_LOGO.png" alt="Company Logo">
+</div>
 
 <label>DB Number</label>
 <input id="db">
@@ -160,30 +146,29 @@ button {
 
 <label>Upload Panel Picture</label>
 <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
-<img id="previewImage">
+<img id="previewImage" style="width:200px;margin-top:10px;display:none;border:1px solid #444;border-radius:5px;">
 
-<h3>Circuits (Name / Breaker / Load)</h3>
-
+<h3>Circuits</h3>
 <div id="circuitsContainer"></div>
 <button onclick="addCircuitRow()">Add Circuit</button>
 
 <br><br>
 <button onclick="savePanel()">Save Panel Data</button>
 
-<!-- Danger Banner ABOVE QR -->
+<!-- BANNER ABOVE QR -->
 <div class="dangerBanner">
 ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
 </div>
 
 <h3>QR Code</h3>
-<button onclick="generateQR()">Generate QR Code</button>
+<button onclick="generateQR()">Generate QR</button>
 
 <div id="qrFinalWrapper">
-    <canvas id="qrCanvas"></canvas><br>
-    <div id="qrLabel" style="font-size:22px; font-weight:bold; margin-top:10px;"></div>
+    <canvas id="qrCanvas"></canvas>
+    <div id="qrLabel" style="font-size:22px;margin-top:10px;font-weight:bold;"></div>
 </div>
 
-<button id="downloadQR" style="display:none;" onclick="downloadFinalQR()">Download QR + Banner</button>
+<button id="downloadQR" style="display:none;" onclick="downloadFinalQR()">Download QR Sheet</button>
 
 <hr>
 
@@ -191,229 +176,195 @@ button {
 <button onclick="showPanels()">Show All Panels</button>
 <div id="panelList"></div>
 
-</div> <!-- END ADMIN PAGE -->
+</div>
 
-
-<!-- QR Library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
-/* ---------------- LOGIN ---------------- */
+/* LOGIN */
 const ADMIN_PASSWORD = "1234";
 
 function checkLogin() {
-    if (document.getElementById("adminPassword").value === ADMIN_PASSWORD) {
-        sessionStorage.setItem("adminLogin", "1");
-        document.getElementById("loginOverlay").style.display = "none";
-        document.getElementById("adminContent").style.display = "block";
+    if (adminPassword.value === ADMIN_PASSWORD) {
+        sessionStorage.setItem("adminLogin",1);
+        loginOverlay.style.display="none";
+        adminContent.style.display="block";
         renderCircuits(null);
     } else {
-        document.getElementById("loginError").innerText = "Wrong Password!";
+        loginError.innerText="Wrong Password!";
     }
 }
 
-if (sessionStorage.getItem("adminLogin") === "1") {
-    document.getElementById("loginOverlay").style.display = "none";
-    document.getElementById("adminContent").style.display = "block";
-    renderCircuits(null);
+if (sessionStorage.getItem("adminLogin")==1){
+    loginOverlay.style.display="none";
+    adminContent.style.display="block";
 }
 
-/* ---------------- CIRCUITS ---------------- */
-function addCircuitRow(name = "", breaker = "", load = "") {
-    const container = document.getElementById("circuitsContainer");
-    const row = document.createElement("div");
-    row.className = "circuit-row";
-
-    row.innerHTML = `
-        <input class="c-name" placeholder="Name" value="${name}">
-        <input class="c-breaker" placeholder="Breaker" value="${breaker}">
-        <input class="c-load" placeholder="Load" value="${load}">
-        <button class="circuit-remove-btn" onclick="this.parentElement.remove()">X</button>
-    `;
-    container.appendChild(row);
+/* CIRCUITS */
+function addCircuitRow(n="",b="",l=""){
+    circuitsContainer.innerHTML += `
+        <div class="circuit-row">
+            <input class="c-name" placeholder="Name" value="${n}">
+            <input class="c-breaker" placeholder="Breaker" value="${b}">
+            <input class="c-load" placeholder="Load" value="${l}">
+            <button class="circuit-remove-btn" onclick="this.parentElement.remove()">X</button>
+        </div>`;
 }
 
-function renderCircuits(circuits) {
-    const container = document.getElementById("circuitsContainer");
-    container.innerHTML = "";
-    if (circuits) {
-        Object.values(circuits).forEach(c => addCircuitRow(c.name, c.breaker, c.load));
-    } else {
-        addCircuitRow();
-    }
+function renderCircuits(c){
+    circuitsContainer.innerHTML="";
+    if(!c){ addCircuitRow(); return; }
+    Object.values(c).forEach(x=> addCircuitRow(x.name,x.breaker,x.load));
 }
 
-function collectCircuits() {
-    const rows = document.querySelectorAll(".circuit-row");
-    const circuits = [];
-    rows.forEach(r => {
-        const name = r.querySelector(".c-name").value;
-        const br = r.querySelector(".c-breaker").value;
-        const ld = r.querySelector(".c-load").value;
-        if (name || br || ld) circuits.push({ name, breaker: br, load: ld });
+function collectCircuits(){
+    let arr=[];
+    document.querySelectorAll(".circuit-row").forEach(r=>{
+        let n=r.querySelector(".c-name").value;
+        let b=r.querySelector(".c-breaker").value;
+        let l=r.querySelector(".c-load").value;
+        if(n||b||l) arr.push({name:n,breaker:b,load:l});
     });
-    return circuits.length ? circuits : null;
+    return arr.length?arr:null;
 }
 
-/* ---------------- IMAGE COMPRESS ---------------- */
-let uploadedImage = null;
-
-function previewAndCompress(event) {
-    let file = event.target.files[0];
-    if (!file) return;
-
-    let reader = new FileReader();
-    reader.onload = e => {
-        let img = new Image();
-        img.src = e.target.result;
-
-        img.onload = () => {
-            let canvas = document.createElement("canvas");
-            let ctx = canvas.getContext("2d");
-
-            let maxWidth = 800;
-            let scale = maxWidth / img.width;
-            canvas.width = maxWidth;
-            canvas.height = img.height * scale;
-
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            uploadedImage = canvas.toDataURL("image/jpeg", 0.7);
-
-            document.getElementById("previewImage").src = uploadedImage;
-            document.getElementById("previewImage").style.display = "block";
-        };
-    };
+/* IMAGE */
+let uploadedImage=null;
+function previewAndCompress(event){
+    let file=event.target.files[0];
+    if(!file) return;
+    let reader=new FileReader();
+    reader.onload=e=>{
+        let img=new Image();
+        img.src=e.target.result;
+        img.onload=()=>{
+            let canvas=document.createElement("canvas");
+            let ctx=canvas.getContext("2d");
+            let maxW=800;
+            let scale=maxW/img.width;
+            canvas.width=maxW;
+            canvas.height=img.height*scale;
+            ctx.drawImage(img,0,0,canvas.width,canvas.height);
+            uploadedImage=canvas.toDataURL("image/jpeg",0.7);
+            previewImage.src=uploadedImage;
+            previewImage.style.display="block";
+        }
+    }
     reader.readAsDataURL(file);
 }
 
-/* ---------------- SAVE PANEL ---------------- */
-function savePanel() {
-    let id = document.getElementById("db").value.trim();
-    if (!id) return alert("Enter DB Number");
+/* SAVE FIXED */
+function savePanel(){
+    let id=db.value.trim();
+    if(!id) return alert("Enter DB Number");
 
-    let data = {
-        dbNumber: id,
-        voltage: volt.value,
-        mainBreaker: breaker.value,
-        cableSize: cable.value,
-        earthStatus: earth.value,
-        location: location.value,
-        purpose: purpose.value,
-        image: uploadedImage,
-        circuits: collectCircuits()
+    let data={
+        dbNumber:id,
+        voltage:volt.value,
+        mainBreaker:breaker.value,
+        cableSize:cable.value,
+        earthStatus:earth.value,
+        location:location.value,
+        purpose:purpose.value,
+        image:uploadedImage,
+        circuits:collectCircuits()
     };
 
-    savePanelToFirebase(id, data, () => alert("Saved Successfully"));
+    savePanelToFirebase(id,data, ()=> alert("Saved Successfully"));
 }
 
-/* ---------------- LIST PANELS ---------------- */
-function showPanels() {
-    loadAllPanels(all => {
-        let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
-
-        for (let id in all) {
-            html += `
-                <tr>
-                    <td>${id}</td>
-                    <td>${all[id].location}</td>
-                    <td>${all[id].purpose}</td>
-                    <td><button onclick="editPanel('${id}')">Edit</button></td>
-                </tr>`;
+/* LIST */
+function showPanels(){
+    loadAllPanels(all=>{
+        let html="<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+        for(let id in all){
+            html+=`
+            <tr>
+              <td>${id}</td>
+              <td>${all[id].location}</td>
+              <td>${all[id].purpose}</td>
+              <td><button onclick="editPanel('${id}')">Edit</button></td>
+            </tr>`;
         }
-
-        html += "</table>";
-        document.getElementById("panelList").innerHTML = html;
-    });
+        html+="</table>";
+        panelList.innerHTML=html;
+    })
 }
 
-/* ---------------- EDIT PANEL ---------------- */
-function editPanel(id) {
-    loadPanelFromFirebase(id, p => {
-        db.value = p.dbNumber;
-        volt.value = p.voltage;
-        breaker.value = p.mainBreaker;
-        cable.value = p.cableSize;
-        earth.value = p.earthStatus;
-        location.value = p.location;
-        purpose.value = p.purpose;
+/* EDIT */
+function editPanel(id){
+    loadPanelFromFirebase(id,p=>{
+        db.value=p.dbNumber;
+        volt.value=p.voltage;
+        breaker.value=p.mainBreaker;
+        cable.value=p.cableSize;
+        earth.value=p.earthStatus;
+        location.value=p.location;
+        purpose.value=p.purpose;
 
-        uploadedImage = p.image;
-        if (uploadedImage) {
-            previewImage.src = uploadedImage;
-            previewImage.style.display = "block";
-        } else {
-            previewImage.style.display = "none";
+        uploadedImage=p.image;
+        if(uploadedImage){
+            previewImage.src=uploadedImage;
+            previewImage.style.display="block";
         }
 
         renderCircuits(p.circuits);
-        window.scrollTo(0, 0);
-    });
+        window.scrollTo(0,0);
+    })
 }
 
-/* ---------------- QR GENERATION ---------------- */
+/* QR GENERATION */
 let qr;
 
-function generateQR() {
-    let id = document.getElementById("db").value.trim();
-    if (!id) return alert("Enter DB Number");
+function generateQR(){
+    let id=db.value.trim();
+    if(!id) return alert("Enter DB Number");
 
-    let url =
-`https://energycew-ui.github.io/panel-system/index.html?id=${encodeURIComponent(id)}`;
+    let url=`https://energycew-ui.github.io/panel-system/index.html?id=${encodeURIComponent(id)}`;
 
-    qr = new QRious({
-        element: document.getElementById("qrCanvas"),
-        value: url,
-        size: 250
+    qr=new QRious({
+        element:qrCanvas,
+        value:url,
+        size:250
     });
 
-    document.getElementById("qrLabel").innerText = id;
-    document.getElementById("downloadQR").style.display = "inline-block";
+    qrLabel.innerText=id;
+    downloadQR.style.display="inline-block";
 }
 
-/* ---------------- FINAL QR DOWNLOAD (banner + qr + dbName) ---------------- */
-function downloadFinalQR() {
-    let id = document.getElementById("db").value.trim();
-    if (!id) return;
+/* QR DOWNLOAD WITH BANNER */
+function downloadFinalQR(){
+    let id=db.value.trim();
+    if(!id) return;
+    
+    let qrCanvas=document.getElementById("qrCanvas");
+    let W=500,H=650;
+    let finalCanvas=document.createElement("canvas");
+    finalCanvas.width=W;
+    finalCanvas.height=H;
+    let ctx=finalCanvas.getContext("2d");
 
-    let qrCanvas = document.getElementById("qrCanvas");
-    let w = 500, h = 650;
+    ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
 
-    let finalCanvas = document.createElement("canvas");
-    finalCanvas.width = w;
-    finalCanvas.height = h;
+    ctx.fillStyle="#c40000";
+    ctx.fillRect(0,0,W,80);
 
-    let ctx = finalCanvas.getContext("2d");
+    ctx.fillStyle="white";
+    ctx.font="bold 24px Arial";
+    ctx.textAlign="center";
+    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️",W/2,50);
 
-    // Background
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(qrCanvas,(W-250)/2,110,250,250);
 
-    // Banner
-    ctx.fillStyle = "#c40000";
-    ctx.fillRect(0, 0, w, 80);
+    ctx.fillStyle="black";
+    ctx.font="bold 38px Arial";
+    ctx.fillText(id,W/2,420);
 
-    ctx.fillStyle = "white";
-    ctx.font = "bold 26px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️", w/2, 50);
-
-    // QR Image
-    ctx.drawImage(qrCanvas, (w-250)/2, 100, 250, 250);
-
-    // DB Label
-    ctx.fillStyle = "black";
-    ctx.font = "bold 36px Arial";
-    ctx.fillText(id, w/2, 410);
-
-    // Download
-    let link = document.createElement("a");
-    link.download = `${id}_QR.png`;
-    link.href = finalCanvas.toDataURL();
+    let link=document.createElement("a");
+    link.download=id+"_QR.png";
+    link.href=finalCanvas.toDataURL();
     link.click();
 }
-
 </script>
-
 </body>
 </html>
