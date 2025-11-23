@@ -113,6 +113,23 @@ th {
     margin-top: 20px;
     border-radius: 8px;
 }
+
+/* CIRCUITS */
+.circuit-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.circuit-row input {
+    width: 100%;
+}
+.circuit-remove-btn {
+    padding: 0 8px;
+    font-size: 14px;
+    background: #c40000;
+    color: white;
+    border-radius: 4px;
+}
 </style>
 </head>
 
@@ -129,10 +146,10 @@ th {
   </div>
 </div>
 
-<!-- ADMIN CONTENT WRAPPED -->
+<!-- ADMIN CONTENT -->
 <div id="adminContent" style="display:none;">
 
-<h2>Admin – Add / Update Panel Data (Global via Firebase)</h2>
+<h2>Admin – Panel Data (Firebase Global)</h2>
 
 <label>DB Number</label>
 <input id="db">
@@ -158,7 +175,11 @@ th {
 <label>Upload Panel Picture (Optional)</label>
 <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
 <img id="previewImage">
-<button onclick="removeImage()">Remove Picture</button>
+<button type="button" onclick="removeImage()">Remove Picture</button>
+
+<h3>Circuits (Name / Breaker / Load)</h3>
+<div id="circuitsContainer"></div>
+<button type="button" onclick="addCircuitRow()">Add Circuit</button>
 
 <br><br>
 <button onclick="savePanel()">Save Data (to Firebase)</button>
@@ -179,44 +200,41 @@ th {
 <button onclick="showPanels()">Show All Panels (From Firebase)</button>
 <div id="panelList"></div>
 
-</div> <!-- end adminContent -->
+</div> <!-- adminContent -->
 
 <!-- QR Library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
 /*************** SIMPLE ADMIN PASSWORD LOGIN ***************/
-
-// CHANGE THIS PASSWORD TO WHATEVER YOU LIKE:
-const ADMIN_PASSWORD = "1234";
+const ADMIN_PASSWORD = "1234"; // change if you want
 
 function checkLogin() {
     const input = document.getElementById("adminPassword").value.trim();
     const errorDiv = document.getElementById("loginError");
 
     if (input === ADMIN_PASSWORD) {
-        // remember for this browser session
         sessionStorage.setItem("adminLoggedIn", "true");
         document.getElementById("loginOverlay").style.display = "none";
         document.getElementById("adminContent").style.display = "block";
+        // ensure at least one empty circuit row for new entries
+        renderCircuits(null);
     } else {
         errorDiv.textContent = "Incorrect password.";
     }
 }
 
-// auto-unlock if already logged in this session
 window.addEventListener("load", function() {
     if (sessionStorage.getItem("adminLoggedIn") === "true") {
         document.getElementById("loginOverlay").style.display = "none";
         document.getElementById("adminContent").style.display = "block";
+        renderCircuits(null);
     }
 });
 
-/*************** EXISTING ADMIN LOGIC (Firebase) ***************/
-
+/*************** IMAGE HANDLING ***************/
 let uploadedImage = null;
 
-// IMAGE PREVIEW + COMPRESSION
 function previewAndCompress(event) {
     let file = event.target.files[0];
     if (!file) return;
@@ -250,15 +268,70 @@ function removeImage() {
     document.getElementById("previewImage").style.display = "none";
 }
 
-// SAVE PANEL TO FIREBASE
+/*************** CIRCUITS HANDLING ***************/
+function addCircuitRow(name = "", breaker = "", load = "") {
+    const container = document.getElementById("circuitsContainer");
+    const row = document.createElement("div");
+    row.className = "circuit-row";
+
+    row.innerHTML = `
+        <input type="text" class="c-name" placeholder="Circuit name" value="${name}">
+        <input type="text" class="c-breaker" placeholder="Breaker (e.g. 10A)" value="${breaker}">
+        <input type="text" class="c-load" placeholder="Load / Description" value="${load}">
+        <button type="button" class="circuit-remove-btn" onclick="removeCircuitRow(this)">X</button>
+    `;
+
+    container.appendChild(row);
+}
+
+function removeCircuitRow(btn) {
+    const row = btn.parentElement;
+    row.parentElement.removeChild(row);
+}
+
+function renderCircuits(circuits) {
+    const container = document.getElementById("circuitsContainer");
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (circuits) {
+        let list = Array.isArray(circuits) ? circuits : Object.values(circuits);
+        list.forEach(c => {
+            addCircuitRow(c.name || "", c.breaker || "", c.load || "");
+        });
+    } else {
+        // start with one empty row
+        addCircuitRow();
+    }
+}
+
+function collectCircuitsFromForm() {
+    const rows = document.querySelectorAll(".circuit-row");
+    const circuits = [];
+    rows.forEach(row => {
+        const name = row.querySelector(".c-name").value.trim();
+        const br = row.querySelector(".c-breaker").value.trim();
+        const ld = row.querySelector(".c-load").value.trim();
+        if (name || br || ld) {
+            circuits.push({
+                name,
+                breaker: br,
+                load: ld
+            });
+        }
+    });
+    return circuits.length ? circuits : null;
+}
+
+/*************** SAVE PANEL TO FIREBASE ***************/
 function savePanel() {
-    let id = document.getElementById("db").value;
+    let id = document.getElementById("db").value.trim();
     if (!id) {
         alert("Enter DB Number!");
         return;
     }
 
-    let data = {
+    const data = {
         dbNumber: id,
         voltage: document.getElementById("volt").value,
         mainBreaker: document.getElementById("breaker").value,
@@ -266,7 +339,8 @@ function savePanel() {
         earthStatus: document.getElementById("earth").value,
         location: document.getElementById("location").value,
         purpose: document.getElementById("purpose").value,
-        image: uploadedImage || null
+        image: uploadedImage || null,
+        circuits: collectCircuitsFromForm()
     };
 
     savePanelToFirebase(id, data, function() {
@@ -274,7 +348,7 @@ function savePanel() {
     });
 }
 
-// EDIT PANEL FROM FIREBASE
+/*************** EDIT / DELETE / LIST ***************/
 function editPanel(id) {
     loadPanelFromFirebase(id, function(p) {
         if (!p) {
@@ -282,7 +356,7 @@ function editPanel(id) {
             return;
         }
 
-        document.getElementById("db").value = p.dbNumber;
+        document.getElementById("db").value = p.dbNumber || id;
         document.getElementById("volt").value = p.voltage || "";
         document.getElementById("breaker").value = p.mainBreaker || "";
         document.getElementById("cable").value = p.cableSize || "";
@@ -291,7 +365,6 @@ function editPanel(id) {
         document.getElementById("purpose").value = p.purpose || "";
 
         uploadedImage = p.image || null;
-
         if (uploadedImage) {
             document.getElementById("previewImage").src = uploadedImage;
             document.getElementById("previewImage").style.display = "block";
@@ -299,11 +372,11 @@ function editPanel(id) {
             document.getElementById("previewImage").style.display = "none";
         }
 
+        renderCircuits(p.circuits || null);
         window.scrollTo(0, 0);
     });
 }
 
-// DELETE PANEL
 function deletePanel(id) {
     if (confirm("Delete " + id + " ?")) {
         firebase.database().ref("panels/" + id).remove().then(function() {
@@ -313,10 +386,37 @@ function deletePanel(id) {
     }
 }
 
-// QR CODE
+function showPanels() {
+    loadAllPanels(function(all) {
+        const div = document.getElementById("panelList");
+        if (!all) {
+            div.innerHTML = "<p>No panels in database.</p>";
+            return;
+        }
+
+        let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+        Object.keys(all).forEach(id => {
+            const p = all[id];
+            html += `
+                <tr>
+                    <td>${p.dbNumber || id}</td>
+                    <td>${p.location || ""}</td>
+                    <td>${p.purpose || ""}</td>
+                    <td>
+                        <button class='action-btn' onclick="editPanel('${id}')">Edit</button>
+                        <button class='action-btn' onclick="deletePanel('${id}')">Delete</button>
+                    </td>
+                </tr>`;
+        });
+        html += "</table>";
+        div.innerHTML = html;
+    });
+}
+
+/*************** QR CODE ***************/
 let qr;
 function generateQR() {
-    let id = document.getElementById("db").value;
+    let id = document.getElementById("db").value.trim();
     if (!id) {
         alert("Enter DB Number first!");
         return;
@@ -335,36 +435,6 @@ function downloadQR() {
     link.download = document.getElementById("db").value + "_QR.png";
     link.href = document.getElementById("qrCanvas").toDataURL();
     link.click();
-}
-
-// SHOW ALL PANELS
-function showPanels() {
-    loadAllPanels(function(all) {
-        let div = document.getElementById("panelList");
-        if (!all) {
-            div.innerHTML = "<p>No panels in database.</p>";
-            return;
-        }
-
-        let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
-
-        Object.keys(all).forEach(id => {
-            let p = all[id];
-            html += `
-                <tr>
-                    <td>${p.dbNumber || id}</td>
-                    <td>${p.location || ""}</td>
-                    <td>${p.purpose || ""}</td>
-                    <td>
-                        <button class='action-btn' onclick="editPanel('${id}')">Edit</button>
-                        <button class='action-btn' onclick="deletePanel('${id}')">Delete</button>
-                    </td>
-                </tr>`;
-        });
-
-        html += "</table>";
-        div.innerHTML = html;
-    });
 }
 </script>
 
