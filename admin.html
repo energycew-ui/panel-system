@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-<!-- Our Firebase helper -->
+<!-- Firebase Helper -->
 <script src="data.js"></script>
 
 <style>
@@ -15,6 +15,43 @@ body {
     font-family: Arial;
     margin: 30px;
 }
+
+/* LOGIN OVERLAY */
+#loginOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+#loginBox {
+    background: #fff;
+    padding: 25px 30px;
+    border-radius: 10px;
+    max-width: 320px;
+    width: 90%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    text-align: center;
+}
+#loginBox input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+}
+#loginBox button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 15px;
+    font-size: 16px;
+}
+#loginError {
+    color: red;
+    margin-top: 10px;
+}
+
+/* ADMIN */
 label {
     display: block;
     margin-top: 12px;
@@ -47,7 +84,6 @@ table {
     border-collapse: collapse;
     margin-top: 20px;
     width: 100%;
-    max-width: 900px;
 }
 th, td {
     border: 1px solid #ccc;
@@ -67,7 +103,7 @@ th {
     font-size: 18px;
     font-weight: bold;
     text-align: center;
-    margin-top: 20px;
+    margin-top: 30px;
     border-radius: 8px;
 }
 </style>
@@ -75,7 +111,21 @@ th {
 
 <body>
 
-<h2>Admin – Add / Update Panel Data (Global via Firebase)</h2>
+<!-- LOGIN POPUP -->
+<div id="loginOverlay">
+  <div id="loginBox">
+    <h2>Admin Login</h2>
+    <p>Enter admin password</p>
+    <input type="password" id="adminPassword" placeholder="Password">
+    <button onclick="checkLogin()">Login</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- ADMIN CONTENT -->
+<div id="adminContent" style="display:none;">
+
+<h2>Admin – Add / Update Panel Data</h2>
 
 <label>DB Number</label>
 <input id="db">
@@ -104,7 +154,7 @@ th {
 <button onclick="removeImage()">Remove Picture</button>
 
 <br><br>
-<button onclick="savePanel()">Save Data (to Firebase)</button>
+<button onclick="savePanel()">Save Data (Firebase)</button>
 
 <div class="dangerBanner">
     ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
@@ -117,18 +167,41 @@ th {
 <button id="downloadQR" style="display:none;" onclick="downloadQR()">Download QR Code</button>
 
 <hr>
-
 <h2>All Panels</h2>
-<button onclick="showPanels()">Show All Panels (From Firebase)</button>
+<button onclick="showPanels()">Show All Panels</button>
 <div id="panelList"></div>
+
+</div>
 
 <!-- QR Library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
+/************* SIMPLE ADMIN LOGIN *************/
+const ADMIN_PASSWORD = "1234";
+
+function checkLogin() {
+    const entered = document.getElementById("adminPassword").value.trim();
+    if (entered === ADMIN_PASSWORD) {
+        sessionStorage.setItem("adminLogged", "yes");
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
+    } else {
+        document.getElementById("loginError").innerText = "Incorrect password.";
+    }
+}
+
+window.onload = function() {
+    if (sessionStorage.getItem("adminLogged") === "yes") {
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
+    }
+};
+
+
+/************* IMAGE UPLOAD + COMPRESSION *************/
 let uploadedImage = null;
 
-// IMAGE PREVIEW + COMPRESSION
 function previewAndCompress(event) {
     let file = event.target.files[0];
     if (!file) return;
@@ -137,21 +210,24 @@ function previewAndCompress(event) {
     reader.onload = function(e) {
         let img = new Image();
         img.src = e.target.result;
+
         img.onload = function() {
             let canvas = document.createElement("canvas");
             let ctx = canvas.getContext("2d");
 
             let maxWidth = 800;
             let scale = maxWidth / img.width;
+
             canvas.width = maxWidth;
             canvas.height = img.height * scale;
 
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
             uploadedImage = canvas.toDataURL("image/jpeg", 0.7);
 
-            let preview = document.getElementById("previewImage");
-            preview.src = uploadedImage;
-            preview.style.display = "block";
+            let prev = document.getElementById("previewImage");
+            prev.src = uploadedImage;
+            prev.style.display = "block";
         };
     };
     reader.readAsDataURL(file);
@@ -162,13 +238,11 @@ function removeImage() {
     document.getElementById("previewImage").style.display = "none";
 }
 
-// SAVE PANEL TO FIREBASE
+
+/************* SAVE PANEL TO FIREBASE *************/
 function savePanel() {
     let id = document.getElementById("db").value;
-    if (!id) {
-        alert("Enter DB Number!");
-        return;
-    }
+    if (!id) { alert("Enter DB Number!"); return; }
 
     let data = {
         dbNumber: id,
@@ -182,17 +256,15 @@ function savePanel() {
     };
 
     savePanelToFirebase(id, data, function() {
-        alert("Panel saved to Firebase successfully!");
+        alert("Panel saved to Firebase!");
     });
 }
 
-// EDIT PANEL FROM FIREBASE
+
+/************* EDIT PANEL FROM FIREBASE *************/
 function editPanel(id) {
     loadPanelFromFirebase(id, function(p) {
-        if (!p) {
-            alert("Panel not found!");
-            return;
-        }
+        if (!p) { alert("Not found"); return; }
 
         document.getElementById("db").value = p.dbNumber;
         document.getElementById("volt").value = p.voltage;
@@ -203,56 +275,84 @@ function editPanel(id) {
         document.getElementById("purpose").value = p.purpose;
 
         uploadedImage = p.image || null;
-
         if (uploadedImage) {
             document.getElementById("previewImage").src = uploadedImage;
             document.getElementById("previewImage").style.display = "block";
+        } else {
+            document.getElementById("previewImage").style.display = "none";
         }
+
+        window.scrollTo(0, 0);
     });
-
-    window.scrollTo(0, 0);
 }
 
-// DELETE PANEL
+
+/************* DELETE PANEL *************/
 function deletePanel(id) {
-    if (confirm("Delete " + id + " ?")) {
-        firebase.database().ref("panels/" + id).remove().then(function() {
-            alert("Deleted " + id);
-            showPanels();
-        });
-    }
+    if (!confirm("Delete " + id + "?")) return;
+
+    firebase.database().ref("panels/" + id).remove().then(() => {
+        alert("Deleted " + id);
+        showPanels();
+    });
 }
 
-// QR CODE
-let qr;
+
+/************* QR CODE WITH DANGER BANNER *************/
 function generateQR() {
     let id = document.getElementById("db").value;
-    if (!id) {
-        alert("Enter DB Number first!");
-        return;
-    }
+    if (!id) { alert("Enter DB Number"); return; }
+
     let url = "https://energycew-ui.github.io/panel-system/index.html?id=" + encodeURIComponent(id);
-    qr = new QRious({
-        element: document.getElementById("qrCanvas"),
+
+    // Raw QR
+    let rawQR = new QRious({
         value: url,
         size: 250
     });
+
+    // Final canvas (banner + QR)
+    let canvas = document.getElementById("qrCanvas");
+    canvas.width = 300;
+    canvas.height = 360;
+    let ctx = canvas.getContext("2d");
+
+    // Red banner
+    ctx.fillStyle = "#c40000";
+    ctx.fillRect(0, 0, 300, 60);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL", 150, 25);
+    ctx.fillText("DO NOT TOUCH ⚠️", 150, 50);
+
+    // Draw QR
+    let img = new Image();
+    img.src = rawQR.toDataURL("image/png");
+    img.onload = function() {
+        ctx.drawImage(img, 25, 70, 250, 250);
+    };
+
     document.getElementById("downloadQR").style.display = "inline-block";
 }
 
 function downloadQR() {
+    let id = document.getElementById("db").value;
     let link = document.createElement("a");
-    link.download = document.getElementById("db").value + "_QR.png";
+    link.download = id + "_QR.png";
     link.href = document.getElementById("qrCanvas").toDataURL();
     link.click();
 }
 
-// SHOW ALL PANELS
+
+/************* SHOW ALL PANELS *************/
 function showPanels() {
     loadAllPanels(function(all) {
         let div = document.getElementById("panelList");
+
         if (!all) {
-            div.innerHTML = "<p>No panels in database.</p>";
+            div.innerHTML = "<p>No panels saved.</p>";
             return;
         }
 
@@ -262,9 +362,9 @@ function showPanels() {
             let p = all[id];
             html += `
                 <tr>
-                    <td>${p.dbNumber}</td>
-                    <td>${p.location}</td>
-                    <td>${p.purpose}</td>
+                    <td>${id}</td>
+                    <td>${p.location || ""}</td>
+                    <td>${p.purpose || ""}</td>
                     <td>
                         <button class='action-btn' onclick="editPanel('${id}')">Edit</button>
                         <button class='action-btn' onclick="deletePanel('${id}')">Delete</button>
