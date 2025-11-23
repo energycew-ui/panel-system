@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Report Fault</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="data.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f4f7;
+    margin: 0;
+}
+.header {
+    background: #c40000;
+    color: white;
+    padding: 18px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+.card {
+    background: white;
+    margin: 20px auto;
+    padding: 20px;
+    max-width: 700px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+label {
+    font-weight: bold;
+    margin-top: 15px;
+    display: block;
+}
+select, input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    font-size: 16px;
+}
+textarea {
+    height: 100px;
+}
+button {
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    margin-top: 20px;
+    font-size: 18px;
+    cursor: pointer;
+    background: #c40000;
+    color: white;
+}
+.photo-preview {
+    width: 100%;
+    max-height: 180px;
+    margin-top: 10px;
+    border-radius: 6px;
+    display: none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    Report Fault – DB: <span id="dbIdHeader"></span>
+</div>
+
+<div class="card">
+
+    <label>Electrician Name</label>
+    <input type="text" id="elecName" placeholder="Enter your name">
+
+    <label>Fault Type</label>
+    <select id="faultType">
+        <option value="">Select...</option>
+        <option value="Tripped breaker">Tripped breaker</option>
+        <option value="Burnt smell">Burnt smell</option>
+        <option value="Overheating">Overheating</option>
+        <option value="Loose connection">Loose connection</option>
+        <option value="Damaged cable">Damaged cable</option>
+        <option value="Water leak">Water leak</option>
+        <option value="Other">Other</option>
+    </select>
+
+    <label>Fault Description</label>
+    <textarea id="desc" placeholder="Describe the fault in detail"></textarea>
+
+    <label>Upload Photos (up to 3)</label>
+    <input type="file" accept="image/*" onchange="previewPhoto(this, 'p1', 1)">
+    <img id="p1" class="photo-preview">
+
+    <input type="file" accept="image/*" onchange="previewPhoto(this, 'p2', 2)">
+    <img id="p2" class="photo-preview">
+
+    <input type="file" accept="image/*" onchange="previewPhoto(this, 'p3', 3)">
+    <img id="p3" class="photo-preview">
+
+    <button onclick="saveFault()">Submit Fault</button>
+
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const dbId = params.get("id");
+
+document.getElementById("dbIdHeader").innerText = dbId;
+
+let photo1 = null, photo2 = null, photo3 = null;
+
+function previewPhoto(input, previewId, index) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById(previewId).src = e.target.result;
+        document.getElementById(previewId).style.display = "block";
+
+        if (index === 1) photo1 = e.target.result;
+        if (index === 2) photo2 = e.target.result;
+        if (index === 3) photo3 = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function saveFault() {
+    const name = document.getElementById("elecName").value;
+    const faultTypeVal = document.getElementById("faultType").value;
+    const descVal = document.getElementById("desc").value;
+
+    if (!name || !faultTypeVal) {
+        alert("Please enter name and fault type.");
+        return;
+    }
+
+    const data = {
+        dbId,
+        electricianName: name,
+        faultType: faultTypeVal,
+        description: descVal,
+        photo1,
+        photo2,
+        photo3,
+        timestamp: new Date().toISOString()
+    };
+
+    firebase.database()
+        .ref("faults/" + dbId)
+        .push(data, err => {
+            if (err) alert("Error: " + err);
+            else alert("Fault Report Submitted.");
+        });
+}
+</script>
+
+</body>
+</html>
