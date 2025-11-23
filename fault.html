@@ -90,6 +90,25 @@ button {
     <label>Fault Description</label>
     <textarea id="desc" placeholder="Describe the fault in detail"></textarea>
 
+    <!-- FAULT TIMINGS -->
+    <label>Start Date & Time</label>
+    <input type="datetime-local" id="startTime">
+
+    <label>End Date & Time</label>
+    <input type="datetime-local" id="endTime">
+
+    <label>Production Loss?</label>
+    <select id="prodLoss" onchange="toggleLossDesc()">
+        <option value="">Select...</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+    </select>
+
+    <div id="lossDescBox" style="display:none;">
+        <label>Production Loss Description</label>
+        <textarea id="lossDesc" placeholder="Details about production loss"></textarea>
+    </div>
+
     <label>Upload Photos (up to 3)</label>
     <input type="file" accept="image/*" onchange="previewPhoto(this, 'p1', 1)">
     <img id="p1" class="photo-preview">
@@ -112,6 +131,14 @@ document.getElementById("dbIdHeader").innerText = dbId;
 
 let photo1 = null, photo2 = null, photo3 = null;
 
+// Show/hide production loss description
+function toggleLossDesc() {
+    document.getElementById("lossDescBox").style.display =
+        document.getElementById("prodLoss").value === "Yes"
+        ? "block" : "none";
+}
+
+// Preview photos
 function previewPhoto(input, previewId, index) {
     const file = input.files[0];
     if (!file) return;
@@ -132,10 +159,25 @@ function saveFault() {
     const name = document.getElementById("elecName").value;
     const faultTypeVal = document.getElementById("faultType").value;
     const descVal = document.getElementById("desc").value;
+    const start = document.getElementById("startTime").value;
+    const end = document.getElementById("endTime").value;
+    const prodLossVal = document.getElementById("prodLoss").value;
+    const lossDescVal = document.getElementById("lossDesc").value || "";
 
-    if (!name || !faultTypeVal) {
-        alert("Please enter name and fault type.");
+    if (!name || !faultTypeVal || !start || !end) {
+        alert("Please fill required fields (Name, Fault Type, Start & End Time).");
         return;
+    }
+
+    // Downtime calculation (in minutes)
+    let downMinutes = null;
+    try {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        downMinutes = Math.floor((endDate - startDate) / (1000 * 60));
+        if (downMinutes < 0) downMinutes = 0;
+    } catch (err) {
+        downMinutes = null;
     }
 
     const data = {
@@ -143,6 +185,11 @@ function saveFault() {
         electricianName: name,
         faultType: faultTypeVal,
         description: descVal,
+        startTime: start,
+        endTime: end,
+        productionLoss: prodLossVal,
+        productionLossDesc: prodLossVal === "Yes" ? lossDescVal : "",
+        downtimeMinutes: downMinutes,
         photo1,
         photo2,
         photo3,
@@ -153,7 +200,7 @@ function saveFault() {
         .ref("faults/" + dbId)
         .push(data, err => {
             if (err) alert("Error: " + err);
-            else alert("Fault Report Submitted.");
+            else alert("Fault Report Submitted Successfully.");
         });
 }
 </script>
