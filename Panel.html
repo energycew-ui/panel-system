@@ -333,7 +333,7 @@
 
 const ELECTRICIAN_PASSWORD = "ELEC123";  // as requested
 let dbID = "";
-let questionsMap = {}; // to show proper labels for extraAnswers
+let questionsMap = {}; // to show nice labels for extraAnswers
 
 /* --------------------------
    VISITOR / ELECTRICIAN FLOW
@@ -379,17 +379,19 @@ function goFault() {
 }
 
 /* --------------------------
-   LOAD PANEL DATA
+   LOAD QUESTIONS (for extra labels)
 --------------------------- */
 
 function loadQuestionsForLabels() {
-  // Only to show nice labels for extraAnswers (same questions node as admin)
-  firebase.database().ref("questions").once("value", snap => {
-    const data = snap.val() || {};
-    questionsMap = data;
-    // After questions loaded we might re-render extra box if already have data
+  // Uses the same /questions structure as admin.html
+  firebase.database().ref("questions").once("value").then(function(snap) {
+    questionsMap = snap.val() || {};
   });
 }
+
+/* --------------------------
+   LOAD PANEL DATA
+--------------------------- */
 
 window.onload = function() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -403,11 +405,11 @@ window.onload = function() {
 
   document.getElementById("dbTitle").innerText = "DB – " + dbID;
 
-  // Load questions for labels
+  // Load question map (for labels on extraAnswers)
   loadQuestionsForLabels();
 
-  // Load panel data from Firebase
-  loadPanelFromFirebase(dbID, panel => {
+  // Load panel data from Firebase using your data.js helper
+  loadPanelFromFirebase(dbID, function(panel) {
     if (!panel) {
       document.getElementById("dbTitle").innerText = "DB Not Found in Database!";
       document.getElementById("userChoiceBox").style.display = "none";
@@ -434,7 +436,7 @@ window.onload = function() {
     const circuitsContainer = document.getElementById("circuitsList");
     circuitsContainer.innerHTML = "";
     if (panel.circuits && Array.isArray(panel.circuits) && panel.circuits.length) {
-      panel.circuits.forEach(c => {
+      panel.circuits.forEach(function(c) {
         const div = document.createElement("div");
         div.className = "master-circuit-box";
         div.innerHTML = `
@@ -454,11 +456,12 @@ window.onload = function() {
     extraList.innerHTML = "";
     if (panel.extraAnswers) {
       extraBox.style.display = "block";
-      Object.entries(panel.extraAnswers).forEach(([qid,val]) => {
+      Object.keys(panel.extraAnswers).forEach(function(qid) {
+        const val = panel.extraAnswers[qid];
         const q = questionsMap[qid];
         const label = q && q.text ? q.text : qid;
         const li = document.createElement("li");
-        li.innerHTML = `<b>${label}:</b> ${val}`;
+        li.innerHTML = "<b>" + label + ":</b> " + val;
         extraList.appendChild(li);
       });
     } else {
