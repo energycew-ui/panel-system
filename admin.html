@@ -221,6 +221,10 @@
       background: #333;
       color: white;
       padding: 8px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
     td {
       border: 1px solid #ddd;
@@ -262,6 +266,57 @@
       background:#555;
       color:#fff;
     }
+
+    /* SUMMARY CARDS (REPORT TABS) */
+    .summary-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0 5px 0;
+    }
+    .summary-card {
+      background: #f6f8fc;
+      border-radius: 10px;
+      padding: 8px 12px;
+      min-width: 150px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-size: 13px;
+    }
+    .summary-title {
+      font-weight: bold;
+      color: #444;
+      margin-bottom: 2px;
+    }
+    .summary-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #111;
+    }
+
+    /* STATUS BADGES */
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .badge-ok {
+      background: #e5f8e8;
+      color: #0b7a2a;
+    }
+    .badge-warn {
+      background: #fff4e5;
+      color: #b26b00;
+    }
+    .badge-bad {
+      background: #fde7e7;
+      color: #b00020;
+    }
+    .badge-info {
+      background: #e6f0ff;
+      color: #174ea6;
+    }
   </style>
 </head>
 
@@ -292,7 +347,7 @@
 
   <div class="tab-wrapper">
 
-    <!-- TAB 1: DB ENTRY (original admin.html content) -->
+    <!-- TAB 1: DB ENTRY -->
     <div class="tab-content active" id="tab-entry">
       <div class="card">
         <h2>DB Entry / Panel Data</h2>
@@ -337,7 +392,6 @@
         <h3>Generate QR Code</h3>
         <button class="secondary-btn" onclick="generateQR()">Generate QR Code</button>
 
-        <!-- On-screen QR + banner preview -->
         <div id="qrPreview">
           <div class="dangerBanner">
             ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
@@ -359,12 +413,22 @@
     <!-- TAB 2: INSPECTION REPORTS -->
     <div class="tab-content" id="tab-inspections">
       <div class="card">
-        <h2>Inspection Reports</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">Inspection Reports</h2>
+          <button class="secondary-btn" onclick="exportInspectionsCSV()">Export CSV</button>
+        </div>
+
+        <div id="insSummary" class="summary-row"></div>
 
         <div class="filterBox">
           <input type="text" id="filterDB_i" placeholder="Filter by DB Number">
           <input type="text" id="filterElec_i" placeholder="Filter by Electrician">
-          <input type="date" id="filterDate_i">
+          <label style="font-weight:normal;">From:
+            <input type="date" id="filterFrom_i">
+          </label>
+          <label style="font-weight:normal;">To:
+            <input type="date" id="filterTo_i">
+          </label>
           <button class="secondary-btn" onclick="applyInspectionFilters()">Apply Filters</button>
         </div>
 
@@ -375,12 +439,27 @@
     <!-- TAB 3: FAULT REPORTS -->
     <div class="tab-content" id="tab-faults">
       <div class="card">
-        <h2>Fault Reports</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">Fault Reports</h2>
+          <button class="secondary-btn" onclick="exportFaultsCSV()">Export CSV</button>
+        </div>
+
+        <div id="faultSummary" class="summary-row"></div>
 
         <div class="filterBox">
           <input type="text" id="filterDB_f" placeholder="Filter by DB Number">
           <input type="text" id="filterElec_f" placeholder="Filter by Electrician">
-          <input type="date" id="filterDate_f">
+          <label style="font-weight:normal;">From:
+            <input type="date" id="filterFrom_f">
+          </label>
+          <label style="font-weight:normal;">To:
+            <input type="date" id="filterTo_f">
+          </label>
+          <select id="filterLoss_f">
+            <option value="">Loss: All</option>
+            <option value="Yes">Loss: Yes</option>
+            <option value="No">Loss: No</option>
+          </select>
           <button class="secondary-btn" onclick="applyFaultFilters()">Apply Filters</button>
         </div>
 
@@ -391,7 +470,13 @@
     <!-- TAB 4: MASTER DB REPORT -->
     <div class="tab-content" id="tab-master">
       <div class="card">
-        <h2>Master DB Report (All DBs & Circuits)</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">Master DB Report (All DBs & Circuits)</h2>
+          <button class="secondary-btn" onclick="exportMasterCSV()">Export CSV</button>
+        </div>
+
+        <div id="masterSummary" class="summary-row"></div>
+
         <button class="secondary-btn" onclick="loadMasterReport()">Reload Data</button>
         <div id="masterContainer" style="margin-top:15px;"></div>
       </div>
@@ -429,10 +514,10 @@ window.addEventListener("load", () => {
 /* ------------ AFTER LOGIN INIT ------------ */
 function afterLoginInit() {
   initTabs();
-  renderCircuits(null);       // at least one circuit row
-  showPanels();               // load panel list
-  loadReports();              // inspections + faults
-  loadMasterReport();         // master DB report
+  renderCircuits(null);
+  showPanels();
+  loadReports();
+  loadMasterReport();
 }
 
 /* ------------ TABS HANDLING ------------ */
@@ -580,7 +665,6 @@ function editPanel(id) {
 
     renderCircuits(p.circuits || null);
 
-    // switch to Entry tab automatically
     document.querySelector('.tab-btn[data-target="tab-entry"]').click();
     window.scrollTo(0, 0);
   });
@@ -655,7 +739,6 @@ function downloadQR() {
   finalCanvas.height = H;
   const ctx = finalCanvas.getContext("2d");
 
-  // White background
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
 
@@ -716,24 +799,41 @@ function downloadQR() {
   };
 }
 
+/* ------------ HELPER: STATUS BADGES ------------ */
+function badgeForStatus(value, okValues = [], warnValues = [], badValues = []) {
+  if (!value) return "";
+  const v = value.toLowerCase();
+  const toCss = txt => `<span class="badge badge-ok">${txt}</span>`;
+  if (okValues.some(x => v === x.toLowerCase())) {
+    return `<span class="badge badge-ok">${value}</span>`;
+  }
+  if (warnValues.some(x => v === x.toLowerCase())) {
+    return `<span class="badge badge-warn">${value}</span>`;
+  }
+  if (badValues.some(x => v === x.toLowerCase())) {
+    return `<span class="badge badge-bad">${value}</span>`;
+  }
+  return `<span class="badge badge-info">${value}</span>`;
+}
+
 /* ------------ REPORTS (INSPECTIONS + FAULTS) ------------ */
 
 let inspectionsGlobal = [];
 let faultsGlobal = [];
 
 function loadReports() {
-  // INSPECTIONS
   firebase.database().ref("inspections").once("value", snap => {
     let data = snap.val() || {};
     inspectionsGlobal = convertInspectionData(data);
     renderInspectionTable(inspectionsGlobal);
+    updateInspectionSummary(inspectionsGlobal);
   });
 
-  // FAULTS
   firebase.database().ref("faults").once("value", snap => {
     let data = snap.val() || {};
     faultsGlobal = convertFaultData(data);
     renderFaultTable(faultsGlobal);
+    updateFaultSummary(faultsGlobal);
   });
 }
 
@@ -763,6 +863,77 @@ function convertFaultData(data) {
   return list;
 }
 
+/* INSPECTION SUMMARY CARDS */
+function updateInspectionSummary(list) {
+  const container = document.getElementById("insSummary");
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No inspection records.</p>";
+    return;
+  }
+
+  const total = list.length;
+  const byDb = new Set(list.map(r => r.dbId)).size;
+  const recent = list.filter(r => {
+    if (!r.timestamp) return false;
+    const d = r.timestamp.substring(0,10);
+    const today = new Date().toISOString().substring(0,10);
+    return d === today;
+  }).length;
+
+  container.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-title">Total Inspections</div>
+      <div class="summary-value">${total}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Panels Inspected</div>
+      <div class="summary-value">${byDb}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Today</div>
+      <div class="summary-value">${recent}</div>
+    </div>
+  `;
+}
+
+/* FAULT SUMMARY CARDS */
+function updateFaultSummary(list) {
+  const container = document.getElementById("faultSummary");
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No fault records.</p>";
+    return;
+  }
+
+  const total = list.length;
+  const byDb = new Set(list.map(r => r.dbId)).size;
+  let totalDowntime = 0;
+  let lossYes = 0;
+  list.forEach(r => {
+    if (r.downtimeMinutes) totalDowntime += Number(r.downtimeMinutes) || 0;
+    if (r.productionLoss === "Yes") lossYes++;
+  });
+  const totalHours = (totalDowntime / 60).toFixed(1);
+
+  container.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-title">Total Faults</div>
+      <div class="summary-value">${total}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Panels with Faults</div>
+      <div class="summary-value">${byDb}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Production Loss Cases</div>
+      <div class="summary-value">${lossYes}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Downtime (hrs)</div>
+      <div class="summary-value">${totalHours}</div>
+    </div>
+  `;
+}
+
 /* RENDER INSPECTIONS TABLE (TAB 2) */
 function renderInspectionTable(list) {
   let html = `
@@ -781,15 +952,42 @@ function renderInspectionTable(list) {
   `;
 
   list.forEach(r => {
+    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
+
+    const breakerHtml = badgeForStatus(
+      r.breakerStatus,
+      ["OK"],
+      [],
+      ["Needs repair", "Not accessible"]
+    );
+    const cleanHtml = badgeForStatus(
+      r.cleanStatus,
+      ["Clean"],
+      ["Needs cleaning"],
+      ["Not accessible"]
+    );
+    const lockedHtml = badgeForStatus(
+      r.lockedStatus,
+      ["Locked"],
+      [],
+      ["Unlocked", "Not lockable"]
+    );
+    const coveredHtml = badgeForStatus(
+      r.coveredStatus,
+      ["Covered", "Not required"],
+      [],
+      ["Not covered"]
+    );
+
     html += `
       <tr>
-        <td>${r.timestamp ? new Date(r.timestamp).toLocaleString() : ""}</td>
-        <td>${r.dbId}</td>
+        <td>${dateStr}</td>
+        <td><span class="badge badge-info">${r.dbId}</span></td>
         <td>${r.electricianName || ""}</td>
-        <td>${r.breakerStatus || ""}</td>
-        <td>${r.cleanStatus || ""}</td>
-        <td>${r.lockedStatus || ""}</td>
-        <td>${r.coveredStatus || ""}</td>
+        <td>${breakerHtml}</td>
+        <td>${cleanHtml}</td>
+        <td>${lockedHtml}</td>
+        <td>${coveredHtml}</td>
         <td>${r.comments || ""}</td>
         <td>
             ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
@@ -823,17 +1021,39 @@ function renderFaultTable(list) {
   `;
 
   list.forEach(r => {
+    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
+    const downtime = r.downtimeMinutes != null ? Number(r.downtimeMinutes) : null;
+    let downtimeHtml = "";
+    if (downtime == null) {
+      downtimeHtml = "";
+    } else if (downtime === 0) {
+      downtimeHtml = `<span class="badge badge-ok">0 min</span>`;
+    } else if (downtime <= 30) {
+      downtimeHtml = `<span class="badge badge-warn">${downtime} min</span>`;
+    } else {
+      downtimeHtml = `<span class="badge badge-bad">${downtime} min</span>`;
+    }
+
+    let lossHtml = "";
+    if (r.productionLoss === "Yes") {
+      lossHtml = `<span class="badge badge-bad">Yes</span>`;
+    } else if (r.productionLoss === "No") {
+      lossHtml = `<span class="badge badge-ok">No</span>`;
+    } else {
+      lossHtml = r.productionLoss || "";
+    }
+
     html += `
       <tr>
-        <td>${r.timestamp ? new Date(r.timestamp).toLocaleString() : ""}</td>
-        <td>${r.dbId}</td>
+        <td>${dateStr}</td>
+        <td><span class="badge badge-info">${r.dbId}</span></td>
         <td>${r.electricianName || ""}</td>
         <td>${r.faultType || ""}</td>
         <td>${r.description || ""}</td>
         <td>${r.startTime || ""}</td>
         <td>${r.endTime || ""}</td>
-        <td>${(r.downtimeMinutes || "") + (r.downtimeMinutes != null ? " min" : "")}</td>
-        <td>${r.productionLoss || ""}<br>${r.productionLossDesc || ""}</td>
+        <td>${downtimeHtml}</td>
+        <td>${lossHtml}<br>${r.productionLossDesc || ""}</td>
         <td>
             ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
             ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
@@ -853,50 +1073,93 @@ function openPhoto(src) {
   win.document.write(`<img src="${src}" style="width:100%;">`);
 }
 
-/* FILTERS: INSPECTIONS */
+/* FILTERS: INSPECTIONS (DB / ELEC / DATE RANGE) */
 function applyInspectionFilters() {
   let fDB = document.getElementById("filterDB_i").value.toLowerCase();
   let fElec = document.getElementById("filterElec_i").value.toLowerCase();
-  let fDate = document.getElementById("filterDate_i").value;
+  let from = document.getElementById("filterFrom_i").value; // yyyy-mm-dd
+  let to = document.getElementById("filterTo_i").value;     // yyyy-mm-dd
 
-  let filtered = inspectionsGlobal.filter(r =>
-      (fDB === "" || r.dbId.toLowerCase().includes(fDB)) &&
-      (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec)) &&
-      (fDate === "" || (r.timestamp || "").startsWith(fDate))
-  );
+  let filtered = inspectionsGlobal.filter(r => {
+    const dbMatch = (fDB === "" || r.dbId.toLowerCase().includes(fDB));
+    const elecMatch = (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec));
+
+    if (!r.timestamp) return false;
+    const day = r.timestamp.substring(0,10); // yyyy-mm-dd
+    const fromOk = (!from || day >= from);
+    const toOk = (!to || day <= to);
+
+    return dbMatch && elecMatch && fromOk && toOk;
+  });
 
   renderInspectionTable(filtered);
+  updateInspectionSummary(filtered);
 }
 
-/* FILTERS: FAULTS */
+/* FILTERS: FAULTS (DB / ELEC / DATE RANGE / Loss) */
 function applyFaultFilters() {
   let fDB = document.getElementById("filterDB_f").value.toLowerCase();
   let fElec = document.getElementById("filterElec_f").value.toLowerCase();
-  let fDate = document.getElementById("filterDate_f").value;
+  let from = document.getElementById("filterFrom_f").value;
+  let to = document.getElementById("filterTo_f").value;
+  let lossFilter = document.getElementById("filterLoss_f").value;
 
-  let filtered = faultsGlobal.filter(r =>
-      (fDB === "" || r.dbId.toLowerCase().includes(fDB)) &&
-      (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec)) &&
-      (fDate === "" || (r.timestamp || "").startsWith(fDate))
-  );
+  let filtered = faultsGlobal.filter(r => {
+    const dbMatch = (fDB === "" || r.dbId.toLowerCase().includes(fDB));
+    const elecMatch = (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec));
+
+    if (!r.timestamp) return false;
+    const day = r.timestamp.substring(0,10);
+    const fromOk = (!from || day >= from);
+    const toOk = (!to || day <= to);
+
+    const lossOk = (!lossFilter || r.productionLoss === lossFilter);
+
+    return dbMatch && elecMatch && fromOk && toOk && lossOk;
+  });
 
   renderFaultTable(filtered);
+  updateFaultSummary(filtered);
 }
 
 /* ------------ MASTER DB REPORT (TAB 4) ------------ */
+
+let masterPanelsGlobal = null;
 
 function loadMasterReport() {
   const container = document.getElementById("masterContainer");
   container.innerHTML = "Loading...";
 
   loadAllPanels(function(all) {
+    masterPanelsGlobal = all;
     if (!all) {
       container.innerHTML = "<p>No panels found.</p>";
+      document.getElementById("masterSummary").innerHTML = "";
       return;
     }
 
+    const ids = Object.keys(all);
+    let totalCircuits = 0;
+    ids.forEach(id => {
+      const p = all[id];
+      if (p.circuits && Array.isArray(p.circuits)) {
+        totalCircuits += p.circuits.length;
+      }
+    });
+
+    document.getElementById("masterSummary").innerHTML = `
+      <div class="summary-card">
+        <div class="summary-title">Total DB Panels</div>
+        <div class="summary-value">${ids.length}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-title">Total Circuits</div>
+        <div class="summary-value">${totalCircuits}</div>
+      </div>
+    `;
+
     let html = "";
-    Object.keys(all).forEach(id => {
+    ids.forEach(id => {
       let p = all[id];
 
       html += `
@@ -930,6 +1193,126 @@ function loadMasterReport() {
 
     container.innerHTML = html;
   });
+}
+
+/* ------------ CSV EXPORT HELPERS ------------ */
+function arrayToCSV(rows) {
+  return rows.map(r => r.map(v => {
+    if (v == null) return "";
+    const s = String(v).replace(/"/g, '""');
+    if (s.search(/("|,|\n)/g) >= 0) {
+      return `"${s}"`;
+    }
+    return s;
+  }).join(",")).join("\n");
+}
+
+function downloadCSV(filename, csv) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/* EXPORT: INSPECTIONS */
+function exportInspectionsCSV() {
+  if (!inspectionsGlobal || !inspectionsGlobal.length) {
+    alert("No inspection data to export.");
+    return;
+  }
+  const rows = [];
+  rows.push(["Timestamp","DB","Electrician","Breaker Status","Clean Status","Locked Status","Covered Status","Comments"]);
+  inspectionsGlobal.forEach(r => {
+    rows.push([
+      r.timestamp || "",
+      r.dbId || "",
+      r.electricianName || "",
+      r.breakerStatus || "",
+      r.cleanStatus || "",
+      r.lockedStatus || "",
+      r.coveredStatus || "",
+      r.comments || ""
+    ]);
+  });
+  const csv = arrayToCSV(rows);
+  downloadCSV("inspections.csv", csv);
+}
+
+/* EXPORT: FAULTS */
+function exportFaultsCSV() {
+  if (!faultsGlobal || !faultsGlobal.length) {
+    alert("No fault data to export.");
+    return;
+  }
+  const rows = [];
+  rows.push(["Timestamp","DB","Electrician","Fault Type","Description","Start Time","End Time","Downtime (min)","Production Loss","Production Loss Desc"]);
+  faultsGlobal.forEach(r => {
+    rows.push([
+      r.timestamp || "",
+      r.dbId || "",
+      r.electricianName || "",
+      r.faultType || "",
+      r.description || "",
+      r.startTime || "",
+      r.endTime || "",
+      r.downtimeMinutes != null ? r.downtimeMinutes : "",
+      r.productionLoss || "",
+      r.productionLossDesc || ""
+    ]);
+  });
+  const csv = arrayToCSV(rows);
+  downloadCSV("faults.csv", csv);
+}
+
+/* EXPORT: MASTER DB + CIRCUITS */
+function exportMasterCSV() {
+  if (!masterPanelsGlobal) {
+    alert("No master DB data loaded yet. Click 'Reload Data' first.");
+    return;
+  }
+  const rows = [];
+  rows.push(["DB","Voltage","Main Breaker","Cable Size","Earth Status","Location","Purpose","Circuit Name","Circuit Breaker","Circuit Load"]);
+
+  Object.keys(masterPanelsGlobal).forEach(id => {
+    const p = masterPanelsGlobal[id];
+    if (p.circuits && Array.isArray(p.circuits) && p.circuits.length) {
+      p.circuits.forEach(c => {
+        rows.push([
+          p.dbNumber || id,
+          p.voltage || "",
+          p.mainBreaker || "",
+          p.cableSize || "",
+          p.earthStatus || "",
+          p.location || "",
+          p.purpose || "",
+          c.name || "",
+          c.breaker || "",
+          c.load || ""
+        ]);
+      });
+    } else {
+      rows.push([
+        p.dbNumber || id,
+        p.voltage || "",
+        p.mainBreaker || "",
+        p.cableSize || "",
+        p.earthStatus || "",
+        p.location || "",
+        p.purpose || "",
+        "",
+        "",
+        ""
+      ]);
+    }
+  });
+
+  const csv = arrayToCSV(rows);
+  downloadCSV("master_panels.csv", csv);
 }
 </script>
 
