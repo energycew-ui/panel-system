@@ -397,10 +397,74 @@
 <!-- MAIN ADMIN DASHBOARD -->
 <div id="adminWrapper" style="display:none;">
 
-  <div class="topbar">
-    <img src="logo.png" alt="Chenab Logo" class="topbar-logo">
-    <div class="topbar-title">Admin Dashboard – Electrical Panels</div>
-  </div>
+  <div class="topbar premium-header">
+    <div class="logo-wrapper">
+        <img src="logo.png" class="topbar-logo" alt="Chenab Engineering Logo">
+    </div>
+    <div class="topbar-title premium-title">
+        Admin Dashboard – Electrical Panels
+    </div>
+    <div class="header-separator"></div>
+</div>
+/* PREMIUM HEADER DESIGN */
+.premium-header {
+    position: relative;
+    padding: 20px 0 28px 0;
+    background: #0c0c0c;
+}
+
+.logo-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.topbar-logo {
+    width: 110px;
+    height: auto;
+    margin-bottom: 10px;
+    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.45));
+    opacity: 1;
+    animation: fadeInDown 0.7s ease-out;
+}
+
+/* Gold Gradient Title */
+.premium-title {
+    background: linear-gradient(90deg, #ffd65a, #ffb300);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-align: center;
+    animation: fadeInUp 0.7s ease-out;
+}
+
+/* Thin gold separator line */
+.header-separator {
+    width: 80%;
+    height: 2px;
+    margin: 12px auto 0 auto;
+    background: linear-gradient(90deg, #ffefc1, #ffb300, #ffefc1);
+    border-radius: 2px;
+    animation: fadeIn 1.2s ease-out;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
 
   <!-- TABS -->
   <div class="tabs">
