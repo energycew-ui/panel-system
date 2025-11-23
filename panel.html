@@ -121,51 +121,56 @@ body {
 </div>
 
 <!-- PANEL CARD -->
-<div class="card">
+<div class="card" style="display: flex; gap: 20px; align-items: flex-start;">
+    
+    <!-- LEFT SIDE (DATA) -->
+    <div style="flex: 1;">
+        <div class="item">
+            <img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png">
+            <span class="label">DB Number:</span>
+            <span class="value" id="dbNum"></span>
+        </div>
 
-    <!-- DB PICTURE -->
-    <img id="dbImage">
+        <div class="item">
+            <img src="https://cdn-icons-png.flaticon.com/512/3103/3103446.png">
+            <span class="label">Voltage Rating:</span>
+            <span class="value" id="volt"></span>
+        </div>
 
-    <div class="item">
-        <img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png">
-        <span class="label">DB Number:</span>
-        <span class="value" id="dbNum"></span>
+        <div class="item">
+            <img src="https://cdn-icons-png.flaticon.com/512/10426/10426713.png">
+            <span class="label">Main Breaker:</span>
+            <span class="value" id="breaker"></span>
+        </div>
+
+        <div class="item">
+            <img src="https://cdn-icons-png.flaticon.com/512/9128/9128894.png">
+            <span class="label">Cable Size:</span>
+            <span class="value" id="cable"></span>
+        </div>
+
+        <div class="item">
+            <img src="https://cdn-icons-png.flaticon.com/512/6146/6146502.png">
+            <span class="label">Earth Status:</span>
+            <span class="value" id="earth"></span>
+        </div>
+
+        <div class="item">
+            <img src="https://cdn-icons-png.flaticon.com/512/854/854878.png">
+            <span class="label">Location:</span>
+            <span class="value" id="location"></span>
+        </div>
+
+        <div class="item">
+            <img src="https://cdn-icons-png.flaticon.com/512/709/709612.png">
+            <span class="label">Purpose:</span>
+            <span class="value" id="purpose"></span>
+        </div>
     </div>
 
-    <div class="item">
-        <img src="https://cdn-icons-png.flaticon.com/512/3103/3103446.png">
-        <span class="label">Voltage Rating:</span>
-        <span class="value" id="volt"></span>
-    </div>
-
-    <div class="item">
-        <img src="https://cdn-icons-png.flaticon.com/512/10426/10426713.png">
-        <span class="label">Main Breaker:</span>
-        <span class="value" id="breaker"></span>
-    </div>
-
-    <div class="item">
-        <img src="https://cdn-icons-png.flaticon.com/512/9128/9128894.png">
-        <span class="label">Cable Size:</span>
-        <span class="value" id="cable"></span>
-    </div>
-
-    <div class="item">
-        <img src="https://cdn-icons-png.flaticon.com/512/6146/6146502.png">
-        <span class="label">Earth Status:</span>
-        <span class="value" id="earth"></span>
-    </div>
-
-    <div class="item">
-        <img src="https://cdn-icons-png.flaticon.com/512/854/854878.png">
-        <span class="label">Location:</span>
-        <span class="value" id="location"></span>
-    </div>
-
-    <div class="item">
-        <img src="https://cdn-icons-png.flaticon.com/512/709/709612.png">
-        <span class="label">Purpose:</span>
-        <span class="value" id="purpose"></span>
+    <!-- RIGHT SIDE (IMAGE) -->
+    <div style="flex: 0 0 45%; text-align: center;">
+        <img id="dbImage" style="width: 100%; border-radius: 10px; display: none;">
     </div>
 
 </div>
