@@ -3,8 +3,12 @@
 <head>
 <title>Admin Panel</title>
 
+<!-- Firebase SDK v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<!-- Our Firebase helper -->
 <script src="data.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <style>
 body {
@@ -39,8 +43,6 @@ button {
     border: 1px solid #ccc;
     padding: 10px;
 }
-
-/* Table */
 table {
     border-collapse: collapse;
     margin-top: 20px;
@@ -58,8 +60,6 @@ th {
     padding: 5px 10px;
     margin-right: 10px;
 }
-
-/* DANGER BANNER */
 .dangerBanner {
     background: #c40000;
     color: white;
@@ -75,7 +75,7 @@ th {
 
 <body>
 
-<h2>Admin – Add / Update Panel Data</h2>
+<h2>Admin – Add / Update Panel Data (Global via Firebase)</h2>
 
 <label>DB Number</label>
 <input id="db">
@@ -98,24 +98,20 @@ th {
 <label>Purpose</label>
 <input id="purpose">
 
-<!-- IMAGE UPLOAD -->
 <label>Upload Panel Picture (Optional)</label>
 <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
 <img id="previewImage">
-
 <button onclick="removeImage()">Remove Picture</button>
 
 <br><br>
-<button onclick="savePanel()">Save Data</button>
+<button onclick="savePanel()">Save Data (to Firebase)</button>
 
-<!-- QR CODE DANGER BANNER -->
 <div class="dangerBanner">
     ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
 </div>
 
 <h3>Generate QR Code</h3>
 <button onclick="generateQR()">Generate QR Code</button>
-<br>
 <canvas id="qrCanvas"></canvas>
 <br>
 <button id="downloadQR" style="display:none;" onclick="downloadQR()">Download QR Code</button>
@@ -123,14 +119,16 @@ th {
 <hr>
 
 <h2>All Panels</h2>
-<button onclick="showPanels()">Show All Panels</button>
+<button onclick="showPanels()">Show All Panels (From Firebase)</button>
 <div id="panelList"></div>
 
+<!-- QR Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
 <script>
-loadData();
 let uploadedImage = null;
 
-/* IMAGE UPLOAD + COMPRESSION */
+// IMAGE PREVIEW + COMPRESSION
 function previewAndCompress(event) {
     let file = event.target.files[0];
     if (!file) return;
@@ -139,12 +137,11 @@ function previewAndCompress(event) {
     reader.onload = function(e) {
         let img = new Image();
         img.src = e.target.result;
-
         img.onload = function() {
             let canvas = document.createElement("canvas");
             let ctx = canvas.getContext("2d");
 
-            let maxWidth = 800; // Option B
+            let maxWidth = 800;
             let scale = maxWidth / img.width;
             canvas.width = maxWidth;
             canvas.height = img.height * scale;
@@ -165,15 +162,15 @@ function removeImage() {
     document.getElementById("previewImage").style.display = "none";
 }
 
-/* SAVE DATA */
+// SAVE PANEL TO FIREBASE
 function savePanel() {
     let id = document.getElementById("db").value;
     if (!id) {
-        alert("Please enter DB Number!");
+        alert("Enter DB Number!");
         return;
     }
 
-    panelData[id] = {
+    let data = {
         dbNumber: id,
         voltage: document.getElementById("volt").value,
         mainBreaker: document.getElementById("breaker").value,
@@ -181,64 +178,65 @@ function savePanel() {
         earthStatus: document.getElementById("earth").value,
         location: document.getElementById("location").value,
         purpose: document.getElementById("purpose").value,
-        image: uploadedImage ?? panelData[id]?.image ?? null
+        image: uploadedImage || null
     };
 
-    saveData();
-    alert("Panel saved successfully!");
+    savePanelToFirebase(id, data, function() {
+        alert("Panel saved to Firebase successfully!");
+    });
 }
 
-/* EDIT PANEL */
+// EDIT PANEL FROM FIREBASE
 function editPanel(id) {
-    let p = panelData[id];
+    loadPanelFromFirebase(id, function(p) {
+        if (!p) {
+            alert("Panel not found!");
+            return;
+        }
 
-    document.getElementById("db").value = p.dbNumber;
-    document.getElementById("volt").value = p.voltage;
-    document.getElementById("breaker").value = p.mainBreaker;
-    document.getElementById("cable").value = p.cableSize;
-    document.getElementById("earth").value = p.earthStatus;
-    document.getElementById("location").value = p.location;
-    document.getElementById("purpose").value = p.purpose;
+        document.getElementById("db").value = p.dbNumber;
+        document.getElementById("volt").value = p.voltage;
+        document.getElementById("breaker").value = p.mainBreaker;
+        document.getElementById("cable").value = p.cableSize;
+        document.getElementById("earth").value = p.earthStatus;
+        document.getElementById("location").value = p.location;
+        document.getElementById("purpose").value = p.purpose;
 
-    uploadedImage = p.image || null;
+        uploadedImage = p.image || null;
 
-    let preview = document.getElementById("previewImage");
-    if (uploadedImage) {
-        preview.src = uploadedImage;
-        preview.style.display = "block";
-    } else {
-        preview.style.display = "none";
-    }
+        if (uploadedImage) {
+            document.getElementById("previewImage").src = uploadedImage;
+            document.getElementById("previewImage").style.display = "block";
+        }
+    });
 
     window.scrollTo(0, 0);
 }
 
-/* DELETE PANEL */
+// DELETE PANEL
 function deletePanel(id) {
-    if (confirm("Delete " + id + "?")) {
-        delete panelData[id];
-        saveData();
-        showPanels();
+    if (confirm("Delete " + id + " ?")) {
+        firebase.database().ref("panels/" + id).remove().then(function() {
+            alert("Deleted " + id);
+            showPanels();
+        });
     }
 }
 
-/* QR CODE */
+// QR CODE
 let qr;
 function generateQR() {
     let id = document.getElementById("db").value;
     if (!id) {
-        alert("Enter DB Number!");
+        alert("Enter DB Number first!");
         return;
     }
-
-    let url = "index.html?id=" + id;
-
+    let url = "https://energycew-ui.github.io/panel-system/index.html?id=" + encodeURIComponent(id);
     qr = new QRious({
         element: document.getElementById("qrCanvas"),
         value: url,
         size: 250
     });
-
     document.getElementById("downloadQR").style.display = "inline-block";
 }
 
@@ -249,35 +247,34 @@ function downloadQR() {
     link.click();
 }
 
-/* LIST PANELS */
+// SHOW ALL PANELS
 function showPanels() {
-    loadData();
-    let div = document.getElementById("panelList");
-    div.innerHTML = "";
+    loadAllPanels(function(all) {
+        let div = document.getElementById("panelList");
+        if (!all) {
+            div.innerHTML = "<p>No panels in database.</p>";
+            return;
+        }
 
-    let keys = Object.keys(panelData);
-    if (keys.length === 0) {
-        div.innerHTML = "<p>No panels found.</p>";
-        return;
-    }
+        let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
 
-    let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+        Object.keys(all).forEach(id => {
+            let p = all[id];
+            html += `
+                <tr>
+                    <td>${p.dbNumber}</td>
+                    <td>${p.location}</td>
+                    <td>${p.purpose}</td>
+                    <td>
+                        <button class='action-btn' onclick="editPanel('${id}')">Edit</button>
+                        <button class='action-btn' onclick="deletePanel('${id}')">Delete</button>
+                    </td>
+                </tr>`;
+        });
 
-    keys.forEach(id => {
-        let p = panelData[id];
-        html += `<tr>
-            <td>${p.dbNumber}</td>
-            <td>${p.location}</td>
-            <td>${p.purpose}</td>
-            <td>
-                <button onclick="editPanel('${id}')" class="action-btn">Edit</button>
-                <button onclick="deletePanel('${id}')" class="action-btn">Delete</button>
-            </td>
-        </tr>`;
+        html += "</table>";
+        div.innerHTML = html;
     });
-
-    html += "</table>";
-    div.innerHTML = html;
 }
 </script>
 
