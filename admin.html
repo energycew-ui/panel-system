@@ -3,890 +3,370 @@
 <head>
 <title>Admin Panel</title>
 
-<!-- Firebase SDK -->
+<!-- Firebase SDK v8 -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<!-- Our Firebase helper -->
 <script src="data.js"></script>
 
 <style>
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f1f1f1;
+    font-family: Arial;
+    margin: 30px;
 }
 
 /* LOGIN OVERLAY */
 #loginOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.75);
+    background: rgba(0,0,0,0.7);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 3000;
+    z-index: 9999;
 }
 #loginBox {
     background: #fff;
     padding: 25px 30px;
     border-radius: 10px;
-    max-width: 350px;
+    max-width: 320px;
     width: 90%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
     text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+#loginBox h2 {
+    margin-top: 0;
 }
 #loginBox input {
     width: 100%;
     padding: 10px;
+    font-size: 16px;
     margin-top: 10px;
 }
 #loginBox button {
     width: 100%;
-    padding: 12px;
+    padding: 10px;
     margin-top: 15px;
+    font-size: 16px;
+    cursor: pointer;
 }
 #loginError {
     color: red;
+    font-size: 14px;
+    margin-top: 8px;
 }
 
-/* MAIN PAGE */
-#adminContent {
-    padding: 30px;
-    display: none;
-}
-
-.headerBar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-#companyLogo {
-    width: 110px;
-    height: 110px;
-    object-fit: contain;
-}
-
-/* FORM CARD */
-.card {
-    background: #fff;
-    padding: 25px;
-    margin-top: 25px;
-    border-radius: 10px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-}
-
+/* ADMIN CONTENT */
 label {
     display: block;
     margin-top: 12px;
     font-weight: bold;
 }
-input[type="text"], input[type="file"] {
-    width: 320px;
-    padding: 10px;
-    margin-top: 5px;
+input {
+    width: 300px;
+    padding: 8px;
+    font-size: 16px;
 }
-
-/* Circuits */
-.circuit-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 8px;
-}
-.circuit-row input {
-    flex: 1;
-}
-.circuit-remove-btn {
-    background: #c40000;
-    color: white;
-    padding: 6px 10px;
-    border-radius: 5px;
+button {
+    padding: 10px 20px;
+    font-size: 16px;
     cursor: pointer;
+    margin-top: 15px;
 }
-
-/* BANNER */
+#previewImage {
+    width: 200px;
+    margin-top: 10px;
+    display: none;
+    border: 2px solid #444;
+    border-radius: 6px;
+}
+#qrCanvas {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+table {
+    border-collapse: collapse;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 900px;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+}
+th {
+    background: #eee;
+}
+.action-btn {
+    padding: 5px 10px;
+    margin-right: 10px;
+}
 .dangerBanner {
     background: #c40000;
     color: white;
-    padding: 14px;
-    text-align: center;
-    font-size: 20px;
-    border-radius: 6px;
-    margin-top: 25px;
+    padding: 12px;
+    font-size: 18px;
     font-weight: bold;
-}
-
-/* QR */
-#qrCanvas {
-    border: 1px solid #ccc;
-    margin-top: 20px;
-}
-#qrLabel {
-    font-size: 22px;
-    font-weight: bold;
-    margin-top: 8px;
-}
-#qrFinalWrapper {
     text-align: center;
     margin-top: 20px;
-}
-
-button {
-    padding: 10px 18px;
-    font-size: 16px;
-    cursor: pointer;
-    border-radius: 6px;
-    border: none;
-    margin-top: 15px;
-}
-.saveButton {
-    background: #007bff;
-    color: white;
-}
-.qrButton {
-    background: #28a745;
-    color: white;
-}
-.downloadButton {
-    background: #6f42c1;
-    color: white;
-}
-.panelButton {
-    background: #333;
-    color: white;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-th, td {
-    border: 1px solid #bbb;
-    padding: 8px;
-}
-th {
-    background: #444;
-    color: white;
+    border-radius: 8px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN SCREEN -->
+<!-- LOGIN OVERLAY -->
 <div id="loginOverlay">
-    <div id="loginBox">
-        <h2>Admin Login</h2>
-        <input type="password" id="adminPassword" placeholder="Enter Password">
-        <button onclick="checkLogin()">Login</button>
-        <div id="loginError"></div>
-    </div>
+  <div id="loginBox">
+    <h2>Admin Login</h2>
+    <p>Enter admin password to access panel data.</p>
+    <input type="password" id="adminPassword" placeholder="Password">
+    <button onclick="checkLogin()">Login</button>
+    <div id="loginError"></div>
+  </div>
 </div>
 
-<!-- MAIN CONTENT -->
-<div id="adminContent">
+<!-- ADMIN CONTENT WRAPPED -->
+<div id="adminContent" style="display:none;">
 
-<div class="headerBar">
-    <h1>Admin Panel</h1>
-    <img id="companyLogo" src="chenab_engineering_works_foundries_pvt_ltd_logo.jpg">
-</div>
-
-<div class="card">
-
-<h2>Panel Information</h2>
+<h2>Admin – Add / Update Panel Data (Global via Firebase)</h2>
 
 <label>DB Number</label>
-<input id="db" type="text">
+<input id="db">
 
 <label>Voltage Rating</label>
-<input id="volt" type="text">
+<input id="volt">
 
 <label>Main Breaker Capacity</label>
-<input id="breaker" type="text">
+<input id="breaker">
 
 <label>Main Cable Size</label>
-<input id="cable" type="text">
+<input id="cable">
 
 <label>Earth Status</label>
-<input id="earth" type="text">
+<input id="earth">
 
 <label>Location</label>
-<input id="location" type="text">
+<input id="location">
 
 <label>Purpose</label>
-<input id="purpose" type="text">
+<input id="purpose">
 
-<label>Upload Panel Image</label>
+<label>Upload Panel Picture (Optional)</label>
 <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
-<img id="previewImage" style="display:none; width:200px; margin-top:10px; border:1px solid #444; border-radius:5px;">
+<img id="previewImage">
+<button onclick="removeImage()">Remove Picture</button>
 
-<h3>Circuits</h3>
-<div id="circuitsContainer"></div>
-<button onclick="addCircuitRow()">Add Circuit</button>
-
-<button class="saveButton" onclick="savePanel()">Save Panel Data</button>
-
-</div>
+<br><br>
+<button onclick="savePanel()">Save Data (to Firebase)</button>
 
 <div class="dangerBanner">
-⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
+    ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
 </div>
 
-<div class="card">
-<h2>QR Code</h2>
+<h3>Generate QR Code</h3>
+<button onclick="generateQR()">Generate QR Code</button>
+<canvas id="qrCanvas"></canvas>
+<br>
+<button id="downloadQR" style="display:none;" onclick="downloadQR()">Download QR Code</button>
 
-<button class="qrButton" onclick="generateQR()">Generate QR</button>
+<hr>
 
-<div id="qrFinalWrapper">
-    <canvas id="qrCanvas"></canvas>
-    <div id="qrLabel"></div>
-</div>
-
-<button id="downloadQR" class="downloadButton" style="display:none;" onclick="downloadFinalQR()">Download QR Sheet</button>
-</div>
-
-<div class="card">
 <h2>All Panels</h2>
-<button class="panelButton" onclick="showPanels()">Show Panels</button>
+<button onclick="showPanels()">Show All Panels (From Firebase)</button>
 <div id="panelList"></div>
-</div>
 
-</div>
+</div> <!-- end adminContent -->
 
 <!-- QR Library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
-/*** LOGIN ***/
+/*************** SIMPLE ADMIN PASSWORD LOGIN ***************/
+
+// CHANGE THIS PASSWORD TO WHATEVER YOU LIKE:
 const ADMIN_PASSWORD = "1234";
 
 function checkLogin() {
-    if (adminPassword.value === ADMIN_PASSWORD) {
-        sessionStorage.setItem("adminLogin",1);
-        loginOverlay.style.display="none";
-        adminContent.style.display="block";
-        addCircuitRow();
+    const input = document.getElementById("adminPassword").value.trim();
+    const errorDiv = document.getElementById("loginError");
+
+    if (input === ADMIN_PASSWORD) {
+        // remember for this browser session
+        sessionStorage.setItem("adminLoggedIn", "true");
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
     } else {
-        loginError.innerText="Wrong password!";
+        errorDiv.textContent = "Incorrect password.";
     }
 }
 
-if (sessionStorage.getItem("adminLogin")==1){
-    loginOverlay.style.display="none";
-    adminContent.style.display="block";
-}
+// auto-unlock if already logged in this session
+window.addEventListener("load", function() {
+    if (sessionStorage.getItem("adminLoggedIn") === "true") {
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
+    }
+});
 
-/*** CIRCUITS ***/
-function addCircuitRow(name="",breaker="",load="") {
-    circuitsContainer.innerHTML += `
-    <div class="circuit-row">
-        <input class="c-name" placeholder="Name" value="${name}">
-        <input class="c-breaker" placeholder="Breaker" value="${breaker}">
-        <input class="c-load" placeholder="Load" value="${load}">
-        <button class="circuit-remove-btn" onclick="this.parentElement.remove()">X</button>
-    </div>`;
-}
+/*************** EXISTING ADMIN LOGIC (Firebase) ***************/
 
-function collectCircuits() {
-    let list=[];
-    document.querySelectorAll(".circuit-row").forEach(r=>{
-        let n=r.querySelector(".c-name").value;
-        let b=r.querySelector(".c-breaker").value;
-        let l=r.querySelector(".c-load").value;
-        if(n||b||l) list.push({name:n,breaker:b,load:l});
-    });
-    return list.length?list:null;
-}
+let uploadedImage = null;
 
-/*** IMAGE COMPRESS ***/
-let uploadedImage=null;
-function previewAndCompress(event){
-    let file=event.target.files[0];
-    if(!file) return;
+// IMAGE PREVIEW + COMPRESSION
+function previewAndCompress(event) {
+    let file = event.target.files[0];
+    if (!file) return;
 
-    let reader=new FileReader();
-    reader.onload=e=>{
-        let img=new Image();
-        img.onload=()=>{
-            let canvas=document.createElement("canvas");
-            let ctx=canvas.getContext("2d");
-            let maxW=800;
-            let scale=maxW/img.width;
-            canvas.width=maxW;
-            canvas.height=img.height*scale;
-            ctx.drawImage(img,0,0,canvas.width,canvas.height);
-            uploadedImage=canvas.toDataURL("image/jpeg",0.7);
-            previewImage.src=uploadedImage;
-            previewImage.style.display="block";
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        let img = new Image();
+        img.src = e.target.result;
+        img.onload = function() {
+            let canvas = document.createElement("canvas");
+            let ctx = canvas.getContext("2d");
+
+            let maxWidth = 800;
+            let scale = maxWidth / img.width;
+            canvas.width = maxWidth;
+            canvas.height = img.height * scale;
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            uploadedImage = canvas.toDataURL("image/jpeg", 0.7);
+
+            let preview = document.getElementById("previewImage");
+            preview.src = uploadedImage;
+            preview.style.display = "block";
         };
-        img.src=e.target.result;
     };
     reader.readAsDataURL(file);
 }
 
-/*** SAVE PANEL (FULLY FIXED) ***/
-function savePanel() {
-    let id=document.getElementById("db").value.trim();
-    if(!id) return alert("Enter DB number");
+function removeImage() {
+    uploadedImage = null;
+    document.getElementById("previewImage").style.display = "none";
+}
 
-    let data={
-        dbNumber:id,
-        voltage:document.getElementById("volt").value,
-        mainBreaker:document.getElementById("breaker").value,
-        cableSize:document.getElementById("cable").value,
-        earthStatus:document.getElementById("earth").value,
-        location:document.getElementById("location").value,
-        purpose:document.getElementById("purpose").value,
-        image:uploadedImage,
-        circuits:collectCircuits()
+// SAVE PANEL TO FIREBASE
+function savePanel() {
+    let id = document.getElementById("db").value;
+    if (!id) {
+        alert("Enter DB Number!");
+        return;
+    }
+
+    let data = {
+        dbNumber: id,
+        voltage: document.getElementById("volt").value,
+        mainBreaker: document.getElementById("breaker").value,
+        cableSize: document.getElementById("cable").value,
+        earthStatus: document.getElementById("earth").value,
+        location: document.getElementById("location").value,
+        purpose: document.getElementById("purpose").value,
+        image: uploadedImage || null
     };
 
-    savePanelToFirebase(id,data,()=>alert("Saved successfully"));
-}
-
-/*** SHOW PANELS ***/
-function showPanels() {
-    loadAllPanels(all=>{
-        let html="<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
-        for(let id in all){
-            html+=`
-            <tr>
-                <td>${id}</td>
-                <td>${all[id].location}</td>
-                <td>${all[id].purpose}</td>
-                <td><button onclick="editPanel('${id}')">Edit</button></td>
-            </tr>`;
-        }
-        html+="</table>";
-        panelList.innerHTML=html;
+    savePanelToFirebase(id, data, function() {
+        alert("Panel saved to Firebase successfully!");
     });
 }
 
-/*** EDIT PANEL (FULLY FIXED) ***/
-function editPanel(id){
-    loadPanelFromFirebase(id,p=>{
-        document.getElementById("db").value=p.dbNumber;
-        document.getElementById("volt").value=p.voltage;
-        document.getElementById("breaker").value=p.mainBreaker;
-        document.getElementById("cable").value=p.cableSize;
-        document.getElementById("earth").value=p.earthStatus;
-        document.getElementById("location").value=p.location;
-        document.getElementById("purpose").value=p.purpose;
-
-        uploadedImage=p.image;
-        if(uploadedImage){
-            previewImage.src=uploadedImage;
-            previewImage.style.display="block";
+// EDIT PANEL FROM FIREBASE
+function editPanel(id) {
+    loadPanelFromFirebase(id, function(p) {
+        if (!p) {
+            alert("Panel not found!");
+            return;
         }
 
-        circuitsContainer.innerHTML="";
-        if(p.circuits){
-            Object.values(p.circuits).forEach(c=>addCircuitRow(c.name,c.breaker,c.load));
-        } else addCircuitRow();
+        document.getElementById("db").value = p.dbNumber;
+        document.getElementById("volt").value = p.voltage || "";
+        document.getElementById("breaker").value = p.mainBreaker || "";
+        document.getElementById("cable").value = p.cableSize || "";
+        document.getElementById("earth").value = p.earthStatus || "";
+        document.getElementById("location").value = p.location || "";
+        document.getElementById("purpose").value = p.purpose || "";
 
-        window.scrollTo(0,0);
+        uploadedImage = p.image || null;
+
+        if (uploadedImage) {
+            document.getElementById("previewImage").src = uploadedImage;
+            document.getElementById("previewImage").style.display = "block";
+        } else {
+            document.getElementById("previewImage").style.display = "none";
+        }
+
+        window.scrollTo(0, 0);
     });
 }
 
-/*** QR GENERATION ***/
-let qr;
-
-function generateQR(){
-    let id=db.value.trim();
-    if(!id) return alert("DB number required");
-    
-    let url=`https://energycew-ui.github.io/panel-system/index.html?id=${id}`;
-
-    qr=new QRious({
-        element:qrCanvas,
-        value:url,
-        size:250
-    });
-
-    qrLabel.innerText=id;
-    downloadQR.style.display="inline-block";
-}
-
-/*** QR DOWNLOAD (INCLUDES BANNER + QR + DB NAME) ***/
-function downloadFinalQR(){
-    let id=db.value.trim();
-    if(!id) return;
-
-    let qrCanvas=document.getElementById("qrCanvas");
-
-    let W=500, H=650;
-    let finalCanvas=document.createElement("canvas");
-    finalCanvas.width=W;
-    finalCanvas.height=H;
-    let ctx=finalCanvas.getContext("2d");
-
-    ctx.fillStyle="#fff";
-    ctx.fillRect(0,0,W,H);
-
-    ctx.fillStyle="#c40000";
-    ctx.fillRect(0,0,W,80);
-
-    ctx.fillStyle="white";
-    ctx.font="bold 24px Arial";
-    ctx.textAlign="center";
-    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️",W/2,50);
-
-    ctx.drawImage(qrCanvas,(W-250)/2,110,250,250);
-
-    ctx.fillStyle="black";
-    ctx.font="bold 38px Arial";
-    ctx.fillText(id,W/2,420);
-
-    let link=document.createElement("a");
-    link.download=id+"_QR.png";
-    link.href=finalCanvas.toDataURL();
-    link.click();
-}
-</script>
-</body>
-</html>
-<!DOCTYPE html>
-<html>
-<head>
-<title>Admin Panel</title>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="data.js"></script>
-
-<style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f1f1f1;
-}
-
-/* LOGIN OVERLAY */
-#loginOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3000;
-}
-#loginBox {
-    background: #fff;
-    padding: 25px 30px;
-    border-radius: 10px;
-    max-width: 350px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-#loginBox input {
-    width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-}
-#loginBox button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 15px;
-}
-#loginError {
-    color: red;
-}
-
-/* MAIN PAGE */
-#adminContent {
-    padding: 30px;
-    display: none;
-}
-
-.headerBar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-#companyLogo {
-    width: 110px;
-    height: 110px;
-    object-fit: contain;
-}
-
-/* FORM CARD */
-.card {
-    background: #fff;
-    padding: 25px;
-    margin-top: 25px;
-    border-radius: 10px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-}
-
-label {
-    display: block;
-    margin-top: 12px;
-    font-weight: bold;
-}
-input[type="text"], input[type="file"] {
-    width: 320px;
-    padding: 10px;
-    margin-top: 5px;
-}
-
-/* Circuits */
-.circuit-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 8px;
-}
-.circuit-row input {
-    flex: 1;
-}
-.circuit-remove-btn {
-    background: #c40000;
-    color: white;
-    padding: 6px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-/* BANNER */
-.dangerBanner {
-    background: #c40000;
-    color: white;
-    padding: 14px;
-    text-align: center;
-    font-size: 20px;
-    border-radius: 6px;
-    margin-top: 25px;
-    font-weight: bold;
-}
-
-/* QR */
-#qrCanvas {
-    border: 1px solid #ccc;
-    margin-top: 20px;
-}
-#qrLabel {
-    font-size: 22px;
-    font-weight: bold;
-    margin-top: 8px;
-}
-#qrFinalWrapper {
-    text-align: center;
-    margin-top: 20px;
-}
-
-button {
-    padding: 10px 18px;
-    font-size: 16px;
-    cursor: pointer;
-    border-radius: 6px;
-    border: none;
-    margin-top: 15px;
-}
-.saveButton {
-    background: #007bff;
-    color: white;
-}
-.qrButton {
-    background: #28a745;
-    color: white;
-}
-.downloadButton {
-    background: #6f42c1;
-    color: white;
-}
-.panelButton {
-    background: #333;
-    color: white;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-th, td {
-    border: 1px solid #bbb;
-    padding: 8px;
-}
-th {
-    background: #444;
-    color: white;
-}
-</style>
-</head>
-
-<body>
-
-<!-- LOGIN SCREEN -->
-<div id="loginOverlay">
-    <div id="loginBox">
-        <h2>Admin Login</h2>
-        <input type="password" id="adminPassword" placeholder="Enter Password">
-        <button onclick="checkLogin()">Login</button>
-        <div id="loginError"></div>
-    </div>
-</div>
-
-<!-- MAIN CONTENT -->
-<div id="adminContent">
-
-<div class="headerBar">
-    <h1>Admin Panel</h1>
-    <img id="companyLogo" src="chenab_engineering_works_foundries_pvt_ltd_logo.jpg">
-</div>
-
-<div class="card">
-
-<h2>Panel Information</h2>
-
-<label>DB Number</label>
-<input id="db" type="text">
-
-<label>Voltage Rating</label>
-<input id="volt" type="text">
-
-<label>Main Breaker Capacity</label>
-<input id="breaker" type="text">
-
-<label>Main Cable Size</label>
-<input id="cable" type="text">
-
-<label>Earth Status</label>
-<input id="earth" type="text">
-
-<label>Location</label>
-<input id="location" type="text">
-
-<label>Purpose</label>
-<input id="purpose" type="text">
-
-<label>Upload Panel Image</label>
-<input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
-<img id="previewImage" style="display:none; width:200px; margin-top:10px; border:1px solid #444; border-radius:5px;">
-
-<h3>Circuits</h3>
-<div id="circuitsContainer"></div>
-<button onclick="addCircuitRow()">Add Circuit</button>
-
-<button class="saveButton" onclick="savePanel()">Save Panel Data</button>
-
-</div>
-
-<div class="dangerBanner">
-⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
-</div>
-
-<div class="card">
-<h2>QR Code</h2>
-
-<button class="qrButton" onclick="generateQR()">Generate QR</button>
-
-<div id="qrFinalWrapper">
-    <canvas id="qrCanvas"></canvas>
-    <div id="qrLabel"></div>
-</div>
-
-<button id="downloadQR" class="downloadButton" style="display:none;" onclick="downloadFinalQR()">Download QR Sheet</button>
-</div>
-
-<div class="card">
-<h2>All Panels</h2>
-<button class="panelButton" onclick="showPanels()">Show Panels</button>
-<div id="panelList"></div>
-</div>
-
-</div>
-
-<!-- QR Library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-
-<script>
-/*** LOGIN ***/
-const ADMIN_PASSWORD = "1234";
-
-function checkLogin() {
-    if (adminPassword.value === ADMIN_PASSWORD) {
-        sessionStorage.setItem("adminLogin",1);
-        loginOverlay.style.display="none";
-        adminContent.style.display="block";
-        addCircuitRow();
-    } else {
-        loginError.innerText="Wrong password!";
+// DELETE PANEL
+function deletePanel(id) {
+    if (confirm("Delete " + id + " ?")) {
+        firebase.database().ref("panels/" + id).remove().then(function() {
+            alert("Deleted " + id);
+            showPanels();
+        });
     }
 }
 
-if (sessionStorage.getItem("adminLogin")==1){
-    loginOverlay.style.display="none";
-    adminContent.style.display="block";
-}
-
-/*** CIRCUITS ***/
-function addCircuitRow(name="",breaker="",load="") {
-    circuitsContainer.innerHTML += `
-    <div class="circuit-row">
-        <input class="c-name" placeholder="Name" value="${name}">
-        <input class="c-breaker" placeholder="Breaker" value="${breaker}">
-        <input class="c-load" placeholder="Load" value="${load}">
-        <button class="circuit-remove-btn" onclick="this.parentElement.remove()">X</button>
-    </div>`;
-}
-
-function collectCircuits() {
-    let list=[];
-    document.querySelectorAll(".circuit-row").forEach(r=>{
-        let n=r.querySelector(".c-name").value;
-        let b=r.querySelector(".c-breaker").value;
-        let l=r.querySelector(".c-load").value;
-        if(n||b||l) list.push({name:n,breaker:b,load:l});
-    });
-    return list.length?list:null;
-}
-
-/*** IMAGE COMPRESS ***/
-let uploadedImage=null;
-function previewAndCompress(event){
-    let file=event.target.files[0];
-    if(!file) return;
-
-    let reader=new FileReader();
-    reader.onload=e=>{
-        let img=new Image();
-        img.onload=()=>{
-            let canvas=document.createElement("canvas");
-            let ctx=canvas.getContext("2d");
-            let maxW=800;
-            let scale=maxW/img.width;
-            canvas.width=maxW;
-            canvas.height=img.height*scale;
-            ctx.drawImage(img,0,0,canvas.width,canvas.height);
-            uploadedImage=canvas.toDataURL("image/jpeg",0.7);
-            previewImage.src=uploadedImage;
-            previewImage.style.display="block";
-        };
-        img.src=e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-/*** SAVE PANEL (FULLY FIXED) ***/
-function savePanel() {
-    let id=document.getElementById("db").value.trim();
-    if(!id) return alert("Enter DB number");
-
-    let data={
-        dbNumber:id,
-        voltage:document.getElementById("volt").value,
-        mainBreaker:document.getElementById("breaker").value,
-        cableSize:document.getElementById("cable").value,
-        earthStatus:document.getElementById("earth").value,
-        location:document.getElementById("location").value,
-        purpose:document.getElementById("purpose").value,
-        image:uploadedImage,
-        circuits:collectCircuits()
-    };
-
-    savePanelToFirebase(id,data,()=>alert("Saved successfully"));
-}
-
-/*** SHOW PANELS ***/
-function showPanels() {
-    loadAllPanels(all=>{
-        let html="<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
-        for(let id in all){
-            html+=`
-            <tr>
-                <td>${id}</td>
-                <td>${all[id].location}</td>
-                <td>${all[id].purpose}</td>
-                <td><button onclick="editPanel('${id}')">Edit</button></td>
-            </tr>`;
-        }
-        html+="</table>";
-        panelList.innerHTML=html;
-    });
-}
-
-/*** EDIT PANEL (FULLY FIXED) ***/
-function editPanel(id){
-    loadPanelFromFirebase(id,p=>{
-        document.getElementById("db").value=p.dbNumber;
-        document.getElementById("volt").value=p.voltage;
-        document.getElementById("breaker").value=p.mainBreaker;
-        document.getElementById("cable").value=p.cableSize;
-        document.getElementById("earth").value=p.earthStatus;
-        document.getElementById("location").value=p.location;
-        document.getElementById("purpose").value=p.purpose;
-
-        uploadedImage=p.image;
-        if(uploadedImage){
-            previewImage.src=uploadedImage;
-            previewImage.style.display="block";
-        }
-
-        circuitsContainer.innerHTML="";
-        if(p.circuits){
-            Object.values(p.circuits).forEach(c=>addCircuitRow(c.name,c.breaker,c.load));
-        } else addCircuitRow();
-
-        window.scrollTo(0,0);
-    });
-}
-
-/*** QR GENERATION ***/
+// QR CODE
 let qr;
-
-function generateQR(){
-    let id=db.value.trim();
-    if(!id) return alert("DB number required");
-    
-    let url=`https://energycew-ui.github.io/panel-system/index.html?id=${id}`;
-
-    qr=new QRious({
-        element:qrCanvas,
-        value:url,
-        size:250
+function generateQR() {
+    let id = document.getElementById("db").value;
+    if (!id) {
+        alert("Enter DB Number first!");
+        return;
+    }
+    let url = "https://energycew-ui.github.io/panel-system/index.html?id=" + encodeURIComponent(id);
+    qr = new QRious({
+        element: document.getElementById("qrCanvas"),
+        value: url,
+        size: 250
     });
-
-    qrLabel.innerText=id;
-    downloadQR.style.display="inline-block";
+    document.getElementById("downloadQR").style.display = "inline-block";
 }
 
-/*** QR DOWNLOAD (INCLUDES BANNER + QR + DB NAME) ***/
-function downloadFinalQR(){
-    let id=db.value.trim();
-    if(!id) return;
-
-    let qrCanvas=document.getElementById("qrCanvas");
-
-    let W=500, H=650;
-    let finalCanvas=document.createElement("canvas");
-    finalCanvas.width=W;
-    finalCanvas.height=H;
-    let ctx=finalCanvas.getContext("2d");
-
-    ctx.fillStyle="#fff";
-    ctx.fillRect(0,0,W,H);
-
-    ctx.fillStyle="#c40000";
-    ctx.fillRect(0,0,W,80);
-
-    ctx.fillStyle="white";
-    ctx.font="bold 24px Arial";
-    ctx.textAlign="center";
-    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️",W/2,50);
-
-    ctx.drawImage(qrCanvas,(W-250)/2,110,250,250);
-
-    ctx.fillStyle="black";
-    ctx.font="bold 38px Arial";
-    ctx.fillText(id,W/2,420);
-
-    let link=document.createElement("a");
-    link.download=id+"_QR.png";
-    link.href=finalCanvas.toDataURL();
+function downloadQR() {
+    let link = document.createElement("a");
+    link.download = document.getElementById("db").value + "_QR.png";
+    link.href = document.getElementById("qrCanvas").toDataURL();
     link.click();
 }
+
+// SHOW ALL PANELS
+function showPanels() {
+    loadAllPanels(function(all) {
+        let div = document.getElementById("panelList");
+        if (!all) {
+            div.innerHTML = "<p>No panels in database.</p>";
+            return;
+        }
+
+        let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+
+        Object.keys(all).forEach(id => {
+            let p = all[id];
+            html += `
+                <tr>
+                    <td>${p.dbNumber || id}</td>
+                    <td>${p.location || ""}</td>
+                    <td>${p.purpose || ""}</td>
+                    <td>
+                        <button class='action-btn' onclick="editPanel('${id}')">Edit</button>
+                        <button class='action-btn' onclick="deletePanel('${id}')">Delete</button>
+                    </td>
+                </tr>`;
+        });
+
+        html += "</table>";
+        div.innerHTML = html;
+    });
+}
 </script>
+
 </body>
 </html>
