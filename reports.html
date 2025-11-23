@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Reports</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script src="data.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f4f7;
+    margin: 0;
+}
+
+.header {
+    background: #111;
+    color: #ffc800;
+    padding: 20px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.container {
+    padding: 20px;
+}
+
+/* LOGIN BOX */
+#loginOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#loginBox {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 280px;
+    text-align: center;
+}
+#loginBox input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+}
+#loginBox button {
+    width: 100%;
+    margin-top: 15px;
+    padding: 10px;
+}
+#error {
+    color: red;
+    margin-top: 10px;
+}
+
+/* TABLE STYLES */
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+th {
+    background: #333;
+    color: white;
+    padding: 10px;
+}
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+tr:nth-child(even) { background: #f9f9f9; }
+
+.photo-btn {
+    background: #007bff;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.filterBox {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.filterBox input, .filterBox select {
+    padding: 8px;
+    font-size: 16px;
+}
+</style>
+
+</head>
+<body>
+
+<div id="loginOverlay">
+    <div id="loginBox">
+        <h3>Admin Login</h3>
+        <input type="password" id="adminPass" placeholder="Password">
+        <button onclick="checkLogin()">Login</button>
+        <div id="error"></div>
+    </div>
+</div>
+
+<div id="content" style="display:none;">
+
+<div class="header">Admin Reports Dashboard</div>
+
+<div class="container">
+
+<h2>Filters</h2>
+<div class="filterBox">
+    <input type="text" id="filterDB" placeholder="Filter by DB Number">
+    <input type="text" id="filterElec" placeholder="Filter by Electrician">
+    <input type="date" id="filterDate">
+    <button onclick="applyFilters()">Apply Filters</button>
+</div>
+
+<hr>
+
+<h2>Inspection Reports</h2>
+<div id="inspectionTable"></div>
+
+<hr>
+
+<h2>Fault Reports</h2>
+<div id="faultTable"></div>
+
+</div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = "1234";
+
+function checkLogin() {
+    let pass = document.getElementById("adminPass").value;
+    if (pass === ADMIN_PASSWORD) {
+        sessionStorage.setItem("adminReportsLogged", "1");
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("content").style.display = "block";
+        loadReports();
+    } else {
+        document.getElementById("error").innerText = "Incorrect Password";
+    }
+}
+
+if (sessionStorage.getItem("adminReportsLogged") === "1") {
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("content").style.display = "block";
+}
+
+/* LOAD ALL REPORTS */
+let inspectionsGlobal = [];
+let faultsGlobal = [];
+
+function loadReports() {
+    firebase.database().ref("inspections").once("value", snap => {
+        let data = snap.val() || {};
+        inspectionsGlobal = convertInspectionData(data);
+        renderInspectionTable(inspectionsGlobal);
+    });
+
+    firebase.database().ref("faults").once("value", snap => {
+        let data = snap.val() || {};
+        faultsGlobal = convertFaultData(data);
+        renderFaultTable(faultsGlobal);
+    });
+}
+
+/* FORMAT INSPECTION DATA */
+function convertInspectionData(data) {
+    let list = [];
+    for (let db in data) {
+        for (let key in data[db]) {
+            list.push({
+                dbId: db,
+                ...data[db][key]
+            });
+        }
+    }
+    return list;
+}
+
+/* FORMAT FAULT DATA */
+function convertFaultData(data) {
+    let list = [];
+    for (let db in data) {
+        for (let key in data[db]) {
+            list.push({
+                dbId: db,
+                ...data[db][key]
+            });
+        }
+    }
+    return list;
+}
+
+/* RENDER INSPECTIONS */
+function renderInspectionTable(list) {
+    let html = `
+        <table>
+        <tr>
+            <th>Date</th>
+            <th>DB</th>
+            <th>Electrician</th>
+            <th>Breaker</th>
+            <th>Clean</th>
+            <th>Locked</th>
+            <th>Covered</th>
+            <th>Comments</th>
+            <th>Photos</th>
+        </tr>
+    `;
+
+    list.forEach(r => {
+        html += `
+            <tr>
+                <td>${new Date(r.timestamp).toLocaleString()}</td>
+                <td>${r.dbId}</td>
+                <td>${r.electricianName || ""}</td>
+                <td>${r.breakerStatus || ""}</td>
+                <td>${r.cleanStatus || ""}</td>
+                <td>${r.lockedStatus || ""}</td>
+                <td>${r.coveredStatus || ""}</td>
+                <td>${r.comments || ""}</td>
+                <td>
+                    ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
+                    ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
+                    ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+                </td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    document.getElementById("inspectionTable").innerHTML = html;
+}
+
+/* RENDER FAULTS */
+function renderFaultTable(list) {
+    let html = `
+        <table>
+        <tr>
+            <th>Date</th>
+            <th>DB</th>
+            <th>Electrician</th>
+            <th>Fault Type</th>
+            <th>Description</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Downtime</th>
+            <th>Production Loss</th>
+            <th>Photos</th>
+        </tr>
+    `;
+
+    list.forEach(r => {
+        html += `
+            <tr>
+                <td>${new Date(r.timestamp).toLocaleString()}</td>
+                <td>${r.dbId}</td>
+                <td>${r.electricianName || ""}</td>
+                <td>${r.faultType || ""}</td>
+                <td>${r.description || ""}</td>
+                <td>${r.startTime || ""}</td>
+                <td>${r.endTime || ""}</td>
+                <td>${r.downtimeMinutes || ""} min</td>
+                <td>${r.productionLoss || ""}<br>${r.productionLossDesc || ""}</td>
+                <td>
+                    ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
+                    ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
+                    ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+                </td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    document.getElementById("faultTable").innerHTML = html;
+}
+
+/* PHOTO VIEWER */
+function openPhoto(src) {
+    let win = window.open();
+    win.document.write(`<img src="${src}" style="width:100%;">`);
+}
+
+/* FILTERS */
+function applyFilters() {
+    let fDB = document.getElementById("filterDB").value.toLowerCase();
+    let fElec = document.getElementById("filterElec").value.toLowerCase();
+    let fDate = document.getElementById("filterDate").value;
+
+    let filteredInspections = inspectionsGlobal.filter(r =>
+        (fDB === "" || r.dbId.toLowerCase().includes(fDB)) &&
+        (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec)) &&
+        (fDate === "" || r.timestamp.startsWith(fDate))
+    );
+
+    let filteredFaults = faultsGlobal.filter(r =>
+        (fDB === "" || r.dbId.toLowerCase().includes(fDB)) &&
+        (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec)) &&
+        (fDate === "" || r.timestamp.startsWith(fDate))
+    );
+
+    renderInspectionTable(filteredInspections);
+    renderFaultTable(filteredFaults);
+}
+</script>
+
+</body>
+</html>
