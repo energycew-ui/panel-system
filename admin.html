@@ -892,7 +892,8 @@ function generateQR() {
     return;
   }
 
-  const url = "panel.html?id=" + encodeURIComponent(id);
+  const url = "https://energycew-ui.github.io/panel-system/panel.html?id=" + encodeURIComponent(id);
+
 
   qr = new QRious({
     element: document.getElementById("qrCanvas"),
