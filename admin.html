@@ -473,15 +473,15 @@
       align-items: center;
     }
 
-.topbar-logo {
-  width: 180px;
-  height: auto;
-  margin-bottom: 0px;
-  filter: drop-shadow(0px 8px 16px rgba(0,0,0,0.65))
-          drop-shadow(0 0 12px rgba(255,200,0,0.35));
-  opacity: 1;
-  transform: translateY(6px);
+..topbar-logo {
+  transform: translateY(4px);   /* Lower slightly = better alignment */
+  background: none;
 }
+
+.premium-header .logo-wrapper {
+  margin-bottom: 0px;          /* Reduce the gap above title */
+}
+
 
 
     /* Gold Gradient Title */
