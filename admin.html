@@ -189,8 +189,22 @@ th {
 <h3>Generate QR Code</h3>
 <button onclick="generateQR()">Generate QR Code</button>
 
-<div style="text-align:center;">
-    <canvas id="qrCanvas"></canvas>
+<!-- ⭐ RED RIBBON ABOVE QR -->
+<div class="dangerBanner">
+    ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
+</div>
+
+<!-- QR CANVAS -->
+<canvas id="qrCanvas"></canvas>
+
+<!-- ⭐ DB NAME BELOW QR -->
+<div id="qrDBname" style="
+    font-size: 22px;
+    font-weight: bold;
+    text-align:center;
+    margin-top: 10px;
+"></div>
+
 
     <!-- DB NAME BELOW QR -->
     <div id="qrDBname"></div>
@@ -393,8 +407,10 @@ function generateQR(){
         value:url,
         size:250
     });
+document.getElementById("qrDBname").innerText = id;
 
     document.getElementById("qrDBname").innerText=id;
+
     document.getElementById("downloadQR").style.display="inline-block";
 }
 
