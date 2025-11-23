@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-<!-- Our Firebase helper (already has firebaseConfig + db ref) -->
+<!-- Firebase helper -->
 <script src="data.js"></script>
 
 <style>
@@ -16,8 +16,6 @@ body {
     background: #f2f4f7;
     margin: 0;
 }
-
-/* HEADER */
 .header {
     background: #111;
     color: #ffc800;
@@ -26,31 +24,23 @@ body {
     font-size: 24px;
     font-weight: bold;
 }
-
-/* CARD */
 .card {
     background: white;
     margin: 20px auto;
     padding: 20px;
-    max-width: 700px;
+    max-width: 800px;
     border-radius: 12px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
-
-/* SECTIONS */
 .section-title {
     font-size: 18px;
     margin-top: 10px;
     margin-bottom: 5px;
     font-weight: bold;
 }
-
-/* SUMMARY */
 .summary-item {
     margin: 4px 0;
 }
-
-/* FORM */
 label {
     display: block;
     margin-top: 12px;
@@ -67,8 +57,6 @@ textarea {
     height: 80px;
     resize: vertical;
 }
-
-/* PHOTOS */
 .photo-row {
     display: flex;
     gap: 10px;
@@ -90,8 +78,6 @@ textarea {
     display: none;
     border: 1px solid #ccc;
 }
-
-/* BUTTONS */
 button {
     padding: 10px 18px;
     font-size: 16px;
@@ -109,6 +95,27 @@ button {
     color: white;
     margin-left: 10px;
 }
+.spec-save-btn {
+    background: #28a745;
+    color: white;
+}
+
+/* Circuits in electrician view */
+.spec-circuit-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.spec-circuit-row input {
+    width: 100%;
+}
+.spec-circuit-remove-btn {
+    padding: 0 8px;
+    font-size: 14px;
+    background: #c40000;
+    color: white;
+    border-radius: 4px;
+}
 </style>
 </head>
 
@@ -120,7 +127,7 @@ button {
 
 <div class="card">
 
-    <!-- PANEL SUMMARY -->
+    <!-- PANEL SUMMARY (READ ONLY) -->
     <div class="section-title">Panel Summary</div>
     <div class="summary-item"><b>DB Number:</b> <span id="dbNum"></span></div>
     <div class="summary-item"><b>Voltage:</b> <span id="volt"></span></div>
@@ -132,14 +139,40 @@ button {
 
     <hr>
 
-    <!-- ELECTRICIAN INFO -->
-    <div class="section-title">Electrician Details</div>
+    <!-- DB SPECIFICATION EDIT (WILL UPDATE MAIN DB) -->
+    <div class="section-title">DB Specification (Editable – updates main DB)</div>
+
+    <label>Voltage Rating</label>
+    <input type="text" id="specVoltage">
+
+    <label>Main Breaker Capacity</label>
+    <input type="text" id="specBreaker">
+
+    <label>Main Cable Size</label>
+    <input type="text" id="specCable">
+
+    <label>Earth Status</label>
+    <input type="text" id="specEarth">
+
+    <label>Location</label>
+    <input type="text" id="specLocation">
+
+    <label>Purpose</label>
+    <input type="text" id="specPurpose">
+
+    <div class="section-title">Circuits (Edit / Add / Remove)</div>
+    <div id="specCircuitsContainer"></div>
+    <button type="button" onclick="addSpecCircuitRow()">Add Circuit</button>
+
+    <button class="spec-save-btn" onclick="saveDbSpec()">Save DB Specification</button>
+
+    <hr>
+
+    <!-- ELECTRICIAN INSPECTION -->
+    <div class="section-title">Electrician Inspection</div>
 
     <label>Electrician Name</label>
     <input type="text" id="elecName" placeholder="Enter your name">
-
-    <!-- INSPECTION CHECKLIST -->
-    <div class="section-title">Inspection Checklist</div>
 
     <label>Breaker Condition</label>
     <select id="breakerStatus">
@@ -176,7 +209,6 @@ button {
     <label>Comments / Notes</label>
     <textarea id="comments" placeholder="Any observations, issues, notes..."></textarea>
 
-    <!-- PHOTOS -->
     <div class="section-title">Inspection Photos (optional, up to 3)</div>
 
     <div class="photo-row">
@@ -197,7 +229,6 @@ button {
         </div>
     </div>
 
-    <!-- ACTION BUTTONS -->
     <button class="save-btn" onclick="saveInspection()">Save Inspection</button>
     <button class="fault-btn" onclick="goToFault()">Report Fault</button>
 
@@ -206,23 +237,25 @@ button {
 <script>
 const params = new URLSearchParams(window.location.search);
 const dbId = params.get("id");
+document.getElementById("dbIdHeader").innerText = dbId || "";
 
-// store base64 photo data
 let photo1Data = null;
 let photo2Data = null;
 let photo3Data = null;
 
-// show DB id in header
-document.getElementById("dbIdHeader").innerText = dbId || "";
+// store full panel object so we can update & keep image etc
+let panelObj = null;
 
-// load main panel data from Firebase
+// Load panel data from Firebase
 if (dbId) {
     loadPanelFromFirebase(dbId, function(p) {
         if (!p) {
             document.body.innerHTML = "<h2 style='text-align:center;color:red;margin-top:40px;'>No data found for this panel.</h2>";
             return;
         }
+        panelObj = p;
 
+        // summary
         document.getElementById("dbNum").innerText = p.dbNumber || dbId;
         document.getElementById("volt").innerText = p.voltage || "";
         document.getElementById("breaker").innerText = p.mainBreaker || "";
@@ -230,12 +263,90 @@ if (dbId) {
         document.getElementById("earth").innerText = p.earthStatus || "";
         document.getElementById("location").innerText = p.location || "";
         document.getElementById("purpose").innerText = p.purpose || "";
+
+        // editable spec fields
+        document.getElementById("specVoltage").value = p.voltage || "";
+        document.getElementById("specBreaker").value = p.mainBreaker || "";
+        document.getElementById("specCable").value = p.cableSize || "";
+        document.getElementById("specEarth").value = p.earthStatus || "";
+        document.getElementById("specLocation").value = p.location || "";
+        document.getElementById("specPurpose").value = p.purpose || "";
+
+        // circuits
+        renderSpecCircuits(p.circuits || null);
     });
 } else {
     document.body.innerHTML = "<h2 style='text-align:center;color:red;margin-top:40px;'>No panel ID provided.</h2>";
 }
 
-// PHOTO HANDLER
+/*********** CIRCUITS EDITING ***********/
+function renderSpecCircuits(circuits) {
+    const container = document.getElementById("specCircuitsContainer");
+    container.innerHTML = "";
+
+    if (circuits) {
+        const list = Array.isArray(circuits) ? circuits : Object.values(circuits);
+        list.forEach(c => {
+            addSpecCircuitRow(c.name || "", c.breaker || "", c.load || "");
+        });
+    } else {
+        addSpecCircuitRow();
+    }
+}
+
+function addSpecCircuitRow(name = "", breaker = "", load = "") {
+    const container = document.getElementById("specCircuitsContainer");
+    const row = document.createElement("div");
+    row.className = "spec-circuit-row";
+    row.innerHTML = `
+        <input type="text" class="spec-c-name" placeholder="Circuit name" value="${name}">
+        <input type="text" class="spec-c-breaker" placeholder="Breaker (e.g. 10A)" value="${breaker}">
+        <input type="text" class="spec-c-load" placeholder="Load / Description" value="${load}">
+        <button type="button" class="spec-circuit-remove-btn" onclick="removeSpecCircuitRow(this)">X</button>
+    `;
+    container.appendChild(row);
+}
+
+function removeSpecCircuitRow(btn) {
+    const row = btn.parentElement;
+    row.parentElement.removeChild(row);
+}
+
+function collectSpecCircuits() {
+    const rows = document.querySelectorAll(".spec-circuit-row");
+    const circuits = [];
+    rows.forEach(row => {
+        const name = row.querySelector(".spec-c-name").value.trim();
+        const br = row.querySelector(".spec-c-breaker").value.trim();
+        const ld = row.querySelector(".spec-c-load").value.trim();
+        if (name || br || ld) {
+            circuits.push({ name, breaker: br, load: ld });
+        }
+    });
+    return circuits.length ? circuits : null;
+}
+
+/*********** SAVE DB SPEC (UPDATE MAIN DB) ***********/
+function saveDbSpec() {
+    if (!dbId || !panelObj) {
+        alert("Panel data not loaded yet.");
+        return;
+    }
+
+    panelObj.voltage = document.getElementById("specVoltage").value;
+    panelObj.mainBreaker = document.getElementById("specBreaker").value;
+    panelObj.cableSize = document.getElementById("specCable").value;
+    panelObj.earthStatus = document.getElementById("specEarth").value;
+    panelObj.location = document.getElementById("specLocation").value;
+    panelObj.purpose = document.getElementById("specPurpose").value;
+    panelObj.circuits = collectSpecCircuits();
+
+    savePanelToFirebase(dbId, panelObj, function() {
+        alert("DB specification updated.");
+    });
+}
+
+/*********** INSPECTION PHOTOS ***********/
 function handlePhoto(inputElem, previewId, index) {
     const file = inputElem.files[0];
     if (!file) {
@@ -259,7 +370,7 @@ function handlePhoto(inputElem, previewId, index) {
     reader.readAsDataURL(file);
 }
 
-// SAVE INSPECTION TO FIREBASE
+/*********** SAVE INSPECTION ***********/
 function saveInspection() {
     if (!dbId) {
         alert("No panel ID in URL.");
@@ -286,29 +397,16 @@ function saveInspection() {
         timestamp: new Date().toISOString()
     };
 
-    // save under /inspections/DB-ID/<auto-id>
     firebase.database().ref("inspections/" + dbId).push(data, function(err) {
         if (err) {
             alert("Error saving inspection: " + err);
         } else {
             alert("Inspection saved successfully.");
-            // optional: clear form
-            // document.getElementById("elecName").value = "";
-            document.getElementById("comments").value = "";
-            document.getElementById("breakerStatus").value = "";
-            document.getElementById("cleanStatus").value = "";
-            document.getElementById("lockedStatus").value = "";
-            document.getElementById("coveredStatus").value = "";
-
-            photo1Data = photo2Data = photo3Data = null;
-            document.getElementById("preview1").style.display = "none";
-            document.getElementById("preview2").style.display = "none";
-            document.getElementById("preview3").style.display = "none";
         }
     });
 }
 
-// GO TO FAULT REPORT PAGE (we'll build fault.html next)
+/*********** FAULT PAGE ***********/
 function goToFault() {
     if (!dbId) {
         alert("No panel ID in URL.");
