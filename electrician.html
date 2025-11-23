@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electrician Panel</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<!-- Our Firebase helper (already has firebaseConfig + db ref) -->
+<script src="data.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f4f7;
+    margin: 0;
+}
+
+/* HEADER */
+.header {
+    background: #111;
+    color: #ffc800;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* CARD */
+.card {
+    background: white;
+    margin: 20px auto;
+    padding: 20px;
+    max-width: 700px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* SECTIONS */
+.section-title {
+    font-size: 18px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+/* SUMMARY */
+.summary-item {
+    margin: 4px 0;
+}
+
+/* FORM */
+label {
+    display: block;
+    margin-top: 12px;
+    font-weight: bold;
+}
+input[type="text"], select, textarea {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+textarea {
+    height: 80px;
+    resize: vertical;
+}
+
+/* PHOTOS */
+.photo-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.photo-box {
+    flex: 1 1 30%;
+    min-width: 150px;
+}
+.photo-box input {
+    width: 100%;
+}
+.photo-preview {
+    margin-top: 5px;
+    width: 100%;
+    max-height: 150px;
+    object-fit: cover;
+    border-radius: 6px;
+    display: none;
+    border: 1px solid #ccc;
+}
+
+/* BUTTONS */
+button {
+    padding: 10px 18px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 15px;
+    border-radius: 6px;
+    border: none;
+}
+.save-btn {
+    background: #007bff;
+    color: white;
+}
+.fault-btn {
+    background: #c40000;
+    color: white;
+    margin-left: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    Electrician Mode – DB: <span id="dbIdHeader"></span>
+</div>
+
+<div class="card">
+
+    <!-- PANEL SUMMARY -->
+    <div class="section-title">Panel Summary</div>
+    <div class="summary-item"><b>DB Number:</b> <span id="dbNum"></span></div>
+    <div class="summary-item"><b>Voltage:</b> <span id="volt"></span></div>
+    <div class="summary-item"><b>Main Breaker:</b> <span id="breaker"></span></div>
+    <div class="summary-item"><b>Cable Size:</b> <span id="cable"></span></div>
+    <div class="summary-item"><b>Earth Status:</b> <span id="earth"></span></div>
+    <div class="summary-item"><b>Location:</b> <span id="location"></span></div>
+    <div class="summary-item"><b>Purpose:</b> <span id="purpose"></span></div>
+
+    <hr>
+
+    <!-- ELECTRICIAN INFO -->
+    <div class="section-title">Electrician Details</div>
+
+    <label>Electrician Name</label>
+    <input type="text" id="elecName" placeholder="Enter your name">
+
+    <!-- INSPECTION CHECKLIST -->
+    <div class="section-title">Inspection Checklist</div>
+
+    <label>Breaker Condition</label>
+    <select id="breakerStatus">
+        <option value="">Select...</option>
+        <option value="OK">OK</option>
+        <option value="Needs repair">Needs repair</option>
+        <option value="Not accessible">Not accessible</option>
+    </select>
+
+    <label>Panel Cleanliness</label>
+    <select id="cleanStatus">
+        <option value="">Select...</option>
+        <option value="Clean">Clean</option>
+        <option value="Needs cleaning">Needs cleaning</option>
+        <option value="Not accessible">Not accessible</option>
+    </select>
+
+    <label>Panel Locked</label>
+    <select id="lockedStatus">
+        <option value="">Select...</option>
+        <option value="Locked">Locked</option>
+        <option value="Unlocked">Unlocked</option>
+        <option value="Not lockable">Not lockable</option>
+    </select>
+
+    <label>Panel Covered</label>
+    <select id="coveredStatus">
+        <option value="">Select...</option>
+        <option value="Covered">Covered</option>
+        <option value="Not covered">Not covered</option>
+        <option value="Not required">Not required</option>
+    </select>
+
+    <label>Comments / Notes</label>
+    <textarea id="comments" placeholder="Any observations, issues, notes..."></textarea>
+
+    <!-- PHOTOS -->
+    <div class="section-title">Inspection Photos (optional, up to 3)</div>
+
+    <div class="photo-row">
+        <div class="photo-box">
+            <small>Photo 1</small>
+            <input type="file" accept="image/*" onchange="handlePhoto(this, 'preview1', 1)">
+            <img id="preview1" class="photo-preview">
+        </div>
+        <div class="photo-box">
+            <small>Photo 2</small>
+            <input type="file" accept="image/*" onchange="handlePhoto(this, 'preview2', 2)">
+            <img id="preview2" class="photo-preview">
+        </div>
+        <div class="photo-box">
+            <small>Photo 3</small>
+            <input type="file" accept="image/*" onchange="handlePhoto(this, 'preview3', 3)">
+            <img id="preview3" class="photo-preview">
+        </div>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <button class="save-btn" onclick="saveInspection()">Save Inspection</button>
+    <button class="fault-btn" onclick="goToFault()">Report Fault</button>
+
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const dbId = params.get("id");
+
+// store base64 photo data
+let photo1Data = null;
+let photo2Data = null;
+let photo3Data = null;
+
+// show DB id in header
+document.getElementById("dbIdHeader").innerText = dbId || "";
+
+// load main panel data from Firebase
+if (dbId) {
+    loadPanelFromFirebase(dbId, function(p) {
+        if (!p) {
+            document.body.innerHTML = "<h2 style='text-align:center;color:red;margin-top:40px;'>No data found for this panel.</h2>";
+            return;
+        }
+
+        document.getElementById("dbNum").innerText = p.dbNumber || dbId;
+        document.getElementById("volt").innerText = p.voltage || "";
+        document.getElementById("breaker").innerText = p.mainBreaker || "";
+        document.getElementById("cable").innerText = p.cableSize || "";
+        document.getElementById("earth").innerText = p.earthStatus || "";
+        document.getElementById("location").innerText = p.location || "";
+        document.getElementById("purpose").innerText = p.purpose || "";
+    });
+} else {
+    document.body.innerHTML = "<h2 style='text-align:center;color:red;margin-top:40px;'>No panel ID provided.</h2>";
+}
+
+// PHOTO HANDLER
+function handlePhoto(inputElem, previewId, index) {
+    const file = inputElem.files[0];
+    if (!file) {
+        if (index === 1) photo1Data = null;
+        if (index === 2) photo2Data = null;
+        if (index === 3) photo3Data = null;
+        document.getElementById(previewId).style.display = "none";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = document.getElementById(previewId);
+        img.src = e.target.result;
+        img.style.display = "block";
+
+        if (index === 1) photo1Data = e.target.result;
+        if (index === 2) photo2Data = e.target.result;
+        if (index === 3) photo3Data = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// SAVE INSPECTION TO FIREBASE
+function saveInspection() {
+    if (!dbId) {
+        alert("No panel ID in URL.");
+        return;
+    }
+
+    const name = document.getElementById("elecName").value.trim();
+    if (!name) {
+        alert("Please enter electrician name.");
+        return;
+    }
+
+    const data = {
+        dbId: dbId,
+        electricianName: name,
+        breakerStatus: document.getElementById("breakerStatus").value,
+        cleanStatus: document.getElementById("cleanStatus").value,
+        lockedStatus: document.getElementById("lockedStatus").value,
+        coveredStatus: document.getElementById("coveredStatus").value,
+        comments: document.getElementById("comments").value,
+        photo1: photo1Data || null,
+        photo2: photo2Data || null,
+        photo3: photo3Data || null,
+        timestamp: new Date().toISOString()
+    };
+
+    // save under /inspections/DB-ID/<auto-id>
+    firebase.database().ref("inspections/" + dbId).push(data, function(err) {
+        if (err) {
+            alert("Error saving inspection: " + err);
+        } else {
+            alert("Inspection saved successfully.");
+            // optional: clear form
+            // document.getElementById("elecName").value = "";
+            document.getElementById("comments").value = "";
+            document.getElementById("breakerStatus").value = "";
+            document.getElementById("cleanStatus").value = "";
+            document.getElementById("lockedStatus").value = "";
+            document.getElementById("coveredStatus").value = "";
+
+            photo1Data = photo2Data = photo3Data = null;
+            document.getElementById("preview1").style.display = "none";
+            document.getElementById("preview2").style.display = "none";
+            document.getElementById("preview3").style.display = "none";
+        }
+    });
+}
+
+// GO TO FAULT REPORT PAGE (we'll build fault.html next)
+function goToFault() {
+    if (!dbId) {
+        alert("No panel ID in URL.");
+        return;
+    }
+    location.href = "fault.html?id=" + encodeURIComponent(dbId);
+}
+</script>
+
+</body>
+</html>
