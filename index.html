@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Panel Access</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f4f7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+.container {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+}
+h1 {
+    margin-bottom: 20px;
+    color: #333;
+}
+button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.visitor-btn {
+    background: #007bff;
+    color: white;
+}
+.elec-btn {
+    background: #aaa;
+    color: white;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+    <h1>Panel Access</h1>
+
+    <button class="visitor-btn" onclick="location.href='panel.html?id=' + getID()">Visitor</button>
+    <button class="elec-btn" disabled>Electrician (Coming Soon)</button>
+</div>
+
+<script>
+function getID() {
+    const url = new URLSearchParams(window.location.search);
+    return url.get("id");
+}
+</script>
+
+</body>
+</html>

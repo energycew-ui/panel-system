@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Panel</title>
+
+<script src="data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+<style>
+body {
+    font-family: Arial;
+    margin: 30px;
+}
+label {
+    display: block;
+    margin-top: 12px;
+    font-weight: bold;
+}
+input {
+    width: 300px;
+    padding: 8px;
+    font-size: 16px;
+}
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 15px;
+}
+#previewImage {
+    width: 200px;
+    margin-top: 10px;
+    display: none;
+    border: 2px solid #444;
+    border-radius: 6px;
+}
+#qrCanvas {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+/* Table */
+table {
+    border-collapse: collapse;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 900px;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+}
+th {
+    background: #eee;
+}
+.action-btn {
+    padding: 5px 10px;
+    margin-right: 10px;
+}
+
+/* DANGER BANNER */
+.dangerBanner {
+    background: #c40000;
+    color: white;
+    padding: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 20px;
+    border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Admin – Add / Update Panel Data</h2>
+
+<label>DB Number</label>
+<input id="db">
+
+<label>Voltage Rating</label>
+<input id="volt">
+
+<label>Main Breaker Capacity</label>
+<input id="breaker">
+
+<label>Main Cable Size</label>
+<input id="cable">
+
+<label>Earth Status</label>
+<input id="earth">
+
+<label>Location</label>
+<input id="location">
+
+<label>Purpose</label>
+<input id="purpose">
+
+<!-- IMAGE UPLOAD -->
+<label>Upload Panel Picture (Optional)</label>
+<input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
+<img id="previewImage">
+
+<button onclick="removeImage()">Remove Picture</button>
+
+<br><br>
+<button onclick="savePanel()">Save Data</button>
+
+<!-- QR CODE DANGER BANNER -->
+<div class="dangerBanner">
+    ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
+</div>
+
+<h3>Generate QR Code</h3>
+<button onclick="generateQR()">Generate QR Code</button>
+<br>
+<canvas id="qrCanvas"></canvas>
+<br>
+<button id="downloadQR" style="display:none;" onclick="downloadQR()">Download QR Code</button>
+
+<hr>
+
+<h2>All Panels</h2>
+<button onclick="showPanels()">Show All Panels</button>
+<div id="panelList"></div>
+
+<script>
+loadData();
+let uploadedImage = null;
+
+/* IMAGE UPLOAD + COMPRESSION */
+function previewAndCompress(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        let img = new Image();
+        img.src = e.target.result;
+
+        img.onload = function() {
+            let canvas = document.createElement("canvas");
+            let ctx = canvas.getContext("2d");
+
+            let maxWidth = 800; // Option B
+            let scale = maxWidth / img.width;
+            canvas.width = maxWidth;
+            canvas.height = img.height * scale;
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            uploadedImage = canvas.toDataURL("image/jpeg", 0.7);
+
+            let preview = document.getElementById("previewImage");
+            preview.src = uploadedImage;
+            preview.style.display = "block";
+        };
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImage() {
+    uploadedImage = null;
+    document.getElementById("previewImage").style.display = "none";
+}
+
+/* SAVE DATA */
+function savePanel() {
+    let id = document.getElementById("db").value;
+    if (!id) {
+        alert("Please enter DB Number!");
+        return;
+    }
+
+    panelData[id] = {
+        dbNumber: id,
+        voltage: document.getElementById("volt").value,
+        mainBreaker: document.getElementById("breaker").value,
+        cableSize: document.getElementById("cable").value,
+        earthStatus: document.getElementById("earth").value,
+        location: document.getElementById("location").value,
+        purpose: document.getElementById("purpose").value,
+        image: uploadedImage ?? panelData[id]?.image ?? null
+    };
+
+    saveData();
+    alert("Panel saved successfully!");
+}
+
+/* EDIT PANEL */
+function editPanel(id) {
+    let p = panelData[id];
+
+    document.getElementById("db").value = p.dbNumber;
+    document.getElementById("volt").value = p.voltage;
+    document.getElementById("breaker").value = p.mainBreaker;
+    document.getElementById("cable").value = p.cableSize;
+    document.getElementById("earth").value = p.earthStatus;
+    document.getElementById("location").value = p.location;
+    document.getElementById("purpose").value = p.purpose;
+
+    uploadedImage = p.image || null;
+
+    let preview = document.getElementById("previewImage");
+    if (uploadedImage) {
+        preview.src = uploadedImage;
+        preview.style.display = "block";
+    } else {
+        preview.style.display = "none";
+    }
+
+    window.scrollTo(0, 0);
+}
+
+/* DELETE PANEL */
+function deletePanel(id) {
+    if (confirm("Delete " + id + "?")) {
+        delete panelData[id];
+        saveData();
+        showPanels();
+    }
+}
+
+/* QR CODE */
+let qr;
+function generateQR() {
+    let id = document.getElementById("db").value;
+    if (!id) {
+        alert("Enter DB Number!");
+        return;
+    }
+
+    let url = "index.html?id=" + id;
+
+    qr = new QRious({
+        element: document.getElementById("qrCanvas"),
+        value: url,
+        size: 250
+    });
+
+    document.getElementById("downloadQR").style.display = "inline-block";
+}
+
+function downloadQR() {
+    let link = document.createElement("a");
+    link.download = document.getElementById("db").value + "_QR.png";
+    link.href = document.getElementById("qrCanvas").toDataURL();
+    link.click();
+}
+
+/* LIST PANELS */
+function showPanels() {
+    loadData();
+    let div = document.getElementById("panelList");
+    div.innerHTML = "";
+
+    let keys = Object.keys(panelData);
+    if (keys.length === 0) {
+        div.innerHTML = "<p>No panels found.</p>";
+        return;
+    }
+
+    let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+
+    keys.forEach(id => {
+        let p = panelData[id];
+        html += `<tr>
+            <td>${p.dbNumber}</td>
+            <td>${p.location}</td>
+            <td>${p.purpose}</td>
+            <td>
+                <button onclick="editPanel('${id}')" class="action-btn">Edit</button>
+                <button onclick="deletePanel('${id}')" class="action-btn">Delete</button>
+            </td>
+        </tr>`;
+    });
+
+    html += "</table>";
+    div.innerHTML = html;
+}
+</script>
+
+</body>
+</html>

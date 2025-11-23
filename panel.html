@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Panel Information</title>
+<script src="data.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f2f4f7;
+    position: relative;
+}
+
+/* WATERMARK */
+.watermark {
+    position: fixed;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg);
+    font-size: 60px;
+    font-weight: bold;
+    color: rgba(200, 0, 0, 0.15); /* Light red transparent */
+    z-index: 1;
+    pointer-events: none;
+    text-align: center;
+    width: 100%;
+}
+
+/* HEADER */
+.header {
+    background: #222;
+    color: #FFC800;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    position: relative;
+}
+.header img {
+    width: 35px;
+    margin-right: 10px;
+}
+
+/* CARD */
+.card {
+    background: white;
+    max-width: 540px;
+    margin: 25px auto;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    border-top: 8px solid #FFC800;
+    position: relative;
+    z-index: 2;
+}
+
+/* ITEM */
+.item {
+    font-size: 18px;
+    margin: 12px 0;
+    display: flex;
+    align-items: center;
+}
+.item img {
+    width: 24px;
+    margin-right: 12px;
+}
+.label {
+    font-weight: bold;
+    color: #222;
+}
+.value {
+    margin-left: 8px;
+    color: #444;
+}
+
+/* DB IMAGE */
+#dbImage {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: none;
+}
+</style>
+</head>
+
+<body>
+
+<!-- VISIBLE DANGER BANNER -->
+<div style="
+    background:#c40000;
+    color:white;
+    padding:15px;
+    font-size:20px;
+    text-align:center;
+    font-weight:bold;
+">
+    ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
+</div>
+
+
+<!-- HEADER BAR -->
+<div class="header">
+    <img src="https://cdn-icons-png.flaticon.com/512/1923/1923494.png">
+    Electrical Panel Information
+</div>
+
+<!-- PANEL CARD -->
+<div class="card">
+
+    <!-- DB IMAGE -->
+    <img id="dbImage">
+
+    <div class="item">
+        <img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png">
+        <span class="label">DB Number:</span>
+        <span class="value" id="dbNum"></span>
+    </div>
+
+    <div class="item">
+        <img src="https://cdn-icons-png.flaticon.com/512/3103/3103446.png">
+        <span class="label">Voltage Rating:</span>
+        <span class="value" id="volt"></span>
+    </div>
+
+    <div class="item">
+        <img src="https://cdn-icons-png.flaticon.com/512/10426/10426713.png">
+        <span class="label">Main Breaker:</span>
+        <span class="value" id="breaker"></span>
+    </div>
+
+    <div class="item">
+        <img src="https://cdn-icons-png.flaticon.com/512/9128/9128894.png">
+        <span class="label">Cable Size:</span>
+        <span class="value" id="cable"></span>
+    </div>
+
+    <div class="item">
+        <img src="https://cdn-icons-png.flaticon.com/512/6146/6146502.png">
+        <span class="label">Earth Status:</span>
+        <span class="value" id="earth"></span>
+    </div>
+
+    <div class="item">
+        <img src="https://cdn-icons-png.flaticon.com/512/854/854878.png">
+        <span class="label">Location:</span>
+        <span class="value" id="location"></span>
+    </div>
+
+    <div class="item">
+        <img src="https://cdn-icons-png.flaticon.com/512/709/709612.png">
+        <span class="label">Purpose:</span>
+        <span class="value" id="purpose"></span>
+    </div>
+
+</div>
+
+<script>
+loadData();
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+if (panelData[id]) {
+    let p = panelData[id];
+
+    // Fill text fields
+    document.getElementById("dbNum").innerText = p.dbNumber;
+    document.getElementById("volt").innerText = p.voltage;
+    document.getElementById("breaker").innerText = p.mainBreaker;
+    document.getElementById("cable").innerText = p.cableSize;
+    document.getElementById("earth").innerText = p.earthStatus;
+    document.getElementById("location").innerText = p.location;
+    document.getElementById("purpose").innerText = p.purpose;
+
+    // Display picture if exists
+    if (p.image) {
+        let img = document.getElementById("dbImage");
+        img.src = p.image;
+        img.style.display = "block";
+    }
+} else {
+    document.body.innerHTML = 
+    "<h3 style='text-align:center;color:red;margin-top:40px;'>No data found for this panel.</h3>";
+}
+</script>
+
+</body>
+</html>
