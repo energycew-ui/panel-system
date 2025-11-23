@@ -291,38 +291,72 @@
     </div>
   </div>
 
-  <!-- Panel Information (visitor view) -->
-  <div id="panelInfoCard" class="card" style="display:none;">
+<!-- ===================== VISITOR VIEW (NEW INDUSTRIAL DESIGN) ===================== -->
+<div id="panelInfoCard" class="card" style="display:none;">
 
-    <div class="panel-image-box" id="panelImageBox" style="display:none;">
-      <img id="panelImage" src="">
-    </div>
-
-    <div class="labelBox">
-      <h3>Panel Details</h3>
-      <p><b>DB Number:</b> <span id="db_number"></span></p>
-      <p><b>Voltage Rating:</b> <span id="db_voltage"></span></p>
-      <p><b>Main Breaker:</b> <span id="db_breaker"></span></p>
-      <p><b>Main Cable Size:</b> <span id="db_cable"></span></p>
-      <p><b>Earth Status:</b> <span id="db_earth"></span></p>
-      <p><b>Location:</b> <span id="db_location"></span></p>
-      <p><b>Purpose:</b> <span id="db_purpose"></span></p>
-    </div>
-
-    <div class="labelBox">
-      <h3>Circuits</h3>
-      <div id="circuitsList"></div>
-    </div>
-
-    <div class="labelBox" id="extraBox" style="display:none;">
-      <h3>Extra Information</h3>
-      <ul id="extraList" style="padding-left:18px;"></ul>
-    </div>
-
-    <p class="small-note">
-      For maintenance or faults, please contact authorized Chenab electricians only.
-    </p>
+  <!-- Full-width Industrial Warning Banner -->
+  <div style="
+    width: 100%;
+    background: #ffcc00;
+    color: #000;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 20px;
+    font-weight: 900;
+    text-align: center;
+    border: 3px solid #000;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  ">
+    ⚠️ HIGH VOLTAGE – AUTHORIZED PERSONNEL ONLY ⚡
   </div>
+
+  <!-- Panel Image -->
+  <div class="panel-image-box" id="panelImageBox" style="display:none;">
+    <img id="panelImage" src="">
+  </div>
+
+  <!-- DB Details Grid -->
+  <div class="labelBox">
+    <h3>Panel Details</h3>
+
+    <div style="
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      font-size: 15px;
+    ">
+      <div>⚡ <b>DB Number:</b><br><span id="db_number"></span></div>
+      <div>🔌 <b>Voltage:</b><br><span id="db_voltage"></span></div>
+
+      <div>⚡ <b>Main Breaker:</b><br><span id="db_breaker"></span></div>
+      <div>🔷 <b>Cable Size:</b><br><span id="db_cable"></span></div>
+
+      <div>🌩️ <b>Earth Status:</b><br><span id="db_earth"></span></div>
+      <div>📍 <b>Location:</b><br><span id="db_location"></span></div>
+
+      <div style="grid-column: span 2;">🏭 <b>Purpose:</b><br><span id="db_purpose"></span></div>
+    </div>
+  </div>
+
+  <!-- Circuits Section -->
+  <div class="labelBox">
+    <h3>🛠️ Circuits</h3>
+    <div id="circuitsList"></div>
+  </div>
+
+  <!-- Extra Dynamic Answers -->
+  <div class="labelBox" id="extraBox" style="display:none;">
+    <h3>📄 Extra Information</h3>
+    <ul id="extraList" style="padding-left:18px;"></ul>
+  </div>
+
+  <p class="small-note" style="margin-top:15px;">
+    For maintenance, inspections or faults, contact authorized Chenab electricians only.
+  </p>
+</div>
+<!-- ===================== END VISITOR VIEW ===================== -->
+
 
 </div>
 
