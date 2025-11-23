@@ -187,7 +187,7 @@ th {
 
 <div class="headerBar">
     <h1>Admin Panel</h1>
-    <img id="companyLogo" src="/mnt/data/chenab_engineering_works_foundries_pvt_ltd_logo.jpg">
+    <img id="companyLogo" src="chenab_engineering_works_foundries_pvt_ltd_logo.jpg">
 </div>
 
 <div class="card">
@@ -323,19 +323,19 @@ function previewAndCompress(event){
     reader.readAsDataURL(file);
 }
 
-/*** SAVE PANEL ***/
+/*** SAVE PANEL (FULLY FIXED) ***/
 function savePanel() {
-    let id=db.value.trim();
+    let id=document.getElementById("db").value.trim();
     if(!id) return alert("Enter DB number");
 
     let data={
         dbNumber:id,
-        voltage:volt.value,
-        mainBreaker:breaker.value,
-        cableSize:cable.value,
-        earthStatus:earth.value,
-        location:location.value,
-        purpose:purpose.value,
+        voltage:document.getElementById("volt").value,
+        mainBreaker:document.getElementById("breaker").value,
+        cableSize:document.getElementById("cable").value,
+        earthStatus:document.getElementById("earth").value,
+        location:document.getElementById("location").value,
+        purpose:document.getElementById("purpose").value,
         image:uploadedImage,
         circuits:collectCircuits()
     };
@@ -361,16 +361,462 @@ function showPanels() {
     });
 }
 
-/*** EDIT PANEL ***/
+/*** EDIT PANEL (FULLY FIXED) ***/
 function editPanel(id){
     loadPanelFromFirebase(id,p=>{
-        db.value=p.dbNumber;
-        volt.value=p.voltage;
-        breaker.value=p.mainBreaker;
-        cable.value=p.cableSize;
-        earth.value=p.earthStatus;
-        location.value=p.location;
-        purpose.value=p.purpose;
+        document.getElementById("db").value=p.dbNumber;
+        document.getElementById("volt").value=p.voltage;
+        document.getElementById("breaker").value=p.mainBreaker;
+        document.getElementById("cable").value=p.cableSize;
+        document.getElementById("earth").value=p.earthStatus;
+        document.getElementById("location").value=p.location;
+        document.getElementById("purpose").value=p.purpose;
+
+        uploadedImage=p.image;
+        if(uploadedImage){
+            previewImage.src=uploadedImage;
+            previewImage.style.display="block";
+        }
+
+        circuitsContainer.innerHTML="";
+        if(p.circuits){
+            Object.values(p.circuits).forEach(c=>addCircuitRow(c.name,c.breaker,c.load));
+        } else addCircuitRow();
+
+        window.scrollTo(0,0);
+    });
+}
+
+/*** QR GENERATION ***/
+let qr;
+
+function generateQR(){
+    let id=db.value.trim();
+    if(!id) return alert("DB number required");
+    
+    let url=`https://energycew-ui.github.io/panel-system/index.html?id=${id}`;
+
+    qr=new QRious({
+        element:qrCanvas,
+        value:url,
+        size:250
+    });
+
+    qrLabel.innerText=id;
+    downloadQR.style.display="inline-block";
+}
+
+/*** QR DOWNLOAD (INCLUDES BANNER + QR + DB NAME) ***/
+function downloadFinalQR(){
+    let id=db.value.trim();
+    if(!id) return;
+
+    let qrCanvas=document.getElementById("qrCanvas");
+
+    let W=500, H=650;
+    let finalCanvas=document.createElement("canvas");
+    finalCanvas.width=W;
+    finalCanvas.height=H;
+    let ctx=finalCanvas.getContext("2d");
+
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,W,H);
+
+    ctx.fillStyle="#c40000";
+    ctx.fillRect(0,0,W,80);
+
+    ctx.fillStyle="white";
+    ctx.font="bold 24px Arial";
+    ctx.textAlign="center";
+    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️",W/2,50);
+
+    ctx.drawImage(qrCanvas,(W-250)/2,110,250,250);
+
+    ctx.fillStyle="black";
+    ctx.font="bold 38px Arial";
+    ctx.fillText(id,W/2,420);
+
+    let link=document.createElement("a");
+    link.download=id+"_QR.png";
+    link.href=finalCanvas.toDataURL();
+    link.click();
+}
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Panel</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="data.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f1f1f1;
+}
+
+/* LOGIN OVERLAY */
+#loginOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+#loginBox {
+    background: #fff;
+    padding: 25px 30px;
+    border-radius: 10px;
+    max-width: 350px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+#loginBox input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+}
+#loginBox button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+}
+#loginError {
+    color: red;
+}
+
+/* MAIN PAGE */
+#adminContent {
+    padding: 30px;
+    display: none;
+}
+
+.headerBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+#companyLogo {
+    width: 110px;
+    height: 110px;
+    object-fit: contain;
+}
+
+/* FORM CARD */
+.card {
+    background: #fff;
+    padding: 25px;
+    margin-top: 25px;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+label {
+    display: block;
+    margin-top: 12px;
+    font-weight: bold;
+}
+input[type="text"], input[type="file"] {
+    width: 320px;
+    padding: 10px;
+    margin-top: 5px;
+}
+
+/* Circuits */
+.circuit-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+.circuit-row input {
+    flex: 1;
+}
+.circuit-remove-btn {
+    background: #c40000;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* BANNER */
+.dangerBanner {
+    background: #c40000;
+    color: white;
+    padding: 14px;
+    text-align: center;
+    font-size: 20px;
+    border-radius: 6px;
+    margin-top: 25px;
+    font-weight: bold;
+}
+
+/* QR */
+#qrCanvas {
+    border: 1px solid #ccc;
+    margin-top: 20px;
+}
+#qrLabel {
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 8px;
+}
+#qrFinalWrapper {
+    text-align: center;
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 18px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 6px;
+    border: none;
+    margin-top: 15px;
+}
+.saveButton {
+    background: #007bff;
+    color: white;
+}
+.qrButton {
+    background: #28a745;
+    color: white;
+}
+.downloadButton {
+    background: #6f42c1;
+    color: white;
+}
+.panelButton {
+    background: #333;
+    color: white;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+th, td {
+    border: 1px solid #bbb;
+    padding: 8px;
+}
+th {
+    background: #444;
+    color: white;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginOverlay">
+    <div id="loginBox">
+        <h2>Admin Login</h2>
+        <input type="password" id="adminPassword" placeholder="Enter Password">
+        <button onclick="checkLogin()">Login</button>
+        <div id="loginError"></div>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="adminContent">
+
+<div class="headerBar">
+    <h1>Admin Panel</h1>
+    <img id="companyLogo" src="chenab_engineering_works_foundries_pvt_ltd_logo.jpg">
+</div>
+
+<div class="card">
+
+<h2>Panel Information</h2>
+
+<label>DB Number</label>
+<input id="db" type="text">
+
+<label>Voltage Rating</label>
+<input id="volt" type="text">
+
+<label>Main Breaker Capacity</label>
+<input id="breaker" type="text">
+
+<label>Main Cable Size</label>
+<input id="cable" type="text">
+
+<label>Earth Status</label>
+<input id="earth" type="text">
+
+<label>Location</label>
+<input id="location" type="text">
+
+<label>Purpose</label>
+<input id="purpose" type="text">
+
+<label>Upload Panel Image</label>
+<input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
+<img id="previewImage" style="display:none; width:200px; margin-top:10px; border:1px solid #444; border-radius:5px;">
+
+<h3>Circuits</h3>
+<div id="circuitsContainer"></div>
+<button onclick="addCircuitRow()">Add Circuit</button>
+
+<button class="saveButton" onclick="savePanel()">Save Panel Data</button>
+
+</div>
+
+<div class="dangerBanner">
+⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
+</div>
+
+<div class="card">
+<h2>QR Code</h2>
+
+<button class="qrButton" onclick="generateQR()">Generate QR</button>
+
+<div id="qrFinalWrapper">
+    <canvas id="qrCanvas"></canvas>
+    <div id="qrLabel"></div>
+</div>
+
+<button id="downloadQR" class="downloadButton" style="display:none;" onclick="downloadFinalQR()">Download QR Sheet</button>
+</div>
+
+<div class="card">
+<h2>All Panels</h2>
+<button class="panelButton" onclick="showPanels()">Show Panels</button>
+<div id="panelList"></div>
+</div>
+
+</div>
+
+<!-- QR Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+<script>
+/*** LOGIN ***/
+const ADMIN_PASSWORD = "1234";
+
+function checkLogin() {
+    if (adminPassword.value === ADMIN_PASSWORD) {
+        sessionStorage.setItem("adminLogin",1);
+        loginOverlay.style.display="none";
+        adminContent.style.display="block";
+        addCircuitRow();
+    } else {
+        loginError.innerText="Wrong password!";
+    }
+}
+
+if (sessionStorage.getItem("adminLogin")==1){
+    loginOverlay.style.display="none";
+    adminContent.style.display="block";
+}
+
+/*** CIRCUITS ***/
+function addCircuitRow(name="",breaker="",load="") {
+    circuitsContainer.innerHTML += `
+    <div class="circuit-row">
+        <input class="c-name" placeholder="Name" value="${name}">
+        <input class="c-breaker" placeholder="Breaker" value="${breaker}">
+        <input class="c-load" placeholder="Load" value="${load}">
+        <button class="circuit-remove-btn" onclick="this.parentElement.remove()">X</button>
+    </div>`;
+}
+
+function collectCircuits() {
+    let list=[];
+    document.querySelectorAll(".circuit-row").forEach(r=>{
+        let n=r.querySelector(".c-name").value;
+        let b=r.querySelector(".c-breaker").value;
+        let l=r.querySelector(".c-load").value;
+        if(n||b||l) list.push({name:n,breaker:b,load:l});
+    });
+    return list.length?list:null;
+}
+
+/*** IMAGE COMPRESS ***/
+let uploadedImage=null;
+function previewAndCompress(event){
+    let file=event.target.files[0];
+    if(!file) return;
+
+    let reader=new FileReader();
+    reader.onload=e=>{
+        let img=new Image();
+        img.onload=()=>{
+            let canvas=document.createElement("canvas");
+            let ctx=canvas.getContext("2d");
+            let maxW=800;
+            let scale=maxW/img.width;
+            canvas.width=maxW;
+            canvas.height=img.height*scale;
+            ctx.drawImage(img,0,0,canvas.width,canvas.height);
+            uploadedImage=canvas.toDataURL("image/jpeg",0.7);
+            previewImage.src=uploadedImage;
+            previewImage.style.display="block";
+        };
+        img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+/*** SAVE PANEL (FULLY FIXED) ***/
+function savePanel() {
+    let id=document.getElementById("db").value.trim();
+    if(!id) return alert("Enter DB number");
+
+    let data={
+        dbNumber:id,
+        voltage:document.getElementById("volt").value,
+        mainBreaker:document.getElementById("breaker").value,
+        cableSize:document.getElementById("cable").value,
+        earthStatus:document.getElementById("earth").value,
+        location:document.getElementById("location").value,
+        purpose:document.getElementById("purpose").value,
+        image:uploadedImage,
+        circuits:collectCircuits()
+    };
+
+    savePanelToFirebase(id,data,()=>alert("Saved successfully"));
+}
+
+/*** SHOW PANELS ***/
+function showPanels() {
+    loadAllPanels(all=>{
+        let html="<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+        for(let id in all){
+            html+=`
+            <tr>
+                <td>${id}</td>
+                <td>${all[id].location}</td>
+                <td>${all[id].purpose}</td>
+                <td><button onclick="editPanel('${id}')">Edit</button></td>
+            </tr>`;
+        }
+        html+="</table>";
+        panelList.innerHTML=html;
+    });
+}
+
+/*** EDIT PANEL (FULLY FIXED) ***/
+function editPanel(id){
+    loadPanelFromFirebase(id,p=>{
+        document.getElementById("db").value=p.dbNumber;
+        document.getElementById("volt").value=p.voltage;
+        document.getElementById("breaker").value=p.mainBreaker;
+        document.getElementById("cable").value=p.cableSize;
+        document.getElementById("earth").value=p.earthStatus;
+        document.getElementById("location").value=p.location;
+        document.getElementById("purpose").value=p.purpose;
 
         uploadedImage=p.image;
         if(uploadedImage){
