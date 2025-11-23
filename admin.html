@@ -24,11 +24,22 @@
     .topbar {
       background: #111;
       color: #ffc800;
-      padding: 16px 24px;
-      font-size: 22px;
-      font-weight: bold;
+      padding: 12px 24px 16px 24px;
       text-align: center;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .topbar-logo {
+      width: 120px;
+      height: auto;
+      margin-bottom: 6px;
+    }
+    .topbar-title {
+      font-size: 22px;
+      font-weight: bold;
     }
 
     /* TABS */
@@ -117,6 +128,11 @@
       color: red;
       font-size: 14px;
       margin-top: 8px;
+    }
+    .login-logo {
+      width: 140px;
+      height: auto;
+      margin-bottom: 10px;
     }
 
     /* CARD STYLE */
@@ -321,6 +337,47 @@
       background: #e6f0ff;
       color: #174ea6;
     }
+
+    /* MASTER DB TABLE SPECIFIC */
+    .master-main-row {
+      cursor: pointer;
+    }
+    .master-main-row:hover {
+      background: #f1f5ff;
+    }
+    .master-details-row td {
+      background: #f9fbff;
+      border-top: none;
+    }
+    .master-details-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .master-details-left {
+      flex: 1 1 60%;
+      min-width: 250px;
+    }
+    .master-details-right {
+      flex: 1 1 35%;
+      min-width: 200px;
+      text-align: center;
+    }
+    .master-details-image {
+      max-width: 100%;
+      max-height: 240px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      object-fit: cover;
+    }
+    .master-circuit-box {
+      background:#fafafa;
+      border:1px solid #ddd;
+      border-radius:6px;
+      padding:8px;
+      margin-bottom:6px;
+      font-size:13px;
+    }
   </style>
 </head>
 
@@ -329,6 +386,7 @@
 <!-- LOGIN OVERLAY -->
 <div id="loginOverlay">
   <div id="loginBox">
+    <img src="logo.png" alt="Chenab Logo" class="login-logo">
     <h2>Admin Login</h2>
     <input type="password" id="adminPassword" placeholder="Password">
     <button onclick="checkLogin()">Login</button>
@@ -339,7 +397,10 @@
 <!-- MAIN ADMIN DASHBOARD -->
 <div id="adminWrapper" style="display:none;">
 
-  <div class="topbar">Admin Dashboard – Electrical Panels</div>
+  <div class="topbar">
+    <img src="logo.png" alt="Chenab Logo" class="topbar-logo">
+    <div class="topbar-title">Admin Dashboard – Electrical Panels</div>
+  </div>
 
   <!-- TABS -->
   <div class="tabs">
@@ -1194,7 +1255,7 @@ function applyFaultFilters() {
   updateFaultSummary(filtered);
 }
 
-/* ------------ MASTER DB REPORT ------------ */
+/* ------------ MASTER DB REPORT (TABLE + INLINE DETAILS) ------------ */
 function loadMasterReport() {
   const container = document.getElementById("masterContainer");
   if (!container) return;
@@ -1228,26 +1289,49 @@ function loadMasterReport() {
       </div>
     `;
 
-    let html = "";
+    let html = `
+      <table>
+        <tr>
+          <th>DB</th>
+          <th>Voltage</th>
+          <th>Breaker</th>
+          <th>Cable</th>
+          <th>Earth</th>
+          <th>Location</th>
+          <th>Circuits</th>
+          <th>Action</th>
+        </tr>
+    `;
+
     ids.forEach(id => {
-      let p = all[id];
+      const p = all[id];
+      const circuitCount = (p.circuits && Array.isArray(p.circuits)) ? p.circuits.length : 0;
+      const rowId = `master-details-${id}`;
 
       html += `
-        <div class="card" style="margin-bottom:15px;">
-          <h3>DB: ${p.dbNumber || id}</h3>
-          <p><b>Voltage:</b> ${p.voltage || ""}</p>
-          <p><b>Main Breaker:</b> ${p.mainBreaker || ""}</p>
-          <p><b>Cable Size:</b> ${p.cableSize || ""}</p>
-          <p><b>Earth Status:</b> ${p.earthStatus || ""}</p>
-          <p><b>Location:</b> ${p.location || ""}</p>
-          <p><b>Purpose:</b> ${p.purpose || ""}</p>
-          <h4>Circuits</h4>
+        <tr class="master-main-row" onclick="toggleMasterDetails('${id}')">
+          <td>${p.dbNumber || id}</td>
+          <td>${p.voltage || ""}</td>
+          <td>${p.mainBreaker || ""}</td>
+          <td>${p.cableSize || ""}</td>
+          <td>${p.earthStatus || ""}</td>
+          <td>${p.location || ""}</td>
+          <td>${circuitCount}</td>
+          <td>
+            <button class="secondary-btn" onclick="event.stopPropagation(); toggleMasterDetails('${id}')">View</button>
+          </td>
+        </tr>
+        <tr id="${rowId}" class="master-details-row" style="display:none;">
+          <td colspan="8">
+            <div class="master-details-wrapper">
+              <div class="master-details-left">
+                <h4>Circuits</h4>
       `;
 
       if (p.circuits && Array.isArray(p.circuits) && p.circuits.length) {
         p.circuits.forEach(c => {
           html += `
-            <div style="background:#fafafa;border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:6px;">
+            <div class="master-circuit-box">
               <b>${c.name || ""}</b><br>
               Breaker: ${c.breaker || ""}<br>
               Load: ${c.load || ""}
@@ -1255,11 +1339,11 @@ function loadMasterReport() {
           `;
         });
       } else {
-        html += "<p>No circuits recorded.</p>";
+        html += `<p>No circuits recorded.</p>`;
       }
 
       if (p.extraAnswers && questionsGlobal) {
-        html += `<h4>Extra DB Answers</h4>`;
+        html += `<h4 style="margin-top:12px;">Extra DB Info</h4>`;
         Object.entries(p.extraAnswers).forEach(([qid,val]) => {
           const q = questionsGlobal[qid];
           const label = q ? q.text : qid;
@@ -1267,11 +1351,35 @@ function loadMasterReport() {
         });
       }
 
-      html += "</div>";
+      html += `
+              </div>
+              <div class="master-details-right">
+                <h4>Panel Image</h4>
+      `;
+
+      if (p.image) {
+        html += `<img src="${p.image}" class="master-details-image" alt="Panel image">`;
+      } else {
+        html += `<p style="font-size:13px;color:#666;">No image available.</p>`;
+      }
+
+      html += `
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
     });
 
+    html += `</table>`;
     container.innerHTML = html;
   });
+}
+
+function toggleMasterDetails(id) {
+  const row = document.getElementById("master-details-" + id);
+  if (!row) return;
+  row.style.display = (row.style.display === "none" || row.style.display === "") ? "table-row" : "none";
 }
 
 /* ------------ CSV EXPORT HELPERS ------------ */
