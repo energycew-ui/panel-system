@@ -11,70 +11,139 @@
   <script src="data.js"></script>
 
   <style>
-    body { font-family: Arial; margin: 30px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+    }
 
-    /* LOGIN SCREEN */
+    /* LOGIN */
     #loginOverlay {
-      position: fixed; inset: 0;
+      position: fixed;
+      inset: 0;
       background: rgba(0,0,0,0.7);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 9999;
     }
     #loginBox {
-      background: #fff; padding: 25px 30px; border-radius: 10px;
-      max-width: 320px; width: 90%; text-align: center;
+      background: #fff;
+      padding: 25px 30px;
+      border-radius: 10px;
+      max-width: 320px;
+      width: 90%;
+      text-align: center;
       box-shadow: 0 5px 15px rgba(0,0,0,0.4);
     }
-    #loginBox input { width: 100%; padding: 10px; margin-top: 10px; }
-    #loginBox button { width: 100%; padding: 10px; margin-top: 15px; }
-    #loginError { color: red; }
+    #loginBox input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    #loginBox button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 15px;
+      cursor: pointer;
+    }
+    #loginError {
+      color: red;
+      font-size: 14px;
+      margin-top: 8px;
+    }
 
-    label { display: block; margin-top: 12px; font-weight: bold; }
-    input { width: 300px; padding: 8px; font-size: 16px; }
+    /* FORM */
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input[type="text"],
+    input[type="file"] {
+      width: 300px;
+      padding: 8px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
 
     #previewImage {
-      width: 200px; margin-top: 10px;
-      border: 2px solid #444; border-radius: 6px;
+      width: 200px;
+      margin-top: 10px;
+      border: 2px solid #444;
+      border-radius: 6px;
       display: none;
     }
 
-    .dangerBanner {
-      background: #c40000;
-      color: white;
-      padding: 12px;
-      font-size: 18px;
-      font-weight: bold;
-      border-radius: 8px;
-      text-align: center;
-    }
-
+    /* Circuits */
     .circuit-row {
-      display: flex; gap: 8px; margin-top: 8px;
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .circuit-row input {
+      width: 100%;
     }
     .circuit-remove-btn {
-      background: #c40000; color: white;
-      padding: 0 8px; border-radius: 4px;
+      background: #c40000;
+      color: white;
+      border-radius: 4px;
+      padding: 0 8px;
+      cursor: pointer;
     }
 
+    /* QR preview block */
+    #qrPreview {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .dangerBanner {
+      background: #c40000;
+      color: #fff;
+      padding: 10px 12px;
+      font-weight: bold;
+      border-radius: 8px;
+      max-width: 420px;
+      margin: 0 auto 15px auto;
+      font-size: 16px;
+    }
     #qrCanvas {
       border: 1px solid #ccc;
       padding: 10px;
-      margin-top: 20px;
+      background: #fff;
     }
     #qrDBname {
-      font-size: 22px; font-weight: bold; margin-top: 15px;
-      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: 12px;
+      color: #111;
     }
 
-    table { border-collapse: collapse; margin-top: 20px; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px 10px; }
-    th { background: #eee; }
+    /* Table */
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 900px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 10px;
+    }
+    th {
+      background: #eee;
+    }
   </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
+<!-- LOGIN OVERLAY -->
 <div id="loginOverlay">
   <div id="loginBox">
     <h2>Admin Login</h2>
@@ -84,64 +153,57 @@
   </div>
 </div>
 
-<!-- ADMIN CONTENT -->
+<!-- MAIN ADMIN CONTENT -->
 <div id="adminContent" style="display:none;">
 
   <h2>Admin – Panel Data</h2>
 
   <label>DB Number</label>
-  <input id="db">
+  <input id="db" type="text">
 
   <label>Voltage Rating</label>
-  <input id="volt">
+  <input id="volt" type="text">
 
   <label>Main Breaker Capacity</label>
-  <input id="breaker">
+  <input id="breaker" type="text">
 
   <label>Main Cable Size</label>
-  <input id="cable">
+  <input id="cable" type="text">
 
   <label>Earth Status</label>
-  <input id="earth">
+  <input id="earth" type="text">
 
   <label>Location</label>
-  <input id="location">
+  <input id="location" type="text">
 
   <label>Purpose</label>
-  <input id="purpose">
+  <input id="purpose" type="text">
 
-  <label>Upload Panel Picture</label>
+  <label>Upload Panel Picture (Optional)</label>
   <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
   <img id="previewImage">
-  <button onclick="removeImage()">Remove Picture</button>
+  <button type="button" onclick="removeImage()">Remove Picture</button>
 
-  <h3>Circuits</h3>
+  <h3>Circuits (Name / Breaker / Load)</h3>
   <div id="circuitsContainer"></div>
-  <button onclick="addCircuitRow()">Add Circuit</button>
+  <button type="button" onclick="addCircuitRow()">Add Circuit</button>
 
   <br><br>
-  <button onclick="savePanel()">Save Data</button>
+  <button onclick="savePanel()">Save Data (to Firebase)</button>
 
   <h3>Generate QR Code</h3>
   <button onclick="generateQR()">Generate QR Code</button>
 
-  <!-- ⭐ FIX: QR + banner + DB IN ONE BLOCK -->
-  <div id="qrBlock" style="text-align:center; margin-top:20px; width:100%;">
-
-      <!-- BANNER -->
-      <div class="dangerBanner" style="width: 350px; margin: 0 auto 20px auto;">
-          ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
-      </div>
-
-      <!-- QR CANVAS -->
-      <canvas id="qrCanvas" style="margin: 0 auto; display:block;"></canvas>
-
-      <!-- DB NAME -->
-      <div id="qrDBname"></div>
-
+  <!-- QR + Banner + DB Name preview -->
+  <div id="qrPreview">
+    <div class="dangerBanner">
+      ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
+    </div>
+    <canvas id="qrCanvas" width="250" height="250"></canvas>
+    <div id="qrDBname"></div>
   </div>
 
-  <button id="downloadQR" style="display:none;" onclick="downloadQR()">Download QR Code</button>
+  <button id="downloadQR" style="display:none;" onclick="downloadQR()">Download QR Sheet</button>
 
   <hr>
 
@@ -155,205 +217,263 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
 <script>
-/******** LOGIN ********/
+/* ---------- LOGIN ---------- */
 const ADMIN_PASSWORD = "1234";
 
 function checkLogin() {
-  const pwd = adminPassword.value.trim();
+  const pwd = document.getElementById("adminPassword").value.trim();
+  const error = document.getElementById("loginError");
+
   if (pwd === ADMIN_PASSWORD) {
     sessionStorage.setItem("adminLoggedIn", "true");
-    loginOverlay.style.display = "none";
-    adminContent.style.display = "block";
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("adminContent").style.display = "block";
     renderCircuits(null);
-  } else loginError.textContent = "Incorrect password.";
+  } else {
+    error.textContent = "Incorrect password.";
+  }
 }
 
-window.onload = () => {
+window.addEventListener("load", () => {
   if (sessionStorage.getItem("adminLoggedIn") === "true") {
-    loginOverlay.style.display = "none";
-    adminContent.style.display = "block";
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("adminContent").style.display = "block";
     renderCircuits(null);
   }
-};
+});
 
-/******** IMAGE ********/
+/* ---------- IMAGE HANDLING ---------- */
 let uploadedImage = null;
 
-function previewAndCompress(e) {
-  const file = e.target.files[0];
+function previewAndCompress(event) {
+  const file = event.target.files[0];
   if (!file) return;
 
-  const r = new FileReader();
-  r.onload = ev => {
+  const reader = new FileReader();
+  reader.onload = e => {
     const img = new Image();
-    img.src = ev.target.result;
+    img.src = e.target.result;
     img.onload = () => {
-      const c = document.createElement("canvas");
-      const ctx = c.getContext("2d");
-      const W = 800;
-      const scale = W / img.width;
-      c.width = W; c.height = img.height * scale;
-      ctx.drawImage(img, 0, 0, c.width, c.height);
-      uploadedImage = c.toDataURL("image/jpeg", 0.7);
-      previewImage.src = uploadedImage;
-      previewImage.style.display = "block";
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const maxWidth = 800;
+      const scale = maxWidth / img.width;
+      canvas.width = maxWidth;
+      canvas.height = img.height * scale;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      uploadedImage = canvas.toDataURL("image/jpeg", 0.7);
+
+      const preview = document.getElementById("previewImage");
+      preview.src = uploadedImage;
+      preview.style.display = "block";
     };
   };
-  r.readAsDataURL(file);
+  reader.readAsDataURL(file);
 }
 
 function removeImage() {
   uploadedImage = null;
-  previewImage.style.display = "none";
+  document.getElementById("previewImage").style.display = "none";
 }
 
-/******** CIRCUITS ********/
-function addCircuitRow(name="", breaker="", load="") {
+/* ---------- CIRCUITS ---------- */
+function addCircuitRow(name = "", breaker = "", load = "") {
+  const container = document.getElementById("circuitsContainer");
   const row = document.createElement("div");
   row.className = "circuit-row";
   row.innerHTML = `
     <input class="c-name" placeholder="Circuit name" value="${name}">
-    <input class="c-breaker" placeholder="Breaker" value="${breaker}">
-    <input class="c-load" placeholder="Load" value="${load}">
-    <button class="circuit-remove-btn" onclick="this.parentElement.remove()">X</button>
+    <input class="c-breaker" placeholder="Breaker (e.g. 10A)" value="${breaker}">
+    <input class="c-load" placeholder="Load / Description" value="${load}">
+    <button type="button" class="circuit-remove-btn" onclick="this.parentElement.remove()">X</button>
   `;
-  circuitsContainer.appendChild(row);
+  container.appendChild(row);
 }
 
-function renderCircuits(list) {
-  circuitsContainer.innerHTML = "";
-  if (list) Object.values(list).forEach(c => addCircuitRow(c.name, c.breaker, c.load));
-  else addCircuitRow();
+function renderCircuits(circuits) {
+  const container = document.getElementById("circuitsContainer");
+  container.innerHTML = "";
+  if (circuits) {
+    const list = Array.isArray(circuits) ? circuits : Object.values(circuits);
+    list.forEach(c => addCircuitRow(c.name || "", c.breaker || "", c.load || ""));
+  } else {
+    addCircuitRow();
+  }
 }
 
-function collectCircuits() {
+function collectCircuitsFromForm() {
   const rows = document.querySelectorAll(".circuit-row");
-  const arr = [];
-  rows.forEach(r => {
-    const n = r.querySelector(".c-name").value.trim();
-    const b = r.querySelector(".c-breaker").value.trim();
-    const l = r.querySelector(".c-load").value.trim();
-    if (n || b || l) arr.push({ name: n, breaker: b, load: l });
+  const circuits = [];
+  rows.forEach(row => {
+    const name = row.querySelector(".c-name").value.trim();
+    const br   = row.querySelector(".c-breaker").value.trim();
+    const ld   = row.querySelector(".c-load").value.trim();
+    if (name || br || ld) {
+      circuits.push({ name, breaker: br, load: ld });
+    }
   });
-  return arr.length ? arr : null;
+  return circuits.length ? circuits : null;
 }
 
-/******** SAVE PANEL ********/
+/* ---------- SAVE PANEL TO FIREBASE ---------- */
 function savePanel() {
-  const id = db.value.trim();
-  if (!id) return alert("Enter DB Number!");
+  const id = document.getElementById("db").value.trim();
+  if (!id) {
+    alert("Enter DB Number!");
+    return;
+  }
 
   const data = {
     dbNumber: id,
-    voltage: volt.value,
-    mainBreaker: breaker.value,
-    cableSize: cable.value,
-    earthStatus: earth.value,
-    location: location.value,
-    purpose: purpose.value,
-    image: uploadedImage,
-    circuits: collectCircuits()
+    voltage: document.getElementById("volt").value,
+    mainBreaker: document.getElementById("breaker").value,
+    cableSize: document.getElementById("cable").value,
+    earthStatus: document.getElementById("earth").value,
+    location: document.getElementById("location").value,
+    purpose: document.getElementById("purpose").value,
+    image: uploadedImage || null,
+    circuits: collectCircuitsFromForm()
   };
 
-  savePanelToFirebase(id, data, () =>
-    alert("Panel saved successfully!")
-  );
-}
-
-/******** LOAD PANEL ********/
-function editPanel(id) {
-  loadPanelFromFirebase(id, p => {
-    db.value = p.dbNumber;
-    volt.value = p.voltage;
-    breaker.value = p.mainBreaker;
-    cable.value = p.cableSize;
-    earth.value = p.earthStatus;
-    location.value = p.location;
-    purpose.value = p.purpose;
-    uploadedImage = p.image;
-
-    if (uploadedImage) {
-      previewImage.src = uploadedImage;
-      previewImage.style.display = "block";
-    } else previewImage.style.display = "none";
-
-    renderCircuits(p.circuits);
-    window.scrollTo(0,0);
+  savePanelToFirebase(id, data, () => {
+    alert("Panel saved to Firebase successfully!");
   });
 }
 
-/******** SHOW PANELS ********/
+/* ---------- LIST / EDIT PANELS ---------- */
 function showPanels() {
   loadAllPanels(all => {
-    if (!all) return panelList.innerHTML = "<p>No panels.</p>";
-    let html = `<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th></th></tr>`;
+    const div = document.getElementById("panelList");
+    if (!all) {
+      div.innerHTML = "<p>No panels in database.</p>";
+      return;
+    }
+    let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
     Object.keys(all).forEach(id => {
+      const p = all[id];
       html += `
         <tr>
-          <td>${id}</td>
-          <td>${all[id].location || ""}</td>
-          <td>${all[id].purpose || ""}</td>
+          <td>${p.dbNumber || id}</td>
+          <td>${p.location || ""}</td>
+          <td>${p.purpose || ""}</td>
           <td><button onclick="editPanel('${id}')">Edit</button></td>
-        </tr>`;
+        </tr>
+      `;
     });
     html += "</table>";
-    panelList.innerHTML = html;
+    div.innerHTML = html;
   });
 }
 
-/******** GENERATE QR ********/
+function editPanel(id) {
+  loadPanelFromFirebase(id, p => {
+    if (!p) {
+      alert("Panel not found!");
+      return;
+    }
+
+    document.getElementById("db").value        = p.dbNumber || id;
+    document.getElementById("volt").value      = p.voltage || "";
+    document.getElementById("breaker").value   = p.mainBreaker || "";
+    document.getElementById("cable").value     = p.cableSize || "";
+    document.getElementById("earth").value     = p.earthStatus || "";
+    document.getElementById("location").value  = p.location || "";
+    document.getElementById("purpose").value   = p.purpose || "";
+
+    uploadedImage = p.image || null;
+    const preview = document.getElementById("previewImage");
+    if (uploadedImage) {
+      preview.src = uploadedImage;
+      preview.style.display = "block";
+    } else {
+      preview.style.display = "none";
+    }
+
+    renderCircuits(p.circuits || null);
+    window.scrollTo(0, 0);
+  });
+}
+
+/* ---------- QR GENERATION PREVIEW ---------- */
 let qr;
 
 function generateQR() {
-  const id = db.value.trim();
-  if (!id) return alert("Enter DB Number first!");
+  const id = document.getElementById("db").value.trim();
+  if (!id) {
+    alert("Enter DB Number first!");
+    return;
+  }
 
-  const url =
-    "https://energycew-ui.github.io/panel-system/index.html?id=" +
-    encodeURIComponent(id);
+  const url = "https://energycew-ui.github.io/panel-system/index.html?id=" +
+              encodeURIComponent(id);
 
   qr = new QRious({
-    element: qrCanvas,
+    element: document.getElementById("qrCanvas"),
     value: url,
     size: 250
   });
 
-  qrDBname.innerText = id;
-  downloadQR.style.display = "inline-block";
+  document.getElementById("qrDBname").innerText = id;
+  document.getElementById("downloadQR").style.display = "inline-block";
 }
 
-/******** DOWNLOAD QR ********/
+/* ---------- LOAD LOGO FOR PRINT SHEET ---------- */
+const logoImg = new Image();
+logoImg.src = "logo.png"; // upload your logo as logo.png in repo
+
+/* ---------- DOWNLOAD QR PRINT SHEET ---------- */
 function downloadQR() {
-  const id = db.value.trim();
+  const id = document.getElementById("db").value.trim();
   if (!id) return;
 
-  const qrCanvasEl = qrCanvas;
+  const qrCanvas = document.getElementById("qrCanvas");
+  const W = 700, H = 900;          // size of final sheet
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = W;
+  finalCanvas.height = H;
+  const ctx = finalCanvas.getContext("2d");
 
-  const W = 500, H = 650;
-  const final = document.createElement("canvas");
-  final.width = W; final.height = H;
-  const ctx = final.getContext("2d");
+  // background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0,0,W,H);
+  // company logo (if loaded)
+  if (logoImg.complete) {
+    const logoSize = 120;
+    ctx.drawImage(logoImg, (W - logoSize) / 2, 40, logoSize, logoSize);
+  }
 
+  // danger banner
   ctx.fillStyle = "#c40000";
-  ctx.fillRect(0,0,W,80);
+  ctx.fillRect(50, 190, W - 100, 70);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 22px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️", W / 2, 230);
 
-  ctx.fillStyle="#fff";
-  ctx.font="bold 24px Arial";
-  ctx.textAlign="center";
-  ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️", W/2, 50);
+  // QR code
+  ctx.drawImage(qrCanvas, (W - 280) / 2, 280, 280, 280);
 
-  ctx.drawImage(qrCanvasEl, (W-250)/2, 120, 250, 250);
+  // DB name
+  ctx.fillStyle = "#000000";
+  ctx.font = "bold 32px Arial";
+  ctx.fillText(id, W / 2, 600);
 
-  ctx.fillStyle="#000";
-  ctx.font="bold 36px Arial";
-  ctx.fillText(id, W/2, 420);
+  // technician signature line
+  ctx.font = "18px Arial";
+  ctx.textAlign = "left";
+  ctx.fillText("Technician Signature:", 80, 680);
+  ctx.beginPath();
+  ctx.moveTo(80, 700);
+  ctx.lineTo(W - 80, 700);
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
+  // download
   const link = document.createElement("a");
-  link.download = id + "_QR.png";
-  link.href = final.toDataURL();
+  link.download = id + "_QR_sheet.png";
+  link.href = finalCanvas.toDataURL();
   link.click();
 }
 </script>
