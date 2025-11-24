@@ -7,7 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
+  <!-- Your Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
   <script src="data.js"></script>
 
   <!-- QR Library -->
@@ -505,7 +505,7 @@
         <label>Upload Panel Picture (Optional)</label>
         <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
         <br>
-        <img id="previewImage">
+        <img id="previewImage" alt="Preview">
         <br>
         <button type="button" class="secondary-btn" onclick="removeImage()">Remove Picture</button>
 
@@ -526,13 +526,15 @@
 
         <div id="qrPreview">
           <div class="dangerBanner">
-           ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
+            ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
           </div>
           <canvas id="qrCanvas" width="250" height="250"></canvas>
           <div id="qrDBname"></div>
         </div>
 
-        <button id="downloadQR" style="display:none;" class="primary-btn" onclick="downloadQR()">Download DB QR Sheet</button>
+        <button id="downloadQR" style="display:none;" class="primary-btn" onclick="downloadQR()">
+          Download DB QR Sheet
+        </button>
       </div>
 
       <div class="card">
@@ -568,7 +570,7 @@
         <label>Upload Transformer Picture (Optional)</label>
         <input type="file" id="tr_imageInput" accept="image/*" onchange="previewTransformerImage(event)">
         <br>
-        <img id="previewTransformerImage">
+        <img id="previewTransformerImage" alt="Transformer Preview">
         <br>
         <button type="button" class="secondary-btn" onclick="removeTransformerImage()">Remove Picture</button>
 
@@ -588,7 +590,9 @@
           <div id="trQrName"></div>
         </div>
 
-        <button id="downloadTrQR" style="display:none;" class="primary-btn" onclick="downloadTransformerQR()">Download Transformer QR Sheet</button>
+        <button id="downloadTrQR" style="display:none;" class="primary-btn" onclick="downloadTransformerQR()">
+          Download Transformer QR Sheet
+        </button>
       </div>
 
       <div class="card">
@@ -745,7 +749,9 @@
         </select>
 
         <label>Options (for dropdown, comma separated)</label>
-        <input type="text" id="qOptions" placeholder="Example: OK, Needs repair, Not accessible" style="width:100%;max-width:500px;">
+        <input type="text" id="qOptions"
+               placeholder="Example: OK, Needs repair, Not accessible"
+               style="width:100%;max-width:500px;">
 
         <label>Applies To</label>
         <label style="font-weight:normal;"><input type="checkbox" id="qApplyDb" checked> DB Entry</label>
@@ -808,16 +814,24 @@ function afterLoginInit() {
   showTransformers();
   loadTransformerReports();
   loadLuxReports();
-  handleEditParam();   // <-- IMPORTANT: handle ?edit= from panel.html
-}
 
-/* ------------ HANDLE ?edit=DBID FROM panel.html ------------ */
-function handleEditParam() {
+  // 🔧 Auto-load DB for editing when coming from panel.html
   const params = new URLSearchParams(window.location.search);
   const editId = params.get("edit");
   if (editId) {
-    // Just use existing editPanel() which loads everything & switches tab
-    editPanel(editId);
+    // Switch to DB Entry tab
+    const entryBtn = document.querySelector('.tab-btn[data-target="tab-entry"]');
+    if (entryBtn) entryBtn.click();
+
+    loadPanelFromFirebase(editId, p => {
+      if (p) {
+        editPanel(editId);
+      } else {
+        alert("Panel not found: " + editId);
+      }
+    });
+
+    window.scrollTo(0, 0);
   }
 }
 
@@ -971,7 +985,7 @@ function savePanel() {
   savePanelToFirebase(id, data, () => {
     alert("Panel saved to Firebase successfully!");
     showPanels();
-    loadMasterReport(); // master DB auto updates
+    loadMasterReport(); // Master DB auto updates
   });
 }
 
@@ -1002,7 +1016,8 @@ function editPanel(id) {
 
     renderCircuits(p.circuits || null);
 
-    document.querySelector('.tab-btn[data-target="tab-entry"]').click();
+    const entryBtn = document.querySelector('.tab-btn[data-target="tab-entry"]');
+    if (entryBtn) entryBtn.click();
     window.scrollTo(0, 0);
   });
 }
@@ -1119,7 +1134,8 @@ function editTransformer(id) {
     } else {
       preview.style.display = "none";
     }
-    document.querySelector('.tab-btn[data-target="tab-transformer-entry"]').click();
+    const trBtn = document.querySelector('.tab-btn[data-target="tab-transformer-entry"]');
+    if (trBtn) trBtn.click();
     window.scrollTo(0, 0);
   });
 }
@@ -1210,7 +1226,7 @@ function downloadQR() {
   };
 }
 
-/* ------------ TRANSFORMER QR + DOWNLOAD ------------ */
+/* ------------ TRANFORMER QR + DOWNLOAD ------------ */
 let trQR;
 
 function generateTransformerQR() {
@@ -1596,7 +1612,7 @@ function deleteInspection(dbId, key) {
 }
 
 function deleteFault(dbId, key) {
-  if (!confirm("Delete this fault report?")) return;
+  if (!confirm("Delete this fault record?")) return;
   firebase.database().ref("faults/" + dbId + "/" + key).remove().then(() => {
     alert("Fault report deleted.");
     loadReports();
@@ -1900,8 +1916,10 @@ function loadQuestions() {
     questionsGlobal = snap.val() || {};
     renderQuestionsAdmin();
     renderDbQuestions();
+    // Re-render tables so extraAnswers labels are resolved
     renderInspectionTable(inspectionsGlobal || []);
     renderFaultTable(faultsGlobal || []);
+    // Re-render master if loaded
     if (masterPanelsGlobal) loadMasterReport();
   });
 }
@@ -2176,7 +2194,9 @@ function renderTransformerTable(list) {
           ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
         </td>
         <td>
-          <button class="danger-btn" onclick="deleteTransformerReport('${r.transformerId}','${r.recordKey}')">Delete</button>
+          <button class="danger-btn" onclick="deleteTransformerReport('${r.transformerId}','${r.recordKey}')">
+            Delete
+          </button>
         </td>
       </tr>
     `;

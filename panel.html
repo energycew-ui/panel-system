@@ -54,6 +54,7 @@
       cursor: pointer;
       margin-top: 12px;
     }
+
     .menu-btn {
       padding: 12px;
       border-radius: 10px;
@@ -112,10 +113,10 @@
       font-weight: bold;
     }
 
-    /* Electrician Menu */
+    /* Electrician Menu buttons */
     .btn-blue { background:#007bff; color:#fff; }
     .btn-gold { background:#ffb300; color:#000; }
-    .btn-red { background:#c40000; color:#fff; }
+    .btn-red  { background:#c40000; color:#fff; }
     .btn-dark { background:#333; color:#fff; }
   </style>
 </head>
@@ -124,7 +125,7 @@
 
 <!-- HEADER -->
 <div class="topbar">
-  <img src="logo.png">
+  <img src="logo.png" alt="Chenab Logo">
   <div class="title">Electrical Panel Access</div>
 </div>
 
@@ -133,11 +134,13 @@
   <h2 style="text-align:center;">Choose Access</h2>
 
   <div class="menu-btn" onclick="selectVisitor()">
-    <div class="icon">👤</div> Visitor – View Panel Details Only
+    <div class="icon">👤</div>
+    Visitor – View Panel Details Only
   </div>
 
   <div class="menu-btn" onclick="selectElectrician()">
-    <div class="icon">🛠️</div> Electrician – Authorized Access
+    <div class="icon">🛠️</div>
+    Electrician – Authorized Access
   </div>
 </div>
 
@@ -177,7 +180,7 @@
     </div>
 
     <div class="info-right">
-      <img id="v_image" style="display:none;">
+      <img id="v_image" style="display:none;" alt="Panel Image">
     </div>
 
   </div>
@@ -186,7 +189,8 @@
 <!-- ELECTRICIAN LOGIN -->
 <div class="card" id="electricianLogin" style="display:none;">
   <h2>Electrician Login</h2>
-  <input id="elecKey" type="password" placeholder="Enter Electrician Password" style="width:100%;padding:12px;font-size:17px;">
+  <input id="elecKey" type="password" placeholder="Enter Electrician Password"
+         style="width:100%;padding:12px;font-size:17px;">
   <button class="btn btn-red" onclick="loginElec()">Login</button>
   <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
@@ -197,14 +201,14 @@
 
   <button class="btn btn-blue" onclick="openModifyDB()">🔧 Modify DB</button>
   <button class="btn btn-blue" onclick="openInspection()">📋 DB Inspection</button>
-  <button class="btn btn-red" onclick="openFault()">⚡ Fault Report</button>
+  <button class="btn btn-red"  onclick="openFault()">⚡ Fault Report</button>
   <button class="btn btn-gold" onclick="openTransformer()">🔌 Transformer Inspection</button>
   <button class="btn btn-dark" onclick="openLux()">💡 LUX Monitoring</button>
 </div>
 
 <script>
 /* -----------------------------
-   GET DB ID
+   GET DB ID FROM URL
 ----------------------------- */
 const urlParams = new URLSearchParams(window.location.search);
 const dbId = urlParams.get("id");
@@ -213,29 +217,37 @@ const dbId = urlParams.get("id");
    LOAD PANEL FROM FIREBASE
 ----------------------------- */
 function loadPanelData() {
+  if (!dbId) {
+    alert("No DB id in URL.");
+    return;
+  }
+
   loadPanelFromFirebase(dbId, p => {
-    if (!p) return alert("Panel not found.");
+    if (!p) {
+      alert("Panel not found.");
+      return;
+    }
 
-    document.getElementById("v_db").innerText = p.dbNumber || dbId;
-    document.getElementById("v_volt").innerText = p.voltage || "";
-    document.getElementById("v_breaker").innerText = p.mainBreaker || "";
-    document.getElementById("v_cable").innerText = p.cableSize || "";
-    document.getElementById("v_earth").innerText = p.earthStatus || "";
+    document.getElementById("v_db").innerText       = p.dbNumber || dbId;
+    document.getElementById("v_volt").innerText     = p.voltage || "";
+    document.getElementById("v_breaker").innerText  = p.mainBreaker || "";
+    document.getElementById("v_cable").innerText    = p.cableSize || "";
+    document.getElementById("v_earth").innerText    = p.earthStatus || "";
     document.getElementById("v_location").innerText = p.location || "";
-    document.getElementById("v_purpose").innerText = p.purpose || "";
+    document.getElementById("v_purpose").innerText  = p.purpose || "";
 
-    /* Circuits */
+    // Circuits
     const cList = document.getElementById("v_circuits");
     cList.innerHTML = "";
-    if (p.circuits) {
+    if (p.circuits && Array.isArray(p.circuits)) {
       p.circuits.forEach(c => {
         const li = document.createElement("li");
-        li.textContent = `${c.name} — ${c.breaker} — ${c.load}`;
+        li.textContent = `${c.name || ""} — ${c.breaker || ""} — ${c.load || ""}`;
         cList.appendChild(li);
       });
     }
 
-    /* Extra Fields */
+    // Extra fields (dynamic questions)
     const eDiv = document.getElementById("v_extra");
     eDiv.innerHTML = "";
     if (p.extraAnswers) {
@@ -246,7 +258,7 @@ function loadPanelData() {
       });
     }
 
-    /* Image */
+    // Image
     if (p.image) {
       const img = document.getElementById("v_image");
       img.src = p.image;
@@ -267,7 +279,7 @@ function selectVisitor() {
 /* -----------------------------
    ELECTRICIAN MODE
 ----------------------------- */
-const ELEC_KEY = "9999";
+const ELEC_KEY = "9999"; // your electrician password
 
 function selectElectrician() {
   document.getElementById("accessSelect").style.display = "none";
@@ -280,7 +292,7 @@ function selectElectrician() {
 }
 
 function loginElec() {
-  const key = document.getElementById("elecKey").value;
+  const key = document.getElementById("elecKey").value.trim();
   if (key === ELEC_KEY) {
     sessionStorage.setItem("electricianLogged", "true");
     showElecMenu();
@@ -297,22 +309,43 @@ function showElecMenu() {
 /* -----------------------------
    BUTTON ACTIONS
 ----------------------------- */
+
+// 🔧 Modify DB –> open admin and auto-load this DB
 function openModifyDB() {
-  window.location.href = "panel.html?id=" + dbId + "#modify";
-}
-function openInspection() {
-  window.location.href = "electrician.html?id=" + dbId;
-}
-function openFault() {
-  window.location.href = "fault.html?id=" + dbId;
-}
-function openTransformer() {
-  window.location.href = "transformer.html?id=" + dbId;
-}
-function openLux() {
-  window.location.href = "lux.html?id=" + dbId;
+  if (!dbId) {
+    alert("No DB id in URL.");
+    return;
+  }
+  window.location.href = "admin.html?edit=" + encodeURIComponent(dbId);
 }
 
+// 📋 DB Inspection
+function openInspection() {
+  if (!dbId) {
+    alert("No DB id in URL.");
+    return;
+  }
+  window.location.href = "electrician.html?id=" + encodeURIComponent(dbId);
+}
+
+// ⚡ Fault Report
+function openFault() {
+  if (!dbId) {
+    alert("No DB id in URL.");
+    return;
+  }
+  window.location.href = "fault.html?id=" + encodeURIComponent(dbId);
+}
+
+// 🔌 Transformer Inspection (by transformer QR)
+function openTransformer() {
+  window.location.href = "transformer.html";
+}
+
+// 💡 LUX Monitoring
+function openLux() {
+  window.location.href = "lux.html";
+}
 </script>
 
 </body>
