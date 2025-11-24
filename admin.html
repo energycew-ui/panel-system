@@ -2373,3 +2373,17 @@ function exportLuxCSV() {
 
 </body>
 </html>
+// Auto-load DB for editing when coming from panel.html
+window.addEventListener("load", () => {
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get("edit");
+
+  if (editId) {
+    document.querySelector('.tab-btn[data-target="tab-entry"]').click();
+    loadPanelFromFirebase(editId, p => {
+      if (p) {
+        editPanel(editId);
+      }
+    });
+  }
+});
