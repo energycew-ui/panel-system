@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Electrical Panel – Visitor & Electrician Access</title>
+  <title>Electrical Panel – Access</title>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -18,55 +18,76 @@
     /* Premium Header */
     .topbar {
       background: #0c0c0c;
-      padding: 20px 0 25px 0;
+      padding: 22px 0 26px 0;
       text-align: center;
       box-shadow: 0 3px 8px rgba(0,0,0,0.4);
     }
     .topbar img {
       width: 120px;
-      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
+      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.6));
     }
     .title {
-      margin-top: 10px;
+      margin-top: 12px;
       font-size: 26px;
       font-weight: bold;
       background: linear-gradient(90deg,#ffd65a,#ffb300);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 8px rgba(0,0,0,0.4);
     }
 
+    /* Cards */
     .card {
       background: #fff;
       padding: 20px;
       max-width: 650px;
       margin: 20px auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
+    /* Buttons */
     .btn {
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 12px;
       cursor: pointer;
-      border: none;
       width: 100%;
-      margin-top: 10px;
+      border: none;
       color: #fff;
+      font-size: 17px;
+      font-weight: bold;
     }
     .btn-red { background: #c40000; }
     .btn-blue { background: #007bff; }
-    .btn-gold { background: #ffb300; color:#000; font-weight:800; }
     .btn-dark { background: #333; }
-    .btn-green { background: #0a8f0a; }
+    .btn-gold { background: #ffb300; color:#000; }
 
-    #electricianButtons { display:none; margin-top:20px; }
-    #dbInfo { display:none; }
+    .menu-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 2px solid #ccc;
+      font-size: 17px;
+      font-weight: bold;
+      margin-top: 10px;
+      background: #fafafa;
+    }
+    .menu-btn:hover {
+      border-color: #ffb300;
+      background:#fff4cc;
+    }
+    .icon {
+      font-size: 26px;
+    }
+
+    #visitorCard, #electricianLoginCard, #electricianMenu, #dbInfoBox {
+      display: none;
+    }
   </style>
 </head>
-
 <body>
 
 <!-- Header -->
@@ -75,87 +96,128 @@
   <div class="title">Electrical Panel Access</div>
 </div>
 
-<div class="card">
-  <h2 id="panelName">Loading...</h2>
-  <div id="dbInfo"></div>
+<!-- CHOOSE ACCESS TYPE -->
+<div class="card" id="accessSelect">
+  <h2 style="text-align:center;margin-bottom:20px;">Choose Access</h2>
+
+  <div class="menu-btn" onclick="selectVisitor()">
+    <div class="icon">👤</div>
+    Visitor — View Panel Details Only
+  </div>
+
+  <div class="menu-btn" onclick="selectElectrician()">
+    <div class="icon">🛠️</div>
+    Electrician — Authorized Access
+  </div>
 </div>
 
-<div class="card">
+<!-- VISITOR VIEW -->
+<div class="card" id="visitorCard">
+  <h2 id="dbTitleVisitor">DB Information</h2>
+  <div id="dbInfoBox"></div>
+</div>
+
+<!-- ELECTRICIAN LOGIN -->
+<div class="card" id="electricianLoginCard">
   <h3>Electrician Login</h3>
-  <input type="password" id="elecKey" placeholder="Enter Electrician Key" style="width:100%;padding:10px;font-size:16px;">
+  <input type="password" id="elecKey" placeholder="Enter Electrician Password" style="width:100%;padding:10px;font-size:16px;">
   <button class="btn btn-red" onclick="loginElectrician()">Login</button>
   <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
 
-<div class="card" id="electricianButtons">
-  <h3>Electrician Menu</h3>
+<!-- ELECTRICIAN MENU -->
+<div class="card" id="electricianMenu">
+  <h2>Electrician Menu</h2>
 
-  <button class="btn btn-blue" onclick="openModifyDB()">🔧 Modify DB Data</button>
+  <button class="btn btn-blue" onclick="openModifyDB()">🔧 Modify DB</button>
   <button class="btn btn-green" onclick="openDbInspection()">📋 DB Inspection</button>
   <button class="btn btn-red" onclick="openFaultReport()">⚡ Fault Report</button>
   <button class="btn btn-gold" onclick="openTransformerInspection()">🔌 Transformer Inspection</button>
-  <button class="btn btn-dark" onclick="openLuxReport()">💡 LUX Monitoring Report</button>
+  <button class="btn btn-dark" onclick="openLuxReport()">💡 LUX Monitoring</button>
 
 </div>
 
 <script>
 /* ---------------------------
-      LOAD DB INFO
+      LOAD DB DATA
 ----------------------------*/
-const urlParams = new URLSearchParams(window.location.search);
-const dbId = urlParams.get("id");
+const params = new URLSearchParams(window.location.search);
+const dbId = params.get("id");
 
-if (!dbId) {
-  document.getElementById("panelName").innerText = "Invalid Panel QR Code!";
-} else {
-  loadPanelFromFirebase(dbId, panel => {
-    if (!panel) {
-      document.getElementById("panelName").innerText = "Panel Not Found!";
+function loadDB() {
+  if (!dbId) return;
+
+  loadPanelFromFirebase(dbId, p => {
+    if (!p) {
+      document.getElementById("dbInfoBox").innerHTML = "Panel not found.";
       return;
     }
 
-    document.getElementById("panelName").innerText = "DB – " + dbId;
-
     let html = `
-      <b>Location:</b> ${panel.location || ""}<br>
-      <b>Voltage:</b> ${panel.voltage || ""}<br>
-      <b>Main Breaker:</b> ${panel.mainBreaker || ""}<br>
-      <b>Cable Size:</b> ${panel.cableSize || ""}<br>
-      <b>Purpose:</b> ${panel.purpose || ""}<br><br>
+      <b>Location:</b> ${p.location || ""}<br>
+      <b>Voltage:</b> ${p.voltage || ""}<br>
+      <b>Main Breaker:</b> ${p.mainBreaker || ""}<br>
+      <b>Cable Size:</b> ${p.cableSize || ""}<br>
+      <b>Purpose:</b> ${p.purpose || ""}<br><br>
     `;
 
-    if (panel.image) {
-      html += `<img src="${panel.image}" style="width:100%;border-radius:10px;">`;
-    }
+    if (p.image) html += `<img src="${p.image}" style="width:100%;border-radius:10px;">`;
 
-    document.getElementById("dbInfo").innerHTML = html;
-    document.getElementById("dbInfo").style.display = "block";
+    document.getElementById("dbInfoBox").innerHTML = html;
   });
 }
 
+loadDB();
+
+/* ---------------------------
+      ACCESS TYPE SELECTION
+----------------------------*/
+function selectVisitor() {
+  document.getElementById("accessSelect").style.display = "none";
+  document.getElementById("visitorCard").style.display = "block";
+
+  document.getElementById("dbTitleVisitor").innerText = "DB – " + dbId;
+}
+
+function selectElectrician() {
+  document.getElementById("accessSelect").style.display = "none";
+
+  if (sessionStorage.getItem("electricianLogged") === "true") {
+    showElectricianMenu();
+  } else {
+    document.getElementById("electricianLoginCard").style.display = "block";
+  }
+}
 
 /* ---------------------------
       ELECTRICIAN LOGIN
 ----------------------------*/
-const ELECTRICIAN_KEY = "9999"; // Change if needed
+const ELECTRICIAN_KEY = "9999";
 
 function loginElectrician() {
-  let key = document.getElementById("elecKey").value.trim();
-  let err = document.getElementById("loginError");
+  const key = document.getElementById("elecKey").value.trim();
+  const err = document.getElementById("loginError");
 
   if (key === ELECTRICIAN_KEY) {
-    document.getElementById("electricianButtons").style.display = "block";
+    sessionStorage.setItem("electricianLogged", "true");
     err.innerText = "";
+    showElectricianMenu();
   } else {
-    err.innerText = "Incorrect key!";
+    err.innerText = "Incorrect password!";
   }
 }
 
+/* ---------------------------
+      SHOW ELECTRICIAN MENU
+----------------------------*/
+function showElectricianMenu() {
+  document.getElementById("electricianLoginCard").style.display = "none";
+  document.getElementById("electricianMenu").style.display = "block";
+}
 
 /* ---------------------------
-      MENU BUTTON FUNCTIONS
+      BUTTON ACTIONS
 ----------------------------*/
-
 function openModifyDB() {
   window.location.href = "panel.html?id=" + dbId + "#modify";
 }

@@ -75,7 +75,7 @@
       flex-wrap:wrap;
     }
     .row-2 > div {
-      flex:1 1 150px;
+      flex:1 1 180px;
     }
 
     .btn {
@@ -92,7 +92,6 @@
 
     .btn-red { background:#c40000; }
     .btn-blue { background:#007bff; }
-    .btn-dark { background:#333; }
 
     #formArea { display:none; }
 
@@ -105,7 +104,6 @@
     th,td {
       border:1px solid #ddd;
       padding:6px 8px;
-      text-align:left;
     }
     th {
       background:#333;
@@ -122,8 +120,14 @@
       color:#fff;
       margin-top:8px;
     }
-    .small-btn-danger {
-      background:#c40000;
+    .small-btn-danger { background:#c40000; }
+
+    #meterPicPreview {
+      width: 100%;
+      display:none;
+      margin-top:10px;
+      border:2px solid #444;
+      border-radius:10px;
     }
   </style>
 </head>
@@ -134,24 +138,20 @@
   <div class="title">LUX Monitoring Report</div>
 </div>
 
-<!-- LOGIN CARD -->
-<div class="card">
-  <h2>LUX Monitoring – Access</h2>
-  <p style="font-size:14px;color:#555;">
-    This form is for authorized electricians to record lighting LUX levels in each department.
-  </p>
+<!-- LOGIN BOX -->
+<div class="card" id="loginCard">
+  <h2>LUX Monitoring – Login</h2>
 
-  <h3>Electrician Login</h3>
-  <input type="password" id="loginKey" placeholder="Enter Electrician Key">
-  <button class="btn btn-red" onclick="login()">Login</button>
+  <input type="password" id="loginKey" placeholder="Enter Electrician Password">
+  <button class="btn btn-red" onclick="doLogin()">Login</button>
   <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
 
-<!-- FORM CARD -->
+<!-- FORM -->
 <div class="card" id="formArea">
+
   <h2>LUX Monitoring Form</h2>
 
-  <!-- Date / Time / Electrician -->
   <div class="row-2">
     <div>
       <label>Date</label>
@@ -194,177 +194,163 @@
     </div>
   </div>
 
-  <!-- Meter / Calibration -->
-  <h3 style="margin-top:18px;">Meter & Calibration</h3>
+  <!-- Meter Details -->
+  <h3>Meter Details</h3>
 
-  <div class="row-2">
-    <div>
-      <label>Lux Meter Model</label>
-      <input type="text" id="lx_meter" placeholder="e.g. TES-1332A">
-    </div>
-    <div>
-      <label>Calibration Certificate No.</label>
-      <input type="text" id="lx_calibNo">
-    </div>
-  </div>
+  <label>Lux Meter Model</label>
+  <input type="text" id="lx_meter">
 
-  <div class="row-2">
-    <div>
-      <label>Calibration Date</label>
-      <input type="date" id="lx_calibDate">
-    </div>
-    <div>
-      <label>Reference (Optional)</label>
-      <input type="text" id="lx_ref" placeholder="DB / Transformer / Area Ref">
-    </div>
-  </div>
+  <label>Calibration Certificate No. (Optional)</label>
+  <input type="text" id="lx_calibNo">
+
+  <label>Calibration Date (Optional)</label>
+  <input type="date" id="lx_calibDate">
+
+  <label>Meter Picture (Optional)</label>
+  <input type="file" accept="image/*" capture="environment" onchange="previewMeter(event)">
+  <img id="meterPicPreview">
 
   <!-- Measurements -->
-  <h3 style="margin-top:18px;">Measurement Points</h3>
-  <p style="font-size:13px;color:#555;">
-    Add one row per measurement point (e.g. “Molding – Machine 1”, “Aisle near Furnace”, etc.).
-  </p>
+  <h3>Measurement Points</h3>
 
   <table>
     <thead>
       <tr>
         <th>Point / Location</th>
         <th>Measured LUX</th>
-        <th>Limit / Standard LUX</th>
+        <th>Limit LUX</th>
         <th>Action</th>
       </tr>
     </thead>
-    <tbody id="measureBody">
-    </tbody>
+    <tbody id="measureBody"></tbody>
   </table>
 
-  <button type="button" class="small-btn" onclick="addMeasurementRow()">+ Add Measurement</button>
+  <button class="small-btn" onclick="addRow()">+ Add Measurement Point</button>
 
-  <label style="margin-top:18px;">Remarks / Corrective Actions</label>
-  <textarea id="lx_remarks" placeholder="Any comments, low lux observations, actions required etc."></textarea>
+  <label style="margin-top:18px;">Remarks</label>
+  <textarea id="lx_remarks"></textarea>
 
-  <button class="btn btn-blue" onclick="submitLux()">Submit LUX Report</button>
+  <button class="btn btn-blue" onclick="submitForm()">Submit Report</button>
+
 </div>
 
 <script>
-/* -------------------------
-      Default Date/Time
--------------------------- */
-(function initDateTime() {
-  const now = new Date();
-  document.addEventListener("DOMContentLoaded", () => {
-    const dEl = document.getElementById("lx_date");
-    const tEl = document.getElementById("lx_time");
-    if (dEl) dEl.value = now.toISOString().slice(0,10);
-    if (tEl) tEl.value = now.toTimeString().slice(0,5);
-  });
-})();
+// =============== LOGIN SYSTEM (AUTO-SKIP) ===============
 
-/* -------------------------
-      Electrician Login
--------------------------- */
-const ELECTRICIAN_KEY = "9999";   // same as other pages
+const ELECTRICIAN_KEY = "9999";
 
-function login() {
-  const val = document.getElementById("loginKey").value.trim();
-  const err = document.getElementById("loginError");
-  if (val === ELECTRICIAN_KEY) {
-    document.getElementById("formArea").style.display = "block";
-    err.innerText = "";
+if (sessionStorage.getItem("electricianLogged") === "true") {
+  showForm();
+}
+
+function doLogin() {
+  let key = document.getElementById("loginKey").value.trim();
+
+  if (key === ELECTRICIAN_KEY) {
+    sessionStorage.setItem("electricianLogged", "true");
+    showForm();
   } else {
-    err.innerText = "Incorrect key!";
+    document.getElementById("loginError").innerText = "Incorrect password!";
   }
 }
 
-/* -------------------------
-      Measurement Rows
--------------------------- */
-function addMeasurementRow(point="", measured="", limit="") {
+function showForm() {
+  document.getElementById("loginCard").style.display = "none";
+  document.getElementById("formArea").style.display = "block";
+}
+
+
+// =============== DEFAULT DATE + TIME ===============
+document.addEventListener("DOMContentLoaded", () => {
+  const now = new Date();
+  document.getElementById("lx_date").value = now.toISOString().slice(0,10);
+  document.getElementById("lx_time").value = now.toTimeString().slice(0,5);
+
+  addRow();
+});
+
+
+// =============== METER PHOTO PREVIEW (CAMERA) ===============
+let meterPic = null;
+
+function previewMeter(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    meterPic = e.target.result;
+    const img = document.getElementById("meterPicPreview");
+    img.src = meterPic;
+    img.style.display = "block";
+  };
+
+  reader.readAsDataURL(file);
+}
+
+
+// =============== MEASUREMENT ROWS ===============
+function addRow(point="", measured="", limit="") {
   const body = document.getElementById("measureBody");
   const tr = document.createElement("tr");
 
   tr.innerHTML = `
-    <td><input type="text" class="m-point" placeholder="Point / Area" value="${point}"></td>
-    <td><input type="number" class="m-measured" placeholder="LUX" value="${measured}"></td>
-    <td><input type="number" class="m-limit" placeholder="Standard LUX" value="${limit}"></td>
-    <td>
-      <button type="button" class="small-btn small-btn-danger" onclick="this.closest('tr').remove()">Delete</button>
-    </td>
+    <td><input type="text" class="m-point" value="${point}" placeholder="Area / Point"></td>
+    <td><input type="number" class="m-measured" value="${measured}" placeholder="LUX"></td>
+    <td><input type="number" class="m-limit" value="${limit}" placeholder="Limit"></td>
+    <td><button class="small-btn-danger" onclick="this.closest('tr').remove()">Delete</button></td>
   `;
 
   body.appendChild(tr);
 }
 
-// Add one default row on load
-document.addEventListener("DOMContentLoaded", () => {
-  addMeasurementRow();
-});
-
-/* -------------------------
-       Collect Data
--------------------------- */
 function collectMeasurements() {
   const rows = document.querySelectorAll("#measureBody tr");
-  const out = [];
+  const list = [];
+
   rows.forEach(r => {
-    const pointEl = r.querySelector(".m-point");
-    const measEl  = r.querySelector(".m-measured");
-    const limitEl = r.querySelector(".m-limit");
-    const point = pointEl ? pointEl.value.trim() : "";
-    const measured = measEl ? measEl.value.trim() : "";
-    const limit = limitEl ? limitEl.value.trim() : "";
-    if (point || measured || limit) {
-      out.push({
-        point,
-        measuredLux: measured,
-        limitLux: limit
-      });
+    const p = r.querySelector(".m-point").value.trim();
+    const m = r.querySelector(".m-measured").value.trim();
+    const l = r.querySelector(".m-limit").value.trim();
+    if (p || m || l) {
+      list.push({ point: p, measuredLux: m, limitLux: l });
     }
   });
-  return out;
+
+  return list;
 }
 
-/* -------------------------
-        Submit LUX
--------------------------- */
-function submitLux() {
-  const date  = document.getElementById("lx_date").value;
-  const time  = document.getElementById("lx_time").value;
-  const name  = document.getElementById("lx_name").value.trim();
-  const dept  = document.getElementById("lx_dept").value;
-  const type  = document.getElementById("lx_type").value;
-  const meter = document.getElementById("lx_meter").value.trim();
-  const calibNo   = document.getElementById("lx_calibNo").value.trim();
-  const calibDate = document.getElementById("lx_calibDate").value;
-  const ref   = document.getElementById("lx_ref").value.trim();
-  const remarks = document.getElementById("lx_remarks").value.trim();
-  const meas = collectMeasurements();
 
-  if (!date || !time || !name || !dept || !type || !meas.length) {
-    alert("Please fill date, time, electrician name, department, type and at least one measurement.");
-    return;
-  }
+// =============== SUBMIT DATA ===============
+function submitForm() {
 
   const data = {
-    date,
-    time,
-    department: dept,
-    monitorType: type,
-    electricianName: name,
-    meterModel: meter,
-    calibrationNo: calibNo,
-    calibrationDate: calibDate,
-    reference: ref,
-    remarks,
-    measurements: meas,
+    date: document.getElementById("lx_date").value,
+    time: document.getElementById("lx_time").value,
+    department: document.getElementById("lx_dept").value,
+    monitorType: document.getElementById("lx_type").value,
+    electricianName: document.getElementById("lx_name").value.trim(),
+    meterModel: document.getElementById("lx_meter").value.trim(),
+    calibrationNo: document.getElementById("lx_calibNo").value.trim(),   // optional
+    calibrationDate: document.getElementById("lx_calibDate").value,     // optional
+    meterPhoto: meterPic,   // new
+    remarks: document.getElementById("lx_remarks").value.trim(),
+    measurements: collectMeasurements(),
     timestamp: Date.now()
   };
 
+  // Required validation:
+  if (!data.electricianName || !data.department || !data.monitorType || data.measurements.length === 0) {
+    alert("Please fill electrician name, department, monitoring type and at least one measurement.");
+    return;
+  }
+
   saveLuxReport(data, key => {
-    alert("LUX Report submitted successfully.");
+    alert("LUX Report Submitted Successfully.");
     window.location.reload();
   });
 }
+
 </script>
 
 </body>

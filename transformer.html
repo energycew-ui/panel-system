@@ -10,7 +10,7 @@
 
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       margin: 0;
       background: #f4f4f4;
     }
@@ -18,13 +18,13 @@
     /* Premium Header */
     .topbar {
       background: #0c0c0c;
-      padding: 18px 0 22px 0;
+      padding: 20px 0 25px 0;
       text-align: center;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+      box-shadow: 0 3px 8px rgba(0,0,0,.45);
     }
     .topbar img {
       width: 120px;
-      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
+      filter: drop-shadow(0px 4px 6px rgba(0,0,0,.55));
     }
     .title {
       margin-top: 10px;
@@ -33,57 +33,71 @@
       background: linear-gradient(90deg,#ffd65a,#ffb300);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 8px rgba(0,0,0,0.4);
+      text-shadow: 0 0 6px rgba(0,0,0,.4);
     }
 
+    /* Card */
     .card {
       background: #fff;
       padding: 20px;
-      max-width: 700px;
+      max-width: 800px;
       margin: 20px auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    }
+
+    label {
+      display:block;
+      margin-top:12px;
+      font-weight:bold;
     }
 
     input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      font-size: 15px;
-      margin-top: 5px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      width:100%;
+      padding:10px;
+      margin-top:3px;
+      border:1px solid #ccc;
+      border-radius:7px;
+      font-size:15px;
     }
 
-    textarea {
-      height: 80px;
-    }
+    textarea { height:80px; }
 
     .btn {
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      border: none;
-      width: 100%;
-      cursor: pointer;
-      margin-top: 12px;
-      color: #fff;
+      width:100%;
+      padding:12px;
+      margin-top:12px;
+      border:none;
+      border-radius:8px;
+      font-size:16px;
+      font-weight:bold;
+      cursor:pointer;
+      color:white;
     }
-
-    .btn-red { background:#c40000; }
     .btn-blue { background:#007bff; }
+    .btn-red { background:#c40000; }
 
-    #preview1,#preview2,#preview3 {
-      width: 100%;
-      margin-top: 10px;
-      display:none;
-      border-radius:10px;
-      border:2px solid #444;
+    #formCard { display:none; }
+
+    .section-title {
+      margin-top:18px;
+      font-weight:bold;
+      font-size:17px;
+      border-left:4px solid #ffb300;
+      padding-left:10px;
     }
 
-    #formArea { display:none; }
+    img.preview {
+      width: 100%;
+      display:none;
+      margin-top:10px;
+      border:2px solid #444;
+      border-radius:10px;
+    }
+
   </style>
 </head>
+
 <body>
 
 <div class="topbar">
@@ -91,195 +105,277 @@
   <div class="title">Transformer Inspection</div>
 </div>
 
-<div class="card">
-  <h2 id="trTitle">Loading...</h2>
-
-  <h3>Electrician Login</h3>
-  <input type="password" id="key" placeholder="Enter Key">
+<!-- LOGIN BOX -->
+<div class="card" id="loginCard">
+  <h2>Electrician Login</h2>
+  <input type="password" id="loginKey" placeholder="Enter Electrician Password">
   <button class="btn btn-red" onclick="login()">Login</button>
-  <div id="error" style="color:red;margin-top:10px;"></div>
+  <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
 
-<div class="card" id="formArea">
+<!-- FORM -->
+<div class="card" id="formCard">
 
-  <h3>Inspection Form</h3>
+  <h2>Transformer Inspection</h2>
 
   <label>Date & Time</label>
-  <input type="datetime-local" id="datetime">
+  <input type="datetime-local" id="tr_datetime">
 
   <label>Electrician Name</label>
-  <input type="text" id="ename">
+  <input type="text" id="tr_name">
 
-  <label>Oil Condition</label>
-  <select id="oilCond">
-    <option value="">Select</option>
-    <option>Good</option>
-    <option>Dark</option>
-    <option>Needs Replacement</option>
-  </select>
+  <div class="section-title">Oil & Physical Condition</div>
 
   <label>Oil Level</label>
-  <select id="oilLevel">
-    <option value="">Select</option>
+  <select id="oil_level">
     <option>Normal</option>
     <option>Low</option>
-    <option>Critical</option>
+    <option>Very Low</option>
   </select>
 
-  <label>Oil Temperature (°C)</label>
-  <input type="number" id="oilTemp">
-
-  <label>Winding Temperature (°C)</label>
-  <input type="number" id="windTemp">
-
-  <label>Noise / Vibration</label>
-  <select id="noise">
-    <option value="">Select</option>
-    <option>Normal</option>
-    <option>Abnormal</option>
+  <label>Oil Condition</label>
+  <select id="oil_condition">
+    <option>Clear</option>
+    <option>Discolored</option>
+    <option>Contaminated</option>
   </select>
 
-  <label>Bushing Condition</label>
-  <select id="bushing">
-    <option value="">Select</option>
-    <option>Good</option>
-    <option>Cracked</option>
-    <option>Dirty</option>
-  </select>
-
-  <label>Fan / Blower</label>
-  <select id="fan">
-    <option value="">Select</option>
-    <option>Working</option>
-    <option>Not Working</option>
-  </select>
-
-  <label>Tap Changer</label>
-  <select id="tap">
-    <option value="">Select</option>
-    <option>Operational</option>
-    <option>Not Operational</option>
-  </select>
-
-  <label>IR Test (MΩ)</label>
-  <input type="number" id="ir">
-
-  <label>Earth Resistance (Ω)</label>
-  <input type="number" id="earth">
-
-  <label>Leakage</label>
-  <select id="leak">
-    <option value="">Select</option>
+  <label>Oil Leakage</label>
+  <select id="oil_leakage">
     <option>No Leakage</option>
     <option>Minor Leakage</option>
     <option>Major Leakage</option>
   </select>
 
-  <label>Load Current (A)</label>
-  <input type="number" id="load">
+  <div class="section-title">Temperature</div>
 
-  <h3>Photos</h3>
+  <label>Winding Temperature (°C)</label>
+  <input type="number" id="temp_winding">
+
+  <label>Oil Temperature (°C)</label>
+  <input type="number" id="temp_oil">
+
+  <div class="section-title">Equipment Status</div>
+
+  <label>Cooling Fan Status</label>
+  <select id="fan_status">
+    <option>Working</option>
+    <option>Not Working</option>
+    <option>Intermittent</option>
+  </select>
+
+  <label>Noise / Vibration</label>
+  <select id="noise">
+    <option>Normal</option>
+    <option>High Noise</option>
+    <option>Vibration Observed</option>
+  </select>
+
+  <label>Bushing Condition</label>
+  <select id="bushing">
+    <option>Good</option>
+    <option>Cracked</option>
+    <option>Damaged</option>
+  </select>
+
+  <label>Earthing</label>
+  <select id="earth">
+    <option>OK</option>
+    <option>Weak</option>
+    <option>Disconnected</option>
+  </select>
+
+  <label>Tap Changer Condition</label>
+  <select id="tap_changer">
+    <option>OK</option>
+    <option>Needs Maintenance</option>
+    <option>Faulty</option>
+  </select>
+
+  <label>Load Current (A)</label>
+  <input type="number" id="load_current">
+
+  <div class="section-title">Additional Questions</div>
+  <div id="trQuestionsContainer">
+    <p style="font-size:13px;color:#666;">Loading questions...</p>
+  </div>
+
+  <div class="section-title">Photos</div>
 
   <label>Photo 1</label>
-  <input type="file" accept="image/*" onchange="previewPhoto(event,1)">
-  <img id="preview1">
+  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,1)">
+  <img id="preview1" class="preview">
 
   <label>Photo 2</label>
-  <input type="file" accept="image/*" onchange="previewPhoto(event,2)">
-  <img id="preview2">
+  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,2)">
+  <img id="preview2" class="preview">
 
   <label>Photo 3</label>
-  <input type="file" accept="image/*" onchange="previewPhoto(event,3)">
-  <img id="preview3">
+  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,3)">
+  <img id="preview3" class="preview">
 
   <label>Remarks</label>
-  <textarea id="remarks"></textarea>
+  <textarea id="tr_comments"></textarea>
 
-  <button class="btn btn-blue" onclick="submitForm()">Submit Inspection</button>
+  <button class="btn btn-blue" onclick="submitTransformer()">Submit Inspection</button>
 
 </div>
 
 <script>
-/* -------------------------
-    Load Transformer ID
---------------------------*/
+/* --------------------------
+   LOGIN & AUTO-LOGIN
+---------------------------*/
+const ELECTRICIAN_KEY = "9999";
 
-const params = new URLSearchParams(window.location.search);
-const trId = params.get("id");
-
-document.getElementById("trTitle").innerText = trId
-  ? "Transformer: " + trId
-  : "Invalid Transformer ID";
-
-/* -------------------------
-     Electrician Login
---------------------------*/
-const KEY = "9999";
+if (sessionStorage.getItem("electricianLogged") === "true") {
+  showForm();
+}
 
 function login() {
-  let val = document.getElementById("key").value.trim();
-  if (val === KEY) {
-    document.getElementById("formArea").style.display = "block";
-    document.getElementById("error").innerText = "";
+  let key = document.getElementById("loginKey").value.trim();
+
+  if (key === ELECTRICIAN_KEY) {
+    sessionStorage.setItem("electricianLogged", "true");
+    showForm();
   } else {
-    document.getElementById("error").innerText = "Incorrect key!";
+    document.getElementById("loginError").innerText = "Incorrect password!";
   }
 }
 
-/* -------------------------
-       Photo Preview
---------------------------*/
-let photo1 = null, photo2 = null, photo3 = null;
+function showForm() {
+  document.getElementById("loginCard").style.display = "none";
+  document.getElementById("formCard").style.display = "block";
 
-function previewPhoto(event, num) {
-  const file = event.target.files[0];
-  if (!file) return;
+  const now = new Date();
+  document.getElementById("tr_datetime").value = now.toISOString().slice(0,16);
 
-  const reader = new FileReader();
-  reader.onload = e => {
-    if (num === 1) { photo1 = e.target.result; document.getElementById("preview1").src = photo1; document.getElementById("preview1").style.display = "block"; }
-    if (num === 2) { photo2 = e.target.result; document.getElementById("preview2").src = photo2; document.getElementById("preview2").style.display = "block"; }
-    if (num === 3) { photo3 = e.target.result; document.getElementById("preview3").src = photo3; document.getElementById("preview3").style.display = "block"; }
-  };
-
-  reader.readAsDataURL(file);
+  loadQuestions();
 }
 
-/* -------------------------
-      Submit Inspection
---------------------------*/
-function submitForm() {
+/* --------------------------
+   GET TRANSFORMER ID
+---------------------------*/
+const params = new URLSearchParams(window.location.search);
+const trId = params.get("id") || "TR-001";
 
-  if (!trId) {
-    alert("Invalid transformer!");
+/* --------------------------
+   LOAD DYNAMIC QUESTIONS
+---------------------------*/
+let questionsGlobal = {};
+
+function loadQuestions() {
+  firebase.database().ref("questions").on("value", snap => {
+    questionsGlobal = snap.val() || {};
+    renderQuestions();
+  });
+}
+
+function renderQuestions() {
+  const box = document.getElementById("trQuestionsContainer");
+  const list = Object.entries(questionsGlobal)
+    .filter(([id,q]) => q.applyInspection && q.active !== false);
+
+  if (!list.length) {
+    box.innerHTML = "<p style='font-size:13px;color:#666;'>No additional questions.</p>";
     return;
   }
 
+  let html = "";
+  list.forEach(([id,q]) => { html += generateField(id,q); });
+  box.innerHTML = html;
+}
+
+function generateField(id, q) {
+  const fieldId = `q_tr_${id}`;
+  let field = "";
+
+  if (q.type === "text") field = `<input type="text" id="${fieldId}">`;
+  else if (q.type === "number") field = `<input type="number" id="${fieldId}" style="max-width:150px;">`;
+  else if (q.type === "yesno")
+    field = `<select id="${fieldId}"><option></option><option>Yes</option><option>No</option></select>`;
+  else if (q.type === "dropdown")
+    field = `<select id="${fieldId}">
+               <option></option>
+               ${q.options.map(o=>`<option>${o}</option>`).join("")}
+             </select>`;
+
+  return `<label>${q.text}</label>${field}`;
+}
+
+function collectDynamic() {
+  const output = {};
+  Object.entries(questionsGlobal).forEach(([id,q]) => {
+    if (!q.applyInspection || q.active === false) return;
+    const inp = document.getElementById(`q_tr_${id}`);
+    if (!inp) return;
+    const val = inp.value.trim();
+    if (val) output[id] = val;
+  });
+  return Object.keys(output).length ? output : null;
+}
+
+/* --------------------------
+   PHOTO PREVIEW
+---------------------------*/
+let photo1=null, photo2=null, photo3=null;
+
+function previewPhoto(e, num){
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = x => {
+    if (num === 1) photo1 = x.target.result;
+    if (num === 2) photo2 = x.target.result;
+    if (num === 3) photo3 = x.target.result;
+
+    const img = document.getElementById("preview"+num);
+    img.src = x.target.result;
+    img.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+}
+
+/* --------------------------
+   SUBMIT INSPECTION
+---------------------------*/
+function submitTransformer() {
+
+  const name = document.getElementById("tr_name").value.trim();
+  if (!name) return alert("Enter electrician name.");
+
   const data = {
-    transformerId: trId,
-    datetimeLocal: document.getElementById("datetime").value,
-    electricianName: document.getElementById("ename").value,
-    oilCondition: document.getElementById("oilCond").value,
-    oilLevel: document.getElementById("oilLevel").value,
-    oilTemperature: document.getElementById("oilTemp").value,
-    windingTemperature: document.getElementById("windTemp").value,
+    timestamp: new Date().toISOString(),
+    datetimeLocal: document.getElementById("tr_datetime").value,
+    electricianName: name,
+
+    oilLevel: document.getElementById("oil_level").value,
+    oilCondition: document.getElementById("oil_condition").value,
+    oilLeakage: document.getElementById("oil_leakage").value,
+
+    tempWinding: document.getElementById("temp_winding").value,
+    tempOil: document.getElementById("temp_oil").value,
+
+    fanStatus: document.getElementById("fan_status").value,
     noise: document.getElementById("noise").value,
     bushing: document.getElementById("bushing").value,
-    fan: document.getElementById("fan").value,
-    tapChanger: document.getElementById("tap").value,
-    irTest: document.getElementById("ir").value,
-    earthResistance: document.getElementById("earth").value,
-    leakage: document.getElementById("leak").value,
-    loadCurrent: document.getElementById("load").value,
-    remarks: document.getElementById("remarks").value,
+    earth: document.getElementById("earth").value,
+    tapChanger: document.getElementById("tap_changer").value,
+    loadCurrent: document.getElementById("load_current").value,
+
+    extraAnswers: collectDynamic(),
+
     photo1, photo2, photo3,
-    timestamp: Date.now()
+    comments: document.getElementById("tr_comments").value
   };
 
-  saveTransformerInspection(trId, data, () => {
-    alert("Transformer Inspection Submitted!");
-    window.location.reload();
-  });
+  // SAVE TO FIREBASE:
+  firebase.database()
+    .ref("transformerInspections/" + trId)
+    .push(data, () => {
+      alert("Transformer inspection submitted successfully.");
+      window.location.href = "panel.html?id=" + encodeURIComponent(trId);
+    });
 }
 
 </script>

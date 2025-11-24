@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>DB Fault Report</title>
+  <title>Fault Report – Electrical Panel</title>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -18,13 +18,13 @@
     /* Premium Header */
     .topbar {
       background: #0c0c0c;
-      padding: 18px 0 22px 0;
+      padding: 20px 0 25px 0;
       text-align: center;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.45);
     }
     .topbar img {
       width: 120px;
-      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
+      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.45));
     }
     .title {
       margin-top: 10px;
@@ -36,115 +36,81 @@
       text-shadow: 0 0 8px rgba(0,0,0,0.4);
     }
 
+    /* Card */
     .card {
       background: #fff;
       padding: 20px;
       max-width: 800px;
       margin: 20px auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    }
-
-    h2, h3 {
-      margin-top: 0;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
     label {
-      display:block;
-      margin-top:10px;
-      font-weight:bold;
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
     }
 
     input, select, textarea {
       width: 100%;
       padding: 10px;
-      font-size: 15px;
-      margin-top: 4px;
       border-radius: 6px;
       border: 1px solid #ccc;
-      box-sizing:border-box;
+      font-size: 15px;
+      margin-top: 4px;
     }
 
-    textarea {
-      height: 80px;
-    }
-
-    .row-2 {
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    .row-2 > div {
-      flex:1 1 150px;
-    }
+    textarea { height: 80px; }
 
     .btn {
+      width: 100%;
       padding: 12px;
       border-radius: 8px;
       font-size: 16px;
       font-weight: bold;
-      border: none;
-      width: 100%;
-      cursor: pointer;
       margin-top: 12px;
-      color: #fff;
+      border: none;
+      cursor: pointer;
+      color: white;
     }
 
-    .btn-red   { background:#c40000; }
-    .btn-blue  { background:#007bff; }
-    .btn-dark  { background:#333; }
+    .btn-blue { background: #007bff; }
+    .btn-red { background: #c40000; }
 
-    #formCard { display:none; }
-
-    #preview1,#preview2,#preview3 {
-      width: 100%;
-      margin-top: 10px;
-      display:none;
-      border-radius:10px;
-      border:2px solid #444;
-    }
-
-    .hint {
-      font-size:12px;
-      color:#666;
-    }
-
-    .db-info {
-      font-size:14px;
-      color:#444;
-      line-height:1.5;
-    }
+    #formCard { display: none; }
 
     .section-title {
-      margin-top:18px;
-      font-size:16px;
-      font-weight:bold;
-      border-left:4px solid #ffb300;
-      padding-left:8px;
+      margin-top: 18px;
+      font-weight: bold;
+      font-size: 17px;
+      border-left: 4px solid #ffb300;
+      padding-left: 10px;
+    }
+
+    img.preview {
+      width: 100%;
+      display: none;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 2px solid #444;
     }
 
   </style>
 </head>
+
 <body>
 
-<!-- HEADER -->
 <div class="topbar">
   <img src="logo.png">
-  <div class="title">Fault Reporting – Electrical Panel</div>
+  <div class="title">DB Fault Reporting</div>
 </div>
 
-<!-- DB INFO -->
-<div class="card">
-  <h2 id="dbTitle">Loading...</h2>
-  <div id="dbInfo" class="db-info"></div>
-</div>
-
-<!-- LOGIN CARD -->
-<div class="card">
-  <h3>Electrician Login</h3>
-  <input type="password" id="loginKey" placeholder="Enter Electrician Key">
-  <button class="btn btn-red" onclick="login()">Login</button>
+<!-- LOGIN BOX -->
+<div class="card" id="loginCard">
+  <h2>Electrician Login</h2>
+  <input type="password" id="loginKey" placeholder="Enter Electrician Password">
+  <button class="btn btn-red" onclick="doLogin()">Login</button>
   <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
 
@@ -153,76 +119,63 @@
 
   <h2>Fault Report</h2>
 
-  <div class="row-2">
-    <div>
-      <label>Date & Time</label>
-      <input type="datetime-local" id="fault_datetime">
-    </div>
-    <div>
-      <label>Electrician Name</label>
-      <input type="text" id="fault_name">
-    </div>
-  </div>
+  <label>Date & Time</label>
+  <input type="datetime-local" id="fault_datetime">
+
+  <label>Electrician Name</label>
+  <input type="text" id="fault_name">
 
   <label>Fault Type</label>
   <select id="fault_type">
-    <option value="">Select</option>
     <option>Breaker Tripped</option>
-    <option>Burning Smell</option>
     <option>Overload</option>
-    <option>Loose Connection</option>
+    <option>Burning Smell</option>
     <option>Phase Failure</option>
-    <option>Short Circuit</option>
+    <option>Loose Connection</option>
     <option>Cable Damage</option>
+    <option>Short Circuit</option>
     <option>Component Failure</option>
     <option>Other</option>
   </select>
 
   <label>Description</label>
-  <textarea id="fault_desc" placeholder="Explain what happened, symptoms, details..."></textarea>
+  <textarea id="fault_desc"></textarea>
 
   <div class="section-title">Downtime</div>
 
-  <div class="row-2">
-    <div>
-      <label>Start Time</label>
-      <input type="datetime-local" id="fault_start">
-    </div>
-    <div>
-      <label>End Time</label>
-      <input type="datetime-local" id="fault_end">
-    </div>
-  </div>
+  <label>Start Time</label>
+  <input type="datetime-local" id="fault_start">
+
+  <label>End Time</label>
+  <input type="datetime-local" id="fault_end">
 
   <label>Production Loss</label>
   <select id="fault_loss">
-    <option value="">Select</option>
-    <option>Yes</option>
     <option>No</option>
+    <option>Yes</option>
   </select>
 
-  <label>If Yes, Describe Loss</label>
+  <label>If Yes, describe loss</label>
   <textarea id="fault_lossDesc"></textarea>
 
-  <!-- DYNAMIC QUESTIONS -->
-  <div class="section-title">Additional Fault Questions</div>
+  <div class="section-title">Additional Questions</div>
   <div id="faultQuestionsContainer">
-    <p class="hint">Admin-added fault questions will appear here.</p>
+    <p style="font-size:13px;color:#666;">Loading questions...</p>
   </div>
 
   <div class="section-title">Photos</div>
 
   <label>Photo 1</label>
-  <input type="file" accept="image/*" onchange="previewPhoto(event,1)">
-  <img id="preview1">
+  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,1)">
+  <img id="preview1" class="preview">
 
   <label>Photo 2</label>
-  <input type="file" accept="image/*" onchange="previewPhoto(event,2)">
-  <img id="preview2">
+  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,2)">
+  <img id="preview2" class="preview">
 
   <label>Photo 3</label>
-  <input type="file" accept="image/*" onchange="previewPhoto(event,3)">
-  <img id="preview3">
+  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,3)">
+  <img id="preview3" class="preview">
 
   <label>Corrective Actions / Remarks</label>
   <textarea id="fault_comments"></textarea>
@@ -232,208 +185,168 @@
 </div>
 
 <script>
-/* -------------------------
-   GLOBAL VARIABLES
--------------------------- */
+/* -----------------------------
+   GET DB ID
+------------------------------*/
 const params = new URLSearchParams(window.location.search);
 const dbId = params.get("id");
+
+/* -----------------------------
+   AUTO-LOGIN CHECK
+------------------------------*/
 const ELECTRICIAN_KEY = "9999";
-let questionsGlobal = {};
-let photo1=null, photo2=null, photo3=null;
 
-/* -------------------------
-   LOAD DB INFORMATION
--------------------------- */
-if (!dbId) {
-  document.getElementById("dbTitle").innerText="Invalid DB ID!";
-} else {
-  document.getElementById("dbTitle").innerText="DB – " + dbId;
-
-  loadPanelFromFirebase(dbId, p => {
-    if (!p) {
-      document.getElementById("dbInfo").innerText = "DB not found in Firebase.";
-      return;
-    }
-    let html = `
-      <b>Location:</b> ${p.location || ""}<br>
-      <b>Voltage:</b> ${p.voltage || ""}<br>
-      <b>Main Breaker:</b> ${p.mainBreaker || ""}<br>
-      <b>Cable Size:</b> ${p.cableSize || ""}<br>
-      <b>Purpose:</b> ${p.purpose || ""}<br>
-    `;
-    if (p.image) html += `<br><img src="${p.image}" style="width:100%;border-radius:10px;">`;
-
-    document.getElementById("dbInfo").innerHTML = html;
-  });
+if (sessionStorage.getItem("electricianLogged") === "true") {
+  showForm();
 }
 
-/* -------------------------
-   SET DEFAULT DATETIME
--------------------------- */
-document.addEventListener("DOMContentLoaded", ()=>{
-  const now = new Date();
-  const dt = document.getElementById("fault_datetime");
-  if (dt) dt.value = now.toISOString().slice(0,16);
-
-  loadQuestions();
-});
-
-/* -------------------------
-   ELECTRICIAN LOGIN
--------------------------- */
-function login(){
-  const val = document.getElementById("loginKey").value.trim();
+function doLogin() {
+  const key = document.getElementById("loginKey").value.trim();
   const err = document.getElementById("loginError");
 
-  if (val === ELECTRICIAN_KEY) {
-    if (!dbId) {
-      err.innerText="Invalid DB ID.";
-      return;
-    }
-    document.getElementById("formCard").style.display="block";
-    err.innerText="";
+  if (key === ELECTRICIAN_KEY) {
+    sessionStorage.setItem("electricianLogged", "true");
+    showForm();
   } else {
-    err.innerText="Incorrect key!";
+    err.innerText = "Incorrect password!";
   }
 }
 
-/* -------------------------
-      PHOTO PREVIEW
--------------------------- */
-function previewPhoto(event,num){
+function showForm() {
+  document.getElementById("loginCard").style.display = "none";
+  document.getElementById("formCard").style.display = "block";
+
+  const now = new Date();
+  document.getElementById("fault_datetime").value = now.toISOString().slice(0,16);
+}
+
+/* -----------------------------
+   PREVIEW PHOTOS
+------------------------------*/
+let photo1 = null, photo2 = null, photo3 = null;
+
+function previewPhoto(event, num) {
   const file = event.target.files[0];
-  if(!file) return;
+  if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = e=>{
-    if(num===1){ photo1=e.target.result; const img=document.getElementById("preview1"); img.src=photo1; img.style.display="block"; }
-    if(num===2){ photo2=e.target.result; const img=document.getElementById("preview2"); img.src=photo2; img.style.display="block"; }
-    if(num===3){ photo3=e.target.result; const img=document.getElementById("preview3"); img.src=photo3; img.style.display="block"; }
+  reader.onload = e => {
+    const img = document.getElementById("preview" + num);
+    img.src = e.target.result;
+    img.style.display = "block";
+
+    if (num === 1) photo1 = e.target.result;
+    if (num === 2) photo2 = e.target.result;
+    if (num === 3) photo3 = e.target.result;
   };
+
   reader.readAsDataURL(file);
 }
 
-/* -------------------------
+/* -----------------------------
    LOAD DYNAMIC QUESTIONS
--------------------------- */
-function loadQuestions(){
-  firebase.database().ref("questions").on("value", snap=>{
-    questionsGlobal = snap.val() || {};
-    renderFaultQuestions();
-  });
-}
+------------------------------*/
+let questionsGlobal = {};
 
-function renderFaultQuestions(){
+firebase.database().ref("questions").on("value", snap => {
+  questionsGlobal = snap.val() || {};
+  renderFaultQuestions();
+});
+
+function renderFaultQuestions() {
   const container = document.getElementById("faultQuestionsContainer");
-
-  const entries = Object.entries(questionsGlobal)
+  const list = Object.entries(questionsGlobal)
     .filter(([id,q]) => q.applyFault && q.active !== false);
 
-  if (!entries.length){
-    container.innerHTML = "<p class='hint'>No extra fault questions added by admin.</p>";
+  if (!list.length) {
+    container.innerHTML = "<p style='font-size:13px;color:#666;'>No additional questions.</p>";
     return;
   }
 
-  let html="";
-  entries.forEach(([id,q])=>{
-    html += renderQuestionFieldHtml("fault", id, q);
-  });
-
+  let html = "";
+  list.forEach(([id,q]) => { html += renderQ(id,q); });
   container.innerHTML = html;
 }
 
-function renderQuestionFieldHtml(sectionPrefix, id, q){
-  const baseId = `q_${sectionPrefix}_${id}`;
-  let fieldHtml="";
+function renderQ(id,q) {
+  const fieldId = `q_fault_${id}`;
+  let field = "";
 
-  if(q.type==="text"){
-    fieldHtml=`<input type="text" id="${baseId}">`;
-  } else if(q.type==="number"){
-    fieldHtml=`<input type="number" id="${baseId}" style="max-width:180px;">`;
-  } else if(q.type==="yesno"){
-    fieldHtml=`
-      <select id="${baseId}">
-        <option value=""></option>
-        <option value="Yes">Yes</option>
-        <option value="No">No</option>
-      </select>`;
-  } else if(q.type==="dropdown"){
-    const opts=(q.options||[]);
-    const optionsHtml=['<option value=""></option>']
-      .concat(opts.map(o=>`<option value="${o}">${o}</option>`))
-      .join("");
-    fieldHtml=`<select id="${baseId}">${optionsHtml}</select>`;
-  } else {
-    fieldHtml=`<input type="text" id="${baseId}">`;
-  }
+  if (q.type === "text")
+    field = `<input type="text" id="${fieldId}">`;
 
-  return `
-    <div style="margin-top:10px;">
-      <label>${q.text}</label>
-      ${fieldHtml}
-    </div>
-  `;
+  else if (q.type === "number")
+    field = `<input type="number" id="${fieldId}" style="max-width:160px;">`;
+
+  else if (q.type === "yesno")
+    field = `<select id="${fieldId}">
+               <option></option>
+               <option>Yes</option>
+               <option>No</option>
+             </select>`;
+
+  else if (q.type === "dropdown")
+    field = `<select id="${fieldId}">
+               <option></option>
+               ${q.options.map(o => `<option>${o}</option>`).join("")}
+             </select>`;
+
+  return `<label>${q.text}</label>${field}`;
 }
 
-function collectDynamicAnswers(sectionPrefix){
-  const result={};
-  Object.entries(questionsGlobal).forEach(([id,q])=>{
-    let applies = false;
-    if(sectionPrefix==="fault" && q.applyFault) applies=true;
-    if(!applies || q.active===false) return;
-
-    const input=document.getElementById(`q_${sectionPrefix}_${id}`);
-    if(!input) return;
-    const val=(input.value || "").trim();
-    if(val) result[id]=val;
+function collectDynamicFault() {
+  const output = {};
+  Object.entries(questionsGlobal).forEach(([id,q]) => {
+    if (!q.applyFault || q.active === false) return;
+    const inp = document.getElementById(`q_fault_${id}`);
+    if (!inp) return;
+    const val = inp.value.trim();
+    if (val) output[id] = val;
   });
-  return Object.keys(result).length? result : null;
+  return Object.keys(output).length ? output : null;
 }
 
-/* -------------------------
-       SUBMIT FAULT
--------------------------- */
-function submitFault(){
-  if(!dbId){
-    alert("Invalid DB ID in URL.");
-    return;
-  }
-
+/* -----------------------------
+   SUBMIT FAULT REPORT
+------------------------------*/
+function submitFault() {
   const name = document.getElementById("fault_name").value.trim();
-  if(!name){
-    alert("Enter electrician name.");
-    return;
-  }
+  if (!name) return alert("Enter electrician name.");
 
   const start = document.getElementById("fault_start").value;
-  const end   = document.getElementById("fault_end").value;
+  const end = document.getElementById("fault_end").value;
 
-  // Calculate downtime
-  let downtimeMinutes = "";
-  if(start && end){
+  let downtime = "";
+  if (start && end) {
     const diff = (new Date(end) - new Date(start)) / 60000;
-    downtimeMinutes = diff > 0 ? Math.round(diff) : "";
+    downtime = diff > 0 ? Math.round(diff) : "";
   }
 
   const data = {
-    dbId: dbId,
     timestamp: new Date().toISOString(),
     datetimeLocal: document.getElementById("fault_datetime").value,
+
+    dbId: dbId,
     electricianName: name,
     faultType: document.getElementById("fault_type").value,
     description: document.getElementById("fault_desc").value,
+
     startTime: start,
     endTime: end,
-    downtimeMinutes: downtimeMinutes,
+    downtimeMinutes: downtime,
+
     productionLoss: document.getElementById("fault_loss").value,
     productionLossDesc: document.getElementById("fault_lossDesc").value,
-    extraAnswers: collectDynamicAnswers("fault"),
+
+    extraAnswers: collectDynamicFault(),
+
     photo1, photo2, photo3,
+
     comments: document.getElementById("fault_comments").value
   };
 
-  saveFault(dbId, data, ()=>{
-    alert("Fault report submitted.");
+  saveFault(dbId, data, () => {
+    alert("Fault Report Submitted.");
     window.location.href = "panel.html?id=" + encodeURIComponent(dbId);
   });
 }
