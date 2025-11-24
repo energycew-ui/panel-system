@@ -7,7 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- Your Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
+  <!-- Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
   <script src="data.js"></script>
 
   <!-- QR Library -->
@@ -526,7 +526,7 @@
 
         <div id="qrPreview">
           <div class="dangerBanner">
-            ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
+           ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
           </div>
           <canvas id="qrCanvas" width="250" height="250"></canvas>
           <div id="qrDBname"></div>
@@ -808,6 +808,17 @@ function afterLoginInit() {
   showTransformers();
   loadTransformerReports();
   loadLuxReports();
+  handleEditParam();   // <-- IMPORTANT: handle ?edit= from panel.html
+}
+
+/* ------------ HANDLE ?edit=DBID FROM panel.html ------------ */
+function handleEditParam() {
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get("edit");
+  if (editId) {
+    // Just use existing editPanel() which loads everything & switches tab
+    editPanel(editId);
+  }
 }
 
 /* ------------ TABS HANDLING ------------ */
@@ -1199,7 +1210,7 @@ function downloadQR() {
   };
 }
 
-/* ------------ TRANFORMER QR + DOWNLOAD ------------ */
+/* ------------ TRANSFORMER QR + DOWNLOAD ------------ */
 let trQR;
 
 function generateTransformerQR() {
@@ -1585,7 +1596,7 @@ function deleteInspection(dbId, key) {
 }
 
 function deleteFault(dbId, key) {
-  if (!confirm("Delete this fault record?")) return;
+  if (!confirm("Delete this fault report?")) return;
   firebase.database().ref("faults/" + dbId + "/" + key).remove().then(() => {
     alert("Fault report deleted.");
     loadReports();
@@ -2369,22 +2380,7 @@ function exportLuxCSV() {
   const csv = arrayToCSV(rows);
   downloadCSV("lux_reports.csv", csv);
 }
-</body>
-</html>
-// Auto-load DB for editing when coming from panel.html
-window.addEventListener("load", () => {
-  const params = new URLSearchParams(window.location.search);
-  const editId = params.get("edit");
-
-  if (editId) {
-    document.querySelector('.tab-btn[data-target="tab-entry"]').click();
-    loadPanelFromFirebase(editId, p => {
-      if (p) {
-        editPanel(editId);
-      }
-    });
-  }
-});
-
 </script>
 
+</body>
+</html>
