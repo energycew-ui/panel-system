@@ -1,508 +1,181 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Chenab Electrical Panel System</title>
+  <title>Electrical Panel – Visitor & Electrician Access</title>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <!-- Your Firebase helper (firebaseConfig + loadPanelFromFirebase etc.) -->
   <script src="data.js"></script>
 
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      background: #f2f4f7;
+      background: #f4f4f4;
     }
 
-    /* BASIC TOPBAR (same as admin) */
+    /* Premium Header */
     .topbar {
-      background: #111;
-      color: #ffc800;
-      padding: 12px 24px 16px 24px;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .topbar-title {
-      font-size: 22px;
-      font-weight: bold;
-    }
-
-    /* CARD STYLE (same as admin) */
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      margin-bottom: 20px;
-    }
-
-    h1, h2, h3 {
-      margin-top: 0;
-      color: #111;
-    }
-
-    /* MAIN WRAPPER similar to tab-wrapper */
-    .panel-wrapper {
-      padding: 20px;
-      max-width: 900px;
-      margin: 0 auto 40px auto;
-    }
-
-    /* FORM ELEMENTS / BUTTONS (reuse admin styles) */
-    label {
-      display: block;
-      margin-top: 12px;
-      font-weight: bold;
-    }
-    input[type="text"],
-    input[type="password"] {
-      padding: 8px;
-      font-size: 16px;
-      width: 100%;
-      max-width: 300px;
-      box-sizing: border-box;
-    }
-    button {
-      padding: 8px 16px;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: 10px;
-      border-radius: 6px;
-      border: none;
-    }
-    .primary-btn {
-      background:#007bff;
-      color:#fff;
-    }
-    .danger-btn {
-      background:#c40000;
-      color:#fff;
-    }
-    .secondary-btn {
-      background:#555;
-      color:#fff;
-    }
-
-    /* DANGER BANNER (same feel as admin) */
-    .dangerBanner {
-      background: #c40000;
-      color: #fff;
-      padding: 10px 12px;
-      font-weight: bold;
-      border-radius: 8px;
-      max-width: 600px;
-      margin: 0 auto 15px auto;
-      font-size: 16px;
-      text-align: center;
-    }
-
-    /* PANEL IMAGE */
-    .panel-image-box img {
-      width: 100%;
-      max-height: 320px;
-      object-fit: cover;
-      border-radius: 10px;
-      border: 2px solid #444;
-    }
-
-    .labelBox {
-      background: #f9fafb;
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 15px;
-      border: 1px solid #e5e7eb;
-    }
-
-    /* VISITOR / ELECTRICIAN CHOICES */
-    .choice-box {
-      text-align: center;
-      margin-top: 10px;
-    }
-    .choice-box h3 {
-      margin-bottom: 10px;
-    }
-    .choice-box button {
-      min-width: 180px;
-      margin: 6px 8px;
-      font-size: 15px;
-    }
-
-    .passwordBox {
-      text-align: center;
-      margin-top: 10px;
-    }
-    .passwordBox p {
-      margin: 6px 0 0 0;
-    }
-    #passError {
-      color: #c40000;
-      font-weight: bold;
-      margin-top: 6px;
-      font-size: 13px;
-    }
-
-    .electricianOptions h3 {
-      margin-bottom: 10px;
-    }
-    .electricianOptions button {
-      display: block;
-      width: 100%;
-      max-width: 300px;
-      margin: 8px auto;
-      font-size: 16px;
-      font-weight: bold;
-    }
-
-    /* CIRCUIT BOXES (same style as master-circuit-box) */
-    .master-circuit-box {
-      background:#fafafa;
-      border:1px solid #ddd;
-      border-radius:6px;
-      padding:8px;
-      margin-bottom:6px;
-      font-size:13px;
-    }
-
-    /* PREMIUM HEADER DESIGN (copied from admin) */
-    .premium-header {
-      position: relative;
-      padding: 20px 0 28px 0;
       background: #0c0c0c;
+      padding: 20px 0 25px 0;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
     }
-
-    .logo-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    .topbar img {
+      width: 120px;
+      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
     }
-
-    .topbar-logo {
-      width: 110px;
-      height: auto;
-      margin-bottom: 10px;
-      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.45));
-      opacity: 1;
-      animation: fadeInDown 0.7s ease-out;
-    }
-
-    /* Gold Gradient Title */
-    .premium-title {
-      background: linear-gradient(90deg, #ffd65a, #ffb300);
+    .title {
+      margin-top: 10px;
+      font-size: 26px;
+      font-weight: bold;
+      background: linear-gradient(90deg,#ffd65a,#ffb300);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      text-align: center;
-      animation: fadeInUp 0.7s ease-out;
+      text-shadow: 0 0 8px rgba(0,0,0,0.4);
     }
 
-    /* Thin gold separator line */
-    .header-separator {
-      width: 80%;
-      height: 2px;
-      margin: 12px auto 0 auto;
-      background: linear-gradient(90deg, #ffefc1, #ffb300, #ffefc1);
-      border-radius: 2px;
-      animation: fadeIn 1.2s ease-out;
+    .card {
+      background: #fff;
+      padding: 20px;
+      max-width: 650px;
+      margin: 20px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
 
-    /* Animations */
-    @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-12px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .btn {
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      width: 100%;
+      margin-top: 10px;
+      color: #fff;
     }
+    .btn-red { background: #c40000; }
+    .btn-blue { background: #007bff; }
+    .btn-gold { background: #ffb300; color:#000; font-weight:800; }
+    .btn-dark { background: #333; }
+    .btn-green { background: #0a8f0a; }
 
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
-    /* SMALL TEXT */
-    .small-note {
-      font-size: 13px;
-      color: #555;
-      margin-top: 4px;
-    }
+    #electricianButtons { display:none; margin-top:20px; }
+    #dbInfo { display:none; }
   </style>
 </head>
 
 <body>
 
-<!-- PREMIUM HEADER (same as admin, but panel title) -->
-<div class="topbar premium-header">
-  <div class="logo-wrapper">
-    <img src="logo.png" class="topbar-logo" alt="Chenab Engineering Logo">
-  </div>
-  <div class="topbar-title premium-title">
-    Chenab Electrical Panel System
-  </div>
-  <div class="header-separator"></div>
+<!-- Header -->
+<div class="topbar">
+  <img src="logo.png">
+  <div class="title">Electrical Panel Access</div>
 </div>
 
-<div class="panel-wrapper">
-
-  <!-- TOP CARD: Danger + Who Are You -->
-  <div class="card">
-    <div class="dangerBanner">
-      ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
-    </div>
-
-    <h2 id="dbTitle">Loading panel...</h2>
-    <p class="small-note">
-      Scan-only information for visitors. Electricians can log in to submit inspection or fault reports.
-    </p>
-
-    <!-- Step 1: user choice -->
-    <div id="userChoiceBox" class="choice-box">
-      <h3>Who are you?</h3>
-      <button class="secondary-btn" onclick="showVisitorView()">View Panel Information</button>
-      <button class="primary-btn" onclick="showElectricianLogin()">Electrician Login</button>
-    </div>
-
-    <!-- Step 2: electrician password -->
-    <div id="passwordBox" class="passwordBox" style="display:none;">
-      <h3>Electrician Login</h3>
-      <input type="password" id="electricianPass" placeholder="Enter Electrician Code">
-      <br>
-      <button class="primary-btn" onclick="checkElectricianPassword()">Login</button>
-      <p id="passError"></p>
-      <p class="small-note">For authorized Chenab electricians only.</p>
-    </div>
-
-    <!-- Step 3: electrician options -->
-    <div id="electricianOptions" class="electricianOptions" style="display:none;">
-      <h3>Select Action</h3>
-      <button class="primary-btn" onclick="goInspection()">Fill Inspection Report</button>
-      <button class="primary-btn" onclick="goFault()">Fill Fault Report</button>
-    </div>
-  </div>
-
-<!-- ===================== VISITOR VIEW (NEW INDUSTRIAL DESIGN) ===================== -->
-<div id="panelInfoCard" class="card" style="display:none;">
-
-  <!-- Full-width Industrial Warning Banner -->
-  <div style="
-    width: 100%;
-    background: #ffcc00;
-    color: #000;
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 20px;
-    font-weight: 900;
-    text-align: center;
-    border: 3px solid #000;
-    margin-bottom: 16px;
-    text-transform: uppercase;
-  ">
-    ⚠️ HIGH VOLTAGE – AUTHORIZED PERSONNEL ONLY ⚡
-  </div>
-
-  <!-- Panel Image -->
-  <div class="panel-image-box" id="panelImageBox" style="display:none;">
-    <img id="panelImage" src="">
-  </div>
-
-  <!-- DB Details Grid -->
-  <div class="labelBox">
-    <h3>Panel Details</h3>
-
-    <div style="
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      font-size: 15px;
-    ">
-      <div>⚡ <b>DB Number:</b><br><span id="db_number"></span></div>
-      <div>🔌 <b>Voltage:</b><br><span id="db_voltage"></span></div>
-
-      <div>⚡ <b>Main Breaker:</b><br><span id="db_breaker"></span></div>
-      <div>🔷 <b>Cable Size:</b><br><span id="db_cable"></span></div>
-
-      <div>🌩️ <b>Earth Status:</b><br><span id="db_earth"></span></div>
-      <div>📍 <b>Location:</b><br><span id="db_location"></span></div>
-
-      <div style="grid-column: span 2;">🏭 <b>Purpose:</b><br><span id="db_purpose"></span></div>
-    </div>
-  </div>
-
-  <!-- Circuits Section -->
-  <div class="labelBox">
-    <h3>🛠️ Circuits</h3>
-    <div id="circuitsList"></div>
-  </div>
-
-  <!-- Extra Dynamic Answers -->
-  <div class="labelBox" id="extraBox" style="display:none;">
-    <h3>📄 Extra Information</h3>
-    <ul id="extraList" style="padding-left:18px;"></ul>
-  </div>
-
-  <p class="small-note" style="margin-top:15px;">
-    For maintenance, inspections or faults, contact authorized Chenab electricians only.
-  </p>
+<div class="card">
+  <h2 id="panelName">Loading...</h2>
+  <div id="dbInfo"></div>
 </div>
-<!-- ===================== END VISITOR VIEW ===================== -->
 
+<div class="card">
+  <h3>Electrician Login</h3>
+  <input type="password" id="elecKey" placeholder="Enter Electrician Key" style="width:100%;padding:10px;font-size:16px;">
+  <button class="btn btn-red" onclick="loginElectrician()">Login</button>
+  <div id="loginError" style="color:red;margin-top:10px;"></div>
+</div>
+
+<div class="card" id="electricianButtons">
+  <h3>Electrician Menu</h3>
+
+  <button class="btn btn-blue" onclick="openModifyDB()">🔧 Modify DB Data</button>
+  <button class="btn btn-green" onclick="openDbInspection()">📋 DB Inspection</button>
+  <button class="btn btn-red" onclick="openFaultReport()">⚡ Fault Report</button>
+  <button class="btn btn-gold" onclick="openTransformerInspection()">🔌 Transformer Inspection</button>
+  <button class="btn btn-dark" onclick="openLuxReport()">💡 LUX Monitoring Report</button>
 
 </div>
 
 <script>
-/* --------------------------
-   GLOBALS
---------------------------- */
+/* ---------------------------
+      LOAD DB INFO
+----------------------------*/
+const urlParams = new URLSearchParams(window.location.search);
+const dbId = urlParams.get("id");
 
-const ELECTRICIAN_PASSWORD = "ELEC123";  // as requested
-let dbID = "";
-let questionsMap = {}; // to show nice labels for extraAnswers
-
-/* --------------------------
-   VISITOR / ELECTRICIAN FLOW
---------------------------- */
-
-function showVisitorView() {
-  document.getElementById("userChoiceBox").style.display = "none";
-  document.getElementById("passwordBox").style.display = "none";
-  document.getElementById("electricianOptions").style.display = "none";
-  document.getElementById("panelInfoCard").style.display = "block";
-}
-
-function showElectricianLogin() {
-  document.getElementById("userChoiceBox").style.display = "none";
-  document.getElementById("panelInfoCard").style.display = "none";
-  document.getElementById("electricianOptions").style.display = "none";
-  document.getElementById("passwordBox").style.display = "block";
-  document.getElementById("passError").innerText = "";
-  document.getElementById("electricianPass").value = "";
-}
-
-function checkElectricianPassword() {
-  const pass = document.getElementById("electricianPass").value.trim();
-  const err = document.getElementById("passError");
-  if (pass === ELECTRICIAN_PASSWORD) {
-    err.innerText = "";
-    document.getElementById("passwordBox").style.display = "none";
-    document.getElementById("electricianOptions").style.display = "block";
-  } else {
-    err.innerText = "Incorrect password!";
-  }
-}
-
-/* redirections */
-function goInspection() {
-  if (!dbID) return;
-  window.location.href = "electrician.html?id=" + encodeURIComponent(dbID);
-}
-
-function goFault() {
-  if (!dbID) return;
-  window.location.href = "fault.html?id=" + encodeURIComponent(dbID);
-}
-
-/* --------------------------
-   LOAD QUESTIONS (for extra labels)
---------------------------- */
-
-function loadQuestionsForLabels() {
-  // Uses the same /questions structure as admin.html
-  firebase.database().ref("questions").once("value").then(function(snap) {
-    questionsMap = snap.val() || {};
-  });
-}
-
-/* --------------------------
-   LOAD PANEL DATA
---------------------------- */
-
-window.onload = function() {
-  const urlParams = new URLSearchParams(window.location.search);
-  dbID = urlParams.get("id");
-
-  if (!dbID) {
-    document.getElementById("dbTitle").innerText = "DB Not Found!";
-    document.getElementById("userChoiceBox").style.display = "none";
-    return;
-  }
-
-  document.getElementById("dbTitle").innerText = "DB – " + dbID;
-
-  // Load question map (for labels on extraAnswers)
-  loadQuestionsForLabels();
-
-  // Load panel data from Firebase using your data.js helper
-  loadPanelFromFirebase(dbID, function(panel) {
+if (!dbId) {
+  document.getElementById("panelName").innerText = "Invalid Panel QR Code!";
+} else {
+  loadPanelFromFirebase(dbId, panel => {
     if (!panel) {
-      document.getElementById("dbTitle").innerText = "DB Not Found in Database!";
-      document.getElementById("userChoiceBox").style.display = "none";
+      document.getElementById("panelName").innerText = "Panel Not Found!";
       return;
     }
 
-    document.getElementById("db_number").innerText   = panel.dbNumber || dbID;
-    document.getElementById("db_voltage").innerText  = panel.voltage || "";
-    document.getElementById("db_breaker").innerText  = panel.mainBreaker || "";
-    document.getElementById("db_cable").innerText    = panel.cableSize || "";
-    document.getElementById("db_earth").innerText    = panel.earthStatus || "";
-    document.getElementById("db_location").innerText = panel.location || "";
-    document.getElementById("db_purpose").innerText  = panel.purpose || "";
+    document.getElementById("panelName").innerText = "DB – " + dbId;
 
-    // Image
+    let html = `
+      <b>Location:</b> ${panel.location || ""}<br>
+      <b>Voltage:</b> ${panel.voltage || ""}<br>
+      <b>Main Breaker:</b> ${panel.mainBreaker || ""}<br>
+      <b>Cable Size:</b> ${panel.cableSize || ""}<br>
+      <b>Purpose:</b> ${panel.purpose || ""}<br><br>
+    `;
+
     if (panel.image) {
-      document.getElementById("panelImage").src = panel.image;
-      document.getElementById("panelImageBox").style.display = "block";
-    } else {
-      document.getElementById("panelImageBox").style.display = "none";
+      html += `<img src="${panel.image}" style="width:100%;border-radius:10px;">`;
     }
 
-    // Circuits
-    const circuitsContainer = document.getElementById("circuitsList");
-    circuitsContainer.innerHTML = "";
-    if (panel.circuits && Array.isArray(panel.circuits) && panel.circuits.length) {
-      panel.circuits.forEach(function(c) {
-        const div = document.createElement("div");
-        div.className = "master-circuit-box";
-        div.innerHTML = `
-          <b>${c.name || ""}</b><br>
-          Breaker: ${c.breaker || ""}<br>
-          Load: ${c.load || ""}
-        `;
-        circuitsContainer.appendChild(div);
-      });
-    } else {
-      circuitsContainer.innerHTML = "<p style='font-size:13px;color:#555;'>No circuits recorded.</p>";
-    }
-
-    // Extra Answers (dynamic questions)
-    const extraBox = document.getElementById("extraBox");
-    const extraList = document.getElementById("extraList");
-    extraList.innerHTML = "";
-    if (panel.extraAnswers) {
-      extraBox.style.display = "block";
-      Object.keys(panel.extraAnswers).forEach(function(qid) {
-        const val = panel.extraAnswers[qid];
-        const q = questionsMap[qid];
-        const label = q && q.text ? q.text : qid;
-        const li = document.createElement("li");
-        li.innerHTML = "<b>" + label + ":</b> " + val;
-        extraList.appendChild(li);
-      });
-    } else {
-      extraBox.style.display = "none";
-    }
+    document.getElementById("dbInfo").innerHTML = html;
+    document.getElementById("dbInfo").style.display = "block";
   });
-};
+}
+
+
+/* ---------------------------
+      ELECTRICIAN LOGIN
+----------------------------*/
+const ELECTRICIAN_KEY = "9999"; // Change if needed
+
+function loginElectrician() {
+  let key = document.getElementById("elecKey").value.trim();
+  let err = document.getElementById("loginError");
+
+  if (key === ELECTRICIAN_KEY) {
+    document.getElementById("electricianButtons").style.display = "block";
+    err.innerText = "";
+  } else {
+    err.innerText = "Incorrect key!";
+  }
+}
+
+
+/* ---------------------------
+      MENU BUTTON FUNCTIONS
+----------------------------*/
+
+function openModifyDB() {
+  window.location.href = "panel.html?id=" + dbId + "#modify";
+}
+
+function openDbInspection() {
+  window.location.href = "electrician.html?id=" + dbId;
+}
+
+function openFaultReport() {
+  window.location.href = "fault.html?id=" + dbId;
+}
+
+function openTransformerInspection() {
+  window.location.href = "transformer.html?id=" + dbId;
+}
+
+function openLuxReport() {
+  window.location.href = "lux.html?id=" + dbId;
+}
+
 </script>
 
 </body>

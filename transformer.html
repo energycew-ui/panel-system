@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Transformer Inspection</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      margin: 0;
+      background: #f4f4f4;
+    }
+
+    /* Premium Header */
+    .topbar {
+      background: #0c0c0c;
+      padding: 18px 0 22px 0;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+    }
+    .topbar img {
+      width: 120px;
+      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
+    }
+    .title {
+      margin-top: 10px;
+      font-size: 26px;
+      font-weight: bold;
+      background: linear-gradient(90deg,#ffd65a,#ffb300);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 8px rgba(0,0,0,0.4);
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      max-width: 700px;
+      margin: 20px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    textarea {
+      height: 80px;
+    }
+
+    .btn {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      width: 100%;
+      cursor: pointer;
+      margin-top: 12px;
+      color: #fff;
+    }
+
+    .btn-red { background:#c40000; }
+    .btn-blue { background:#007bff; }
+
+    #preview1,#preview2,#preview3 {
+      width: 100%;
+      margin-top: 10px;
+      display:none;
+      border-radius:10px;
+      border:2px solid #444;
+    }
+
+    #formArea { display:none; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="logo.png">
+  <div class="title">Transformer Inspection</div>
+</div>
+
+<div class="card">
+  <h2 id="trTitle">Loading...</h2>
+
+  <h3>Electrician Login</h3>
+  <input type="password" id="key" placeholder="Enter Key">
+  <button class="btn btn-red" onclick="login()">Login</button>
+  <div id="error" style="color:red;margin-top:10px;"></div>
+</div>
+
+<div class="card" id="formArea">
+
+  <h3>Inspection Form</h3>
+
+  <label>Date & Time</label>
+  <input type="datetime-local" id="datetime">
+
+  <label>Electrician Name</label>
+  <input type="text" id="ename">
+
+  <label>Oil Condition</label>
+  <select id="oilCond">
+    <option value="">Select</option>
+    <option>Good</option>
+    <option>Dark</option>
+    <option>Needs Replacement</option>
+  </select>
+
+  <label>Oil Level</label>
+  <select id="oilLevel">
+    <option value="">Select</option>
+    <option>Normal</option>
+    <option>Low</option>
+    <option>Critical</option>
+  </select>
+
+  <label>Oil Temperature (°C)</label>
+  <input type="number" id="oilTemp">
+
+  <label>Winding Temperature (°C)</label>
+  <input type="number" id="windTemp">
+
+  <label>Noise / Vibration</label>
+  <select id="noise">
+    <option value="">Select</option>
+    <option>Normal</option>
+    <option>Abnormal</option>
+  </select>
+
+  <label>Bushing Condition</label>
+  <select id="bushing">
+    <option value="">Select</option>
+    <option>Good</option>
+    <option>Cracked</option>
+    <option>Dirty</option>
+  </select>
+
+  <label>Fan / Blower</label>
+  <select id="fan">
+    <option value="">Select</option>
+    <option>Working</option>
+    <option>Not Working</option>
+  </select>
+
+  <label>Tap Changer</label>
+  <select id="tap">
+    <option value="">Select</option>
+    <option>Operational</option>
+    <option>Not Operational</option>
+  </select>
+
+  <label>IR Test (MΩ)</label>
+  <input type="number" id="ir">
+
+  <label>Earth Resistance (Ω)</label>
+  <input type="number" id="earth">
+
+  <label>Leakage</label>
+  <select id="leak">
+    <option value="">Select</option>
+    <option>No Leakage</option>
+    <option>Minor Leakage</option>
+    <option>Major Leakage</option>
+  </select>
+
+  <label>Load Current (A)</label>
+  <input type="number" id="load">
+
+  <h3>Photos</h3>
+
+  <label>Photo 1</label>
+  <input type="file" accept="image/*" onchange="previewPhoto(event,1)">
+  <img id="preview1">
+
+  <label>Photo 2</label>
+  <input type="file" accept="image/*" onchange="previewPhoto(event,2)">
+  <img id="preview2">
+
+  <label>Photo 3</label>
+  <input type="file" accept="image/*" onchange="previewPhoto(event,3)">
+  <img id="preview3">
+
+  <label>Remarks</label>
+  <textarea id="remarks"></textarea>
+
+  <button class="btn btn-blue" onclick="submitForm()">Submit Inspection</button>
+
+</div>
+
+<script>
+/* -------------------------
+    Load Transformer ID
+--------------------------*/
+
+const params = new URLSearchParams(window.location.search);
+const trId = params.get("id");
+
+document.getElementById("trTitle").innerText = trId
+  ? "Transformer: " + trId
+  : "Invalid Transformer ID";
+
+/* -------------------------
+     Electrician Login
+--------------------------*/
+const KEY = "9999";
+
+function login() {
+  let val = document.getElementById("key").value.trim();
+  if (val === KEY) {
+    document.getElementById("formArea").style.display = "block";
+    document.getElementById("error").innerText = "";
+  } else {
+    document.getElementById("error").innerText = "Incorrect key!";
+  }
+}
+
+/* -------------------------
+       Photo Preview
+--------------------------*/
+let photo1 = null, photo2 = null, photo3 = null;
+
+function previewPhoto(event, num) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (num === 1) { photo1 = e.target.result; document.getElementById("preview1").src = photo1; document.getElementById("preview1").style.display = "block"; }
+    if (num === 2) { photo2 = e.target.result; document.getElementById("preview2").src = photo2; document.getElementById("preview2").style.display = "block"; }
+    if (num === 3) { photo3 = e.target.result; document.getElementById("preview3").src = photo3; document.getElementById("preview3").style.display = "block"; }
+  };
+
+  reader.readAsDataURL(file);
+}
+
+/* -------------------------
+      Submit Inspection
+--------------------------*/
+function submitForm() {
+
+  if (!trId) {
+    alert("Invalid transformer!");
+    return;
+  }
+
+  const data = {
+    transformerId: trId,
+    datetimeLocal: document.getElementById("datetime").value,
+    electricianName: document.getElementById("ename").value,
+    oilCondition: document.getElementById("oilCond").value,
+    oilLevel: document.getElementById("oilLevel").value,
+    oilTemperature: document.getElementById("oilTemp").value,
+    windingTemperature: document.getElementById("windTemp").value,
+    noise: document.getElementById("noise").value,
+    bushing: document.getElementById("bushing").value,
+    fan: document.getElementById("fan").value,
+    tapChanger: document.getElementById("tap").value,
+    irTest: document.getElementById("ir").value,
+    earthResistance: document.getElementById("earth").value,
+    leakage: document.getElementById("leak").value,
+    loadCurrent: document.getElementById("load").value,
+    remarks: document.getElementById("remarks").value,
+    photo1, photo2, photo3,
+    timestamp: Date.now()
+  };
+
+  saveTransformerInspection(trId, data, () => {
+    alert("Transformer Inspection Submitted!");
+    window.location.reload();
+  });
+}
+
+</script>
+
+</body>
+</html>

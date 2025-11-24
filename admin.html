@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html>
 <head>
   <title>Admin Dashboard</title>
@@ -169,7 +169,8 @@
       border: none;
     }
 
-    #previewImage {
+    #previewImage,
+    #previewTransformerImage {
       width: 200px;
       margin-top: 10px;
       border: 2px solid #444;
@@ -197,7 +198,7 @@
     }
 
     /* QR PREVIEW */
-    #qrPreview {
+    #qrPreview, #trQrPreview {
       text-align: center;
       margin-top: 20px;
     }
@@ -211,12 +212,12 @@
       margin: 0 auto 15px auto;
       font-size: 16px;
     }
-    #qrCanvas {
+    #qrCanvas, #trQrCanvas {
       border: 1px solid #ccc;
       padding: 10px;
       background: #fff;
     }
-    #qrDBname {
+    #qrDBname, #trQrName {
       font-size: 22px;
       font-weight: bold;
       margin-top: 12px;
@@ -397,7 +398,6 @@
       animation: fadeInDown 0.7s ease-out;
     }
 
-    /* Gold Gradient Title */
     .premium-title {
       background: linear-gradient(90deg, #ffd65a, #ffb300);
       -webkit-background-clip: text;
@@ -409,7 +409,6 @@
       animation: fadeInUp 0.7s ease-out;
     }
 
-    /* Thin gold separator line */
     .header-separator {
       width: 80%;
       height: 2px;
@@ -419,7 +418,6 @@
       animation: fadeIn 1.2s ease-out;
     }
 
-    /* Animations */
     @keyframes fadeInDown {
       from { opacity: 0; transform: translateY(-12px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -459,7 +457,7 @@
       <img src="logo.png" class="topbar-logo" alt="Chenab Engineering Logo">
     </div>
     <div class="topbar-title premium-title">
-      Admin Dashboard – Electrical Panels
+      Admin Dashboard – Electrical & Transformer System
     </div>
     <div class="header-separator"></div>
   </div>
@@ -467,8 +465,11 @@
   <!-- TABS -->
   <div class="tabs">
     <button class="tab-btn active" data-target="tab-entry">DB Entry</button>
-    <button class="tab-btn" data-target="tab-inspections">Inspection Reports</button>
+    <button class="tab-btn" data-target="tab-transformer-entry">Transformer Entry</button>
+    <button class="tab-btn" data-target="tab-inspections">DB Inspection Reports</button>
     <button class="tab-btn" data-target="tab-faults">Fault Reports</button>
+    <button class="tab-btn" data-target="tab-transformer-reports">Transformer Reports</button>
+    <button class="tab-btn" data-target="tab-lux-reports">LUX Reports</button>
     <button class="tab-btn" data-target="tab-master">Master DB Report</button>
     <button class="tab-btn" data-target="tab-questions">Form Questions</button>
   </div>
@@ -516,11 +517,11 @@
         <div id="dbQuestionsContainer"></div>
 
         <br><br>
-        <button class="primary-btn" onclick="savePanel()">Save Data (to Firebase)</button>
+        <button class="primary-btn" onclick="savePanel()">Save DB Data</button>
 
         <hr>
 
-        <h3>Generate QR Code</h3>
+        <h3>Generate DB QR Code</h3>
         <button class="secondary-btn" onclick="generateQR()">Generate QR Code</button>
 
         <div id="qrPreview">
@@ -531,21 +532,77 @@
           <div id="qrDBname"></div>
         </div>
 
-        <button id="downloadQR" style="display:none;" class="primary-btn" onclick="downloadQR()">Download QR Sheet</button>
+        <button id="downloadQR" style="display:none;" class="primary-btn" onclick="downloadQR()">Download DB QR Sheet</button>
       </div>
 
       <div class="card">
-        <h2>All Panels</h2>
+        <h2>All Panels (DBs)</h2>
         <button class="secondary-btn" onclick="showPanels()">Refresh Panel List</button>
         <div id="panelList" style="margin-top:10px;"></div>
       </div>
     </div>
 
-    <!-- TAB 2: INSPECTION REPORTS -->
+    <!-- TAB 2: TRANSFORMER ENTRY -->
+    <div class="tab-content" id="tab-transformer-entry">
+      <div class="card">
+        <h2>Transformer Entry</h2>
+
+        <label>Transformer ID (e.g. TR-001)</label>
+        <input id="tr_id" type="text">
+
+        <label>Transformer Rating (kVA)</label>
+        <input id="tr_rating" type="text">
+
+        <label>Primary Voltage (V)</label>
+        <input id="tr_vin" type="text">
+
+        <label>Secondary Voltage (V)</label>
+        <input id="tr_vout" type="text">
+
+        <label>Location</label>
+        <input id="tr_location" type="text">
+
+        <label>Purpose / Feeder</label>
+        <input id="tr_purpose" type="text">
+
+        <label>Upload Transformer Picture (Optional)</label>
+        <input type="file" id="tr_imageInput" accept="image/*" onchange="previewTransformerImage(event)">
+        <br>
+        <img id="previewTransformerImage">
+        <br>
+        <button type="button" class="secondary-btn" onclick="removeTransformerImage()">Remove Picture</button>
+
+        <br><br>
+        <button class="primary-btn" onclick="saveTransformerEntry()">Save Transformer</button>
+
+        <hr>
+
+        <h3>Generate Transformer QR Code</h3>
+        <button class="secondary-btn" onclick="generateTransformerQR()">Generate Transformer QR</button>
+
+        <div id="trQrPreview">
+          <div class="dangerBanner">
+            ⚠️ HIGH VOLTAGE TRANSFORMER – AUTHORIZED ONLY ⚠️
+          </div>
+          <canvas id="trQrCanvas" width="250" height="250"></canvas>
+          <div id="trQrName"></div>
+        </div>
+
+        <button id="downloadTrQR" style="display:none;" class="primary-btn" onclick="downloadTransformerQR()">Download Transformer QR Sheet</button>
+      </div>
+
+      <div class="card">
+        <h2>All Transformers</h2>
+        <button class="secondary-btn" onclick="showTransformers()">Refresh Transformer List</button>
+        <div id="transformerList" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: DB INSPECTION REPORTS -->
     <div class="tab-content" id="tab-inspections">
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <h2 style="margin:0;">Inspection Reports</h2>
+          <h2 style="margin:0;">DB Inspection Reports</h2>
           <button class="secondary-btn" onclick="exportInspectionsCSV()">Export CSV</button>
         </div>
 
@@ -567,7 +624,7 @@
       </div>
     </div>
 
-    <!-- TAB 3: FAULT REPORTS -->
+    <!-- TAB 4: FAULT REPORTS -->
     <div class="tab-content" id="tab-faults">
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -598,7 +655,59 @@
       </div>
     </div>
 
-    <!-- TAB 4: MASTER DB REPORT -->
+    <!-- TAB 5: TRANSFORMER REPORTS -->
+    <div class="tab-content" id="tab-transformer-reports">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">Transformer Inspection Reports</h2>
+          <button class="secondary-btn" onclick="exportTransformersCSV()">Export CSV</button>
+        </div>
+
+        <div id="trSummary" class="summary-row"></div>
+
+        <div class="filterBox">
+          <input type="text" id="filterTR_id" placeholder="Filter by Transformer ID">
+          <input type="text" id="filterTR_elec" placeholder="Filter by Electrician">
+          <label style="font-weight:normal;">From:
+            <input type="date" id="filterTR_from">
+          </label>
+          <label style="font-weight:normal;">To:
+            <input type="date" id="filterTR_to">
+          </label>
+          <button class="secondary-btn" onclick="applyTransformerFilters()">Apply Filters</button>
+        </div>
+
+        <div id="transformerTable"></div>
+      </div>
+    </div>
+
+    <!-- TAB 6: LUX REPORTS -->
+    <div class="tab-content" id="tab-lux-reports">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">LUX Monitoring Reports</h2>
+          <button class="secondary-btn" onclick="exportLuxCSV()">Export CSV</button>
+        </div>
+
+        <div id="luxSummary" class="summary-row"></div>
+
+        <div class="filterBox">
+          <input type="text" id="filterLX_dept" placeholder="Filter by Department">
+          <input type="text" id="filterLX_elec" placeholder="Filter by Electrician">
+          <label style="font-weight:normal;">From:
+            <input type="date" id="filterLX_from">
+          </label>
+          <label style="font-weight:normal;">To:
+            <input type="date" id="filterLX_to">
+          </label>
+          <button class="secondary-btn" onclick="applyLuxFilters()">Apply Filters</button>
+        </div>
+
+        <div id="luxTable"></div>
+      </div>
+    </div>
+
+    <!-- TAB 7: MASTER DB REPORT -->
     <div class="tab-content" id="tab-master">
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -613,7 +722,7 @@
       </div>
     </div>
 
-    <!-- TAB 5: FORM QUESTIONS -->
+    <!-- TAB 8: FORM QUESTIONS -->
     <div class="tab-content" id="tab-questions">
       <div class="card">
         <h2>Form Questions (Dynamic)</h2>
@@ -663,6 +772,8 @@ let questionsGlobal = {};
 let inspectionsGlobal = [];
 let faultsGlobal = [];
 let masterPanelsGlobal = null;
+let transformerReportsGlobal = [];
+let luxReportsGlobal = [];
 
 function checkLogin() {
   const pwd = document.getElementById("adminPassword").value.trim();
@@ -694,6 +805,9 @@ function afterLoginInit() {
   loadReports();
   loadMasterReport();
   loadQuestions();
+  showTransformers();
+  loadTransformerReports();
+  loadLuxReports();
 }
 
 /* ------------ TABS HANDLING ------------ */
@@ -714,7 +828,7 @@ function initTabs() {
   });
 }
 
-/* ------------ IMAGE HANDLING (ENTRY TAB) ------------ */
+/* ------------ IMAGE HANDLING (DB ENTRY) ------------ */
 let uploadedImage = null;
 
 function previewAndCompress(event) {
@@ -749,7 +863,41 @@ function removeImage() {
   document.getElementById("imageInput").value = "";
 }
 
-/* ------------ CIRCUITS (ENTRY TAB) ------------ */
+/* ------------ TRANSFORMER IMAGE ------------ */
+let uploadedTransformerImage = null;
+
+function previewTransformerImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const maxWidth = 800;
+      const scale = maxWidth / img.width;
+      canvas.width = maxWidth;
+      canvas.height = img.height * scale;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      uploadedTransformerImage = canvas.toDataURL("image/jpeg", 0.7);
+
+      const preview = document.getElementById("previewTransformerImage");
+      preview.src = uploadedTransformerImage;
+      preview.style.display = "block";
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeTransformerImage() {
+  uploadedTransformerImage = null;
+  document.getElementById("previewTransformerImage").style.display = "none";
+  document.getElementById("tr_imageInput").value = "";
+}
+
+/* ------------ CIRCUITS (DB ENTRY) ------------ */
 function addCircuitRow(name = "", breaker = "", load = "") {
   const container = document.getElementById("circuitsContainer");
   const row = document.createElement("div");
@@ -788,7 +936,7 @@ function collectCircuitsFromForm() {
   return circuits.length ? circuits : null;
 }
 
-/* ------------ SAVE PANEL (ENTRY TAB) ------------ */
+/* ------------ SAVE PANEL (DB ENTRY) ------------ */
 function savePanel() {
   const id = document.getElementById("db").value.trim();
   if (!id) {
@@ -812,10 +960,11 @@ function savePanel() {
   savePanelToFirebase(id, data, () => {
     alert("Panel saved to Firebase successfully!");
     showPanels();
+    loadMasterReport(); // master DB auto updates
   });
 }
 
-/* ------------ EDIT / DELETE / LIST PANELS (ENTRY TAB) ------------ */
+/* ------------ EDIT / DELETE / LIST PANELS (DB ENTRY) ------------ */
 function editPanel(id) {
   loadPanelFromFirebase(id, p => {
     if (!p) {
@@ -852,6 +1001,7 @@ function deletePanel(id) {
   firebase.database().ref("panels/" + id).remove().then(() => {
     alert("Panel " + id + " deleted.");
     showPanels();
+    loadMasterReport();
   });
 }
 
@@ -882,7 +1032,96 @@ function showPanels() {
   });
 }
 
-/* ------------ QR PREVIEW + DOWNLOAD (ENTRY TAB) ------------ */
+/* ------------ TRANSFORMER ENTRY ------------ */
+function saveTransformerEntry() {
+  const id = document.getElementById("tr_id").value.trim();
+  if (!id) {
+    alert("Enter Transformer ID (e.g. TR-001)");
+    return;
+  }
+  const data = {
+    transformerId: id,
+    rating: document.getElementById("tr_rating").value,
+    vin: document.getElementById("tr_vin").value,
+    vout: document.getElementById("tr_vout").value,
+    location: document.getElementById("tr_location").value,
+    purpose: document.getElementById("tr_purpose").value,
+    image: uploadedTransformerImage || null
+  };
+  firebase.database().ref("transformers/" + id).set(data, err => {
+    if (err) alert("Error saving transformer: " + err);
+    else {
+      alert("Transformer saved.");
+      showTransformers();
+    }
+  });
+}
+
+function showTransformers() {
+  const div = document.getElementById("transformerList");
+  if (!div) return;
+  firebase.database().ref("transformers").once("value").then(snap => {
+    const all = snap.val();
+    if (!all) {
+      div.innerHTML = "<p>No transformers in database.</p>";
+      return;
+    }
+    let html = "<table><tr><th>ID</th><th>Rating</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+    Object.keys(all).forEach(id => {
+      const t = all[id];
+      html += `
+        <tr>
+          <td>${t.transformerId || id}</td>
+          <td>${t.rating || ""}</td>
+          <td>${t.location || ""}</td>
+          <td>${t.purpose || ""}</td>
+          <td>
+            <button class="secondary-btn" onclick="editTransformer('${id}')">Edit</button>
+            <button class="danger-btn" onclick="deleteTransformer('${id}')">Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+    html += "</table>";
+    div.innerHTML = html;
+  });
+}
+
+function editTransformer(id) {
+  firebase.database().ref("transformers/" + id).once("value").then(snap => {
+    const t = snap.val();
+    if (!t) {
+      alert("Transformer not found.");
+      return;
+    }
+    document.getElementById("tr_id").value = t.transformerId || id;
+    document.getElementById("tr_rating").value = t.rating || "";
+    document.getElementById("tr_vin").value = t.vin || "";
+    document.getElementById("tr_vout").value = t.vout || "";
+    document.getElementById("tr_location").value = t.location || "";
+    document.getElementById("tr_purpose").value = t.purpose || "";
+    uploadedTransformerImage = t.image || null;
+    const preview = document.getElementById("previewTransformerImage");
+    if (uploadedTransformerImage) {
+      preview.src = uploadedTransformerImage;
+      preview.style.display = "block";
+    } else {
+      preview.style.display = "none";
+    }
+    document.querySelector('.tab-btn[data-target="tab-transformer-entry"]').click();
+    window.scrollTo(0, 0);
+  });
+}
+
+function deleteTransformer(id) {
+  if (!confirm("Delete transformer " + id + " ?")) return;
+  firebase.database().ref("transformers/" + id).remove().then(() => {
+    alert("Transformer deleted.");
+    showTransformers();
+  });
+}
+
+/* ------------ QR PREVIEW + DOWNLOAD (DB ENTRY) ------------ */
 let qr;
 
 function generateQR() {
@@ -893,7 +1132,6 @@ function generateQR() {
   }
 
   const url = "https://energycew-ui.github.io/panel-system/panel.html?id=" + encodeURIComponent(id);
-
 
   qr = new QRious({
     element: document.getElementById("qrCanvas"),
@@ -958,21 +1196,74 @@ function downloadQR() {
 
   logo.onerror = () => {
     alert("Logo not found (logo.png). QR sheet will be generated without logo.");
-    ctx.fillStyle = "#c40000";
-    ctx.fillRect(80, 80, W - 160, 70);
-    ctx.fillStyle = "#ffffff";
+  };
+}
+
+/* ------------ TRANFORMER QR + DOWNLOAD ------------ */
+let trQR;
+
+function generateTransformerQR() {
+  const id = document.getElementById("tr_id").value.trim();
+  if (!id) {
+    alert("Enter Transformer ID first!");
+    return;
+  }
+
+  const url = "https://energycew-ui.github.io/panel-system/transformer.html?id=" + encodeURIComponent(id);
+
+  trQR = new QRious({
+    element: document.getElementById("trQrCanvas"),
+    value: url,
+    size: 250
+  });
+
+  document.getElementById("trQrName").innerText = id;
+  document.getElementById("downloadTrQR").style.display = "inline-block";
+}
+
+function downloadTransformerQR() {
+  const id = document.getElementById("tr_id").value.trim();
+  if (!id) return;
+
+  const qrCanvasEl = document.getElementById("trQrCanvas");
+  const W = 700, H = 900;
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = W;
+  finalCanvas.height = H;
+  const ctx = finalCanvas.getContext("2d");
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  const logo = new Image();
+  logo.src = "logo.png";
+
+  logo.onload = () => {
+    const logoW = 420;
+    const logoH = (logo.height / logo.width) * logoW;
+    ctx.drawImage(logo, (W - logoW) / 2, 40, logoW, logoH);
+
+    ctx.fillStyle = "#ffcc00";
+    ctx.fillRect(45, 200, W - 80, 70);
+    ctx.fillStyle = "#000000";
     ctx.font = "bold 24px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️", W / 2, 245);
-    ctx.drawImage(qrCanvasEl, (W - 300) / 2, 220, 300, 300);
+    ctx.fillText("HIGH VOLTAGE TRANSFORMER – AUTHORIZED ONLY", W / 2, 245);
+
+    ctx.drawImage(qrCanvasEl, (W - 300) / 2, 300, 300, 300);
+
     ctx.fillStyle = "#000000";
     ctx.font = "bold 36px Arial";
-    ctx.fillText(id, W / 2, 590);
+    ctx.fillText(id, W / 2, 640);
 
     const link = document.createElement("a");
-    link.download = id + "_QR_sheet.png";
+    link.download = id + "_Transformer_QR_sheet.png";
     link.href = finalCanvas.toDataURL();
     link.click();
+  };
+
+  logo.onerror = () => {
+    alert("Logo not found (logo.png). QR sheet will be generated without logo.");
   };
 }
 
@@ -992,7 +1283,7 @@ function badgeForStatus(value, okValues = [], warnValues = [], badValues = []) {
   return `<span class="badge badge-info">${value}</span>`;
 }
 
-/* ------------ REPORTS (INSPECTIONS + FAULTS) ------------ */
+/* ------------ DB INSPECTION + FAULT REPORTS ------------ */
 
 function loadReports() {
   firebase.database().ref("inspections").once("value", snap => {
@@ -1016,6 +1307,7 @@ function convertInspectionData(data) {
     for (let key in data[db]) {
       list.push({
         dbId: db,
+        recordKey: key,
         ...data[db][key]
       });
     }
@@ -1029,6 +1321,7 @@ function convertFaultData(data) {
     for (let key in data[db]) {
       list.push({
         dbId: db,
+        recordKey: key,
         ...data[db][key]
       });
     }
@@ -1109,7 +1402,7 @@ function updateFaultSummary(list) {
   `;
 }
 
-/* RENDER INSPECTIONS TABLE */
+/* RENDER INSPECTIONS TABLE (with delete) */
 function renderInspectionTable(list) {
   if (!document.getElementById("inspectionTable")) return;
 
@@ -1125,6 +1418,7 @@ function renderInspectionTable(list) {
         <th>Covered</th>
         <th>Comments / Extra</th>
         <th>Photos</th>
+        <th>Action</th>
     </tr>
   `;
 
@@ -1182,6 +1476,9 @@ function renderInspectionTable(list) {
             ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
             ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
         </td>
+        <td>
+          <button class="danger-btn" onclick="deleteInspection('${r.dbId}','${r.recordKey}')">Delete</button>
+        </td>
       </tr>
     `;
   });
@@ -1190,7 +1487,7 @@ function renderInspectionTable(list) {
   document.getElementById("inspectionTable").innerHTML = html;
 }
 
-/* RENDER FAULTS TABLE */
+/* RENDER FAULTS TABLE (with delete) */
 function renderFaultTable(list) {
   if (!document.getElementById("faultTable")) return;
 
@@ -1207,6 +1504,7 @@ function renderFaultTable(list) {
         <th>Downtime</th>
         <th>Production Loss</th>
         <th>Photos</th>
+        <th>Action</th>
     </tr>
   `;
 
@@ -1260,6 +1558,9 @@ function renderFaultTable(list) {
             ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
             ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
         </td>
+        <td>
+          <button class="danger-btn" onclick="deleteFault('${r.dbId}','${r.recordKey}')">Delete</button>
+        </td>
       </tr>
     `;
   });
@@ -1272,6 +1573,23 @@ function renderFaultTable(list) {
 function openPhoto(src) {
   let win = window.open();
   win.document.write(`<img src="${src}" style="width:100%;">`);
+}
+
+/* DELETE INSPECTION / FAULT RECORDS */
+function deleteInspection(dbId, key) {
+  if (!confirm("Delete this inspection record?")) return;
+  firebase.database().ref("inspections/" + dbId + "/" + key).remove().then(() => {
+    alert("Inspection deleted.");
+    loadReports();
+  });
+}
+
+function deleteFault(dbId, key) {
+  if (!confirm("Delete this fault record?")) return;
+  firebase.database().ref("faults/" + dbId + "/" + key).remove().then(() => {
+    alert("Fault report deleted.");
+    loadReports();
+  });
 }
 
 /* FILTERS: INSPECTIONS */
@@ -1571,10 +1889,8 @@ function loadQuestions() {
     questionsGlobal = snap.val() || {};
     renderQuestionsAdmin();
     renderDbQuestions();
-    // re-render tables so extraAnswers labels are resolved
     renderInspectionTable(inspectionsGlobal || []);
     renderFaultTable(faultsGlobal || []);
-    // re-render master if loaded
     if (masterPanelsGlobal) loadMasterReport();
   });
 }
@@ -1754,6 +2070,304 @@ function collectDynamicAnswers(sectionPrefix) {
   });
 
   return Object.keys(result).length ? result : null;
+}
+
+/* ------------ TRANSFORMER REPORTS (from transformer.html) ------------ */
+function loadTransformerReports() {
+  firebase.database().ref("transformerInspections").once("value", snap => {
+    const data = snap.val() || {};
+    const list = [];
+    for (let trId in data) {
+      for (let key in data[trId]) {
+        list.push({
+          transformerId: trId,
+          recordKey: key,
+          ...data[trId][key]
+        });
+      }
+    }
+    transformerReportsGlobal = list;
+    renderTransformerTable(list);
+    updateTransformerSummary(list);
+  });
+}
+
+function updateTransformerSummary(list) {
+  const container = document.getElementById("trSummary");
+  if (!container) return;
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No transformer reports.</p>";
+    return;
+  }
+  const total = list.length;
+  const transformersCount = new Set(list.map(r => r.transformerId)).size;
+  const today = new Date().toISOString().slice(0,10);
+  const todayCount = list.filter(r => (r.timestamp || "").slice(0,10) === today).length;
+
+  container.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-title">Total Reports</div>
+      <div class="summary-value">${total}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Transformers</div>
+      <div class="summary-value">${transformersCount}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Today</div>
+      <div class="summary-value">${todayCount}</div>
+    </div>
+  `;
+}
+
+function renderTransformerTable(list) {
+  const container = document.getElementById("transformerTable");
+  if (!container) return;
+
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No transformer reports.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <tr>
+        <th>Date/Time</th>
+        <th>Transformer</th>
+        <th>Electrician</th>
+        <th>Oil</th>
+        <th>Temp (Oil/Winding)</th>
+        <th>IR (MΩ)</th>
+        <th>Earth (Ω)</th>
+        <th>Load (A)</th>
+        <th>Photos</th>
+        <th>Action</th>
+      </tr>
+  `;
+
+  list.forEach(r => {
+    const dt = r.datetimeLocal 
+      ? r.datetimeLocal.replace("T"," ")
+      : (r.timestamp ? new Date(r.timestamp).toLocaleString() : "");
+    html += `
+      <tr>
+        <td>${dt}</td>
+        <td>${r.transformerId || ""}</td>
+        <td>${r.electricianName || ""}</td>
+        <td>${r.oilCondition || ""}<br>Level: ${r.oilLevel || ""}</td>
+        <td>${r.oilTemperature || ""} / ${r.windingTemperature || ""}</td>
+        <td>${r.irTest || ""}</td>
+        <td>${r.earthResistance || ""}</td>
+        <td>${r.loadCurrent || ""}</td>
+        <td>
+          ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
+          ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
+          ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+        </td>
+        <td>
+          <button class="danger-btn" onclick="deleteTransformerReport('${r.transformerId}','${r.recordKey}')">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+  container.innerHTML = html;
+}
+
+function applyTransformerFilters() {
+  let fId = document.getElementById("filterTR_id").value.toLowerCase();
+  let fElec = document.getElementById("filterTR_elec").value.toLowerCase();
+  let from = document.getElementById("filterTR_from").value;
+  let to   = document.getElementById("filterTR_to").value;
+
+  let filtered = transformerReportsGlobal.filter(r => {
+    const idMatch   = !fId   || (r.transformerId || "").toLowerCase().includes(fId);
+    const elecMatch = !fElec || (r.electricianName || "").toLowerCase().includes(fElec);
+    const day = (r.timestamp || "").slice(0,10);
+    const fromOk = !from || day >= from;
+    const toOk   = !to   || day <= to;
+    return idMatch && elecMatch && fromOk && toOk;
+  });
+
+  renderTransformerTable(filtered);
+  updateTransformerSummary(filtered);
+}
+
+function deleteTransformerReport(trId, key) {
+  if (!confirm("Delete this transformer report?")) return;
+  firebase.database().ref("transformerInspections/" + trId + "/" + key).remove().then(() => {
+    alert("Report deleted.");
+    loadTransformerReports();
+  });
+}
+
+function exportTransformersCSV() {
+  if (!transformerReportsGlobal.length) {
+    alert("No transformer reports.");
+    return;
+  }
+  const rows = [["DateTime","Transformer","Electrician","OilCondition","OilLevel","OilTemp","WindingTemp","IR","EarthRes","LoadCurrent","Remarks"]];
+  transformerReportsGlobal.forEach(r => {
+    const dt = r.datetimeLocal 
+      ? r.datetimeLocal.replace("T"," ")
+      : (r.timestamp || "");
+    rows.push([
+      dt,
+      r.transformerId || "",
+      r.electricianName || "",
+      r.oilCondition || "",
+      r.oilLevel || "",
+      r.oilTemperature || "",
+      r.windingTemperature || "",
+      r.irTest || "",
+      r.earthResistance || "",
+      r.loadCurrent || "",
+      r.remarks || ""
+    ]);
+  });
+  const csv = arrayToCSV(rows);
+  downloadCSV("transformer_reports.csv", csv);
+}
+
+/* ------------ LUX REPORTS (from lux.html) ------------ */
+function loadLuxReports() {
+  firebase.database().ref("luxReports").once("value", snap => {
+    const data = snap.val() || {};
+    const list = Object.keys(data).map(key => ({
+      key,
+      ...data[key]
+    }));
+    luxReportsGlobal = list;
+    renderLuxTable(list);
+    updateLuxSummary(list);
+  });
+}
+
+function updateLuxSummary(list) {
+  const container = document.getElementById("luxSummary");
+  if (!container) return;
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No LUX reports.</p>";
+    return;
+  }
+  const total = list.length;
+  const depts = new Set(list.map(r => r.department)).size;
+  container.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-title">Total LUX Reports</div>
+      <div class="summary-value">${total}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Departments</div>
+      <div class="summary-value">${depts}</div>
+    </div>
+  `;
+}
+
+function renderLuxTable(list) {
+  const container = document.getElementById("luxTable");
+  if (!container) return;
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No LUX reports.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <tr>
+        <th>Date</th>
+        <th>Dept</th>
+        <th>Type</th>
+        <th>Electrician</th>
+        <th>Meter / Calib</th>
+        <th>Measurements</th>
+        <th>Action</th>
+      </tr>
+  `;
+
+  list.forEach(r => {
+    const measCount = (r.measurements && r.measurements.length) ? r.measurements.length : 0;
+    let measText = "";
+    if (measCount) {
+      measText = r.measurements.map((m, i) => {
+        return `${i+1}. ${m.point || ""}: ${m.measuredLux || ""} lx (Limit: ${m.limitLux || ""})`;
+      }).join("<br>");
+    }
+
+    html += `
+      <tr>
+        <td>${r.date || ""} ${r.time || ""}</td>
+        <td>${r.department || ""}</td>
+        <td>${r.monitorType || ""}</td>
+        <td>${r.electricianName || ""}</td>
+        <td>
+          ${r.meterModel || ""}<br>
+          Cert: ${r.calibrationNo || ""} (${r.calibrationDate || ""})
+        </td>
+        <td>${measText}</td>
+        <td>
+          <button class="danger-btn" onclick="deleteLuxReport('${r.key}')">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+  container.innerHTML = html;
+}
+
+function applyLuxFilters() {
+  let fDept = document.getElementById("filterLX_dept").value.toLowerCase();
+  let fElec = document.getElementById("filterLX_elec").value.toLowerCase();
+  let from = document.getElementById("filterLX_from").value;
+  let to   = document.getElementById("filterLX_to").value;
+
+  let filtered = luxReportsGlobal.filter(r => {
+    const deptMatch = !fDept || (r.department || "").toLowerCase().includes(fDept);
+    const elecMatch = !fElec || (r.electricianName || "").toLowerCase().includes(fElec);
+    const day = r.date || "";
+    const fromOk = !from || day >= from;
+    const toOk   = !to   || day <= to;
+    return deptMatch && elecMatch && fromOk && toOk;
+  });
+
+  renderLuxTable(filtered);
+  updateLuxSummary(filtered);
+}
+
+function deleteLuxReport(key) {
+  if (!confirm("Delete this LUX report?")) return;
+  firebase.database().ref("luxReports/" + key).remove().then(() => {
+    alert("LUX report deleted.");
+    loadLuxReports();
+  });
+}
+
+function exportLuxCSV() {
+  if (!luxReportsGlobal.length) {
+    alert("No LUX data to export.");
+    return;
+  }
+  const rows = [["Date","Dept","Type","Electrician","MeterModel","CalibNo","CalibDate","Remarks","Measurements"]];
+  luxReportsGlobal.forEach(r => {
+    const meas = (r.measurements || []).map((m, i) =>
+      `${i+1}) ${m.point || ""}: ${m.measuredLux || ""} lx (Limit:${m.limitLux || ""})`
+    ).join(" | ");
+    rows.push([
+      (r.date || "") + " " + (r.time || ""),
+      r.department || "",
+      r.monitorType || "",
+      r.electricianName || "",
+      r.meterModel || "",
+      r.calibrationNo || "",
+      r.calibrationDate || "",
+      r.remarks || "",
+      meas
+    ]);
+  });
+  const csv = arrayToCSV(rows);
+  downloadCSV("lux_reports.csv", csv);
 }
 </script>
 

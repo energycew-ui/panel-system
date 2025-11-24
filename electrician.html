@@ -1,411 +1,444 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Electrician Panel</title>
+  <title>DB Industrial Inspection</title>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
 
-<!-- Firebase helper -->
-<script src="data.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f4f4;
+    }
 
-<style>
-body {
-    font-family: Arial, sans-serif;
-    background: #f2f4f7;
-    margin: 0;
-}
-.header {
-    background: #111;
-    color: #ffc800;
-    padding: 20px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-}
-.card {
-    background: white;
-    margin: 20px auto;
-    padding: 20px;
-    max-width: 800px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-.section-title {
-    font-size: 18px;
-    margin-top: 10px;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-.summary-item {
-    margin: 4px 0;
-}
-label {
-    display: block;
-    margin-top: 12px;
-    font-weight: bold;
-}
-input[type="text"], select, textarea {
-    width: 100%;
-    padding: 8px;
-    font-size: 16px;
-    margin-top: 5px;
-    box-sizing: border-box;
-}
-textarea {
-    height: 80px;
-    resize: vertical;
-}
-.photo-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-.photo-box {
-    flex: 1 1 30%;
-    min-width: 150px;
-}
-.photo-box input {
-    width: 100%;
-}
-.photo-preview {
-    margin-top: 5px;
-    width: 100%;
-    max-height: 150px;
-    object-fit: cover;
-    border-radius: 6px;
-    display: none;
-    border: 1px solid #ccc;
-}
-button {
-    padding: 10px 18px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 15px;
-    border-radius: 6px;
-    border: none;
-}
-.save-btn {
-    background: #007bff;
-    color: white;
-}
-.fault-btn {
-    background: #c40000;
-    color: white;
-    margin-left: 10px;
-}
-.spec-save-btn {
-    background: #28a745;
-    color: white;
-}
+    /* Premium Header */
+    .topbar {
+      background: #0c0c0c;
+      padding: 18px 0 22px 0;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+    }
+    .topbar img {
+      width: 120px;
+      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
+    }
+    .title {
+      margin-top: 10px;
+      font-size: 26px;
+      font-weight: bold;
+      background: linear-gradient(90deg,#ffd65a,#ffb300);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 8px rgba(0,0,0,0.4);
+    }
 
-/* Circuits edit */
-.spec-circuit-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-}
-.spec-circuit-row input {
-    width: 100%;
-}
-.spec-circuit-remove-btn {
-    padding: 0 8px;
-    font-size: 14px;
-    background: #c40000;
-    color: white;
-    border-radius: 4px;
-}
-</style>
+    .card {
+      background: #fff;
+      padding: 20px;
+      max-width: 800px;
+      margin: 20px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    h2, h3 {
+      margin-top: 0;
+    }
+
+    label {
+      display:block;
+      margin-top:10px;
+      font-weight:bold;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      margin-top: 4px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing:border-box;
+    }
+
+    textarea {
+      height: 80px;
+    }
+
+    .row-2 {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .row-2 > div {
+      flex:1 1 150px;
+    }
+
+    .btn {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      width: 100%;
+      cursor: pointer;
+      margin-top: 12px;
+      color: #fff;
+    }
+
+    .btn-red   { background:#c40000; }
+    .btn-blue  { background:#007bff; }
+    .btn-dark  { background:#333; }
+
+    #formCard { display:none; }
+
+    .db-info {
+      font-size:14px;
+      color:#444;
+      line-height:1.5;
+    }
+
+    .section-title {
+      margin-top:18px;
+      font-size:16px;
+      font-weight:bold;
+      border-left:4px solid #ffb300;
+      padding-left:8px;
+    }
+
+    #preview1,#preview2,#preview3 {
+      width: 100%;
+      margin-top: 10px;
+      display:none;
+      border-radius:10px;
+      border:2px solid #444;
+    }
+
+    .hint {
+      font-size:12px;
+      color:#666;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="header">
-    Electrician Mode – DB: <span id="dbIdHeader"></span>
+<!-- HEADER -->
+<div class="topbar">
+  <img src="logo.png" alt="Chenab Logo">
+  <div class="title">DB Industrial Inspection</div>
 </div>
 
+<!-- DB INFO -->
 <div class="card">
+  <h2 id="dbTitle">Loading...</h2>
+  <div id="dbInfo" class="db-info"></div>
+</div>
 
-    <!-- PANEL SUMMARY (READ ONLY) -->
-    <div class="section-title">Panel Summary</div>
-    <div class="summary-item"><b>DB Number:</b> <span id="dbNum"></span></div>
-    <div class="summary-item"><b>Voltage:</b> <span id="volt"></span></div>
-    <div class="summary-item"><b>Main Breaker:</b> <span id="breaker"></span></div>
-    <div class="summary-item"><b>Cable Size:</b> <span id="cable"></span></div>
-    <div class="summary-item"><b>Earth Status:</b> <span id="earth"></span></div>
-    <div class="summary-item"><b>Location:</b> <span id="location"></span></div>
-    <div class="summary-item"><b>Purpose:</b> <span id="purpose"></span></div>
+<!-- LOGIN CARD -->
+<div class="card">
+  <h3>Electrician Login</h3>
+  <input type="password" id="loginKey" placeholder="Enter Electrician Key">
+  <button class="btn btn-red" onclick="login()">Login</button>
+  <div id="loginError" style="color:red;margin-top:10px;"></div>
+</div>
 
-    <hr>
+<!-- FORM CARD -->
+<div class="card" id="formCard">
+  <h2>Inspection Form</h2>
 
-    <!-- DB SPECIFICATION EDIT -->
-    <div class="section-title">DB Specification (Editable – updates main DB)</div>
-
-    <label>Voltage Rating</label>
-    <input type="text" id="specVoltage">
-
-    <label>Main Breaker Capacity</label>
-    <input type="text" id="specBreaker">
-
-    <label>Main Cable Size</label>
-    <input type="text" id="specCable">
-
-    <label>Earth Status</label>
-    <input type="text" id="specEarth">
-
-    <label>Location</label>
-    <input type="text" id="specLocation">
-
-    <label>Purpose</label>
-    <input type="text" id="specPurpose">
-
-    <div class="section-title">Circuits (Edit / Add / Remove)</div>
-    <div id="specCircuitsContainer"></div>
-    <button type="button" onclick="addSpecCircuitRow()">Add Circuit</button>
-
-    <button class="spec-save-btn" onclick="saveDbSpec()">Save DB Specification</button>
-
-    <hr>
-
-    <!-- ELECTRICIAN INSPECTION -->
-    <div class="section-title">Electrician Inspection</div>
-
-    <label>Electrician Name</label>
-    <input type="text" id="elecName" placeholder="Enter your name">
-
-    <label>Breaker Condition</label>
-    <select id="breakerStatus">
-        <option value="">Select...</option>
-        <option value="OK">OK</option>
-        <option value="Needs repair">Needs repair</option>
-        <option value="Not accessible">Not accessible</option>
-    </select>
-
-    <label>Panel Cleanliness</label>
-    <select id="cleanStatus">
-        <option value="">Select...</option>
-        <option value="Clean">Clean</option>
-        <option value="Needs cleaning">Needs cleaning</option>
-        <option value="Not accessible">Not accessible</option>
-    </select>
-
-    <label>Panel Locked</label>
-    <select id="lockedStatus">
-        <option value="">Select...</option>
-        <option value="Locked">Locked</option>
-        <option value="Unlocked">Unlocked</option>
-        <option value="Not lockable">Not lockable</option>
-    </select>
-
-    <label>Panel Covered</label>
-    <select id="coveredStatus">
-        <option value="">Select...</option>
-        <option value="Covered">Covered</option>
-        <option value="Not covered">Not covered</option>
-        <option value="Not required">Not required</option>
-    </select>
-
-    <label>Comments / Notes</label>
-    <textarea id="comments" placeholder="Any observations, issues, notes..."></textarea>
-
-    <div class="section-title">Extra Inspection Questions</div>
-    <div id="inspExtraQuestions"></div>
-
-    <div class="section-title">Inspection Photos (optional, up to 3)</div>
-
-    <div class="photo-row">
-        <div class="photo-box">
-            <small>Photo 1</small>
-            <input type="file" accept="image/*" onchange="handlePhoto(this, 'preview1', 1)">
-            <img id="preview1" class="photo-preview">
-        </div>
-        <div class="photo-box">
-            <small>Photo 2</small>
-            <input type="file" accept="image/*" onchange="handlePhoto(this, 'preview2', 2)">
-            <img id="preview2" class="photo-preview">
-        </div>
-        <div class="photo-box">
-            <small>Photo 3</small>
-            <input type="file" accept="image/*" onchange="handlePhoto(this, 'preview3', 3)">
-            <img id="preview3" class="photo-preview">
-        </div>
+  <div class="row-2">
+    <div>
+      <label>Date & Time</label>
+      <input type="datetime-local" id="ins_datetime">
     </div>
+    <div>
+      <label>Electrician Name</label>
+      <input type="text" id="ins_name">
+    </div>
+  </div>
 
-    <button class="save-btn" onclick="saveInspection()">Save Inspection</button>
-    <button class="fault-btn" onclick="goToFault()">Report Fault</button>
+  <div class="section-title">Breaker & Heating</div>
+
+  <label>Breaker Condition</label>
+  <select id="ins_breakerCond">
+    <option value="">Select</option>
+    <option>OK</option>
+    <option>Loose</option>
+    <option>Overheated</option>
+    <option>Damaged</option>
+    <option>Not Accessible</option>
+  </select>
+  <div class="hint">This will also appear as “Breaker” status in admin report.</div>
+
+  <label>Tightness / Heating Check</label>
+  <select id="ins_tightHeat">
+    <option value="">Select</option>
+    <option>No Hot Spots</option>
+    <option>Minor Hot Spots</option>
+    <option>Critical Hot Spots</option>
+  </select>
+
+  <div class="section-title">Cleanliness & Environment</div>
+
+  <label>Cleanliness of Panel</label>
+  <select id="ins_clean">
+    <option value="">Select</option>
+    <option>Clean</option>
+    <option>Dusty</option>
+    <option>Very Dusty</option>
+    <option>Oil / Grease</option>
+    <option>Not Accessible</option>
+  </select>
+  <div class="hint">This will also appear as “Clean” status in admin report.</div>
+
+  <label>Signs of Overload / Heating</label>
+  <select id="ins_overload">
+    <option value="">Select</option>
+    <option>No Signs</option>
+    <option>Discoloration</option>
+    <option>Burn Marks</option>
+  </select>
+
+  <label>Burning Smell</label>
+  <select id="ins_smell">
+    <option value="">Select</option>
+    <option>No</option>
+    <option>Yes – Intermittent</option>
+    <option>Yes – Continuous</option>
+  </select>
+
+  <div class="section-title">Mechanical & Safety</div>
+
+  <label>Panel Door / Cover Condition</label>
+  <select id="ins_door">
+    <option value="">Select</option>
+    <option>Good / Intact</option>
+    <option>Loose Hinges</option>
+    <option>Damaged</option>
+    <option>Cover Missing</option>
+  </select>
+  <div class="hint">Mapped to “Covered” status in admin report.</div>
+
+  <label>Locking Mechanism</label>
+  <select id="ins_lock">
+    <option value="">Select</option>
+    <option>Locked</option>
+    <option>Unlocked</option>
+    <option>Not Lockable</option>
+  </select>
+  <div class="hint">Mapped to “Locked” status in admin report.</div>
+
+  <label>Cable Condition</label>
+  <select id="ins_cable">
+    <option value="">Select</option>
+    <option>Good</option>
+    <option>Insulation Cracks</option>
+    <option>Loose Cables</option>
+    <option>Improper Routing</option>
+  </select>
+
+  <label>Earthing Condition</label>
+  <select id="ins_earth">
+    <option value="">Select</option>
+    <option>OK</option>
+    <option>Loose</option>
+    <option>Not Available</option>
+  </select>
+
+  <div class="section-title">Electrical Checks</div>
+
+  <label>Phase Sequence</label>
+  <select id="ins_phase">
+    <option value="">Select</option>
+    <option>Correct</option>
+    <option>Incorrect</option>
+    <option>Not Checked</option>
+  </select>
+
+  <label>Loose Connections / Wires</label>
+  <select id="ins_loose">
+    <option value="">Select</option>
+    <option>No Loose Wires</option>
+    <option>Minor Loose Wires</option>
+    <option>Critical Loose Wires</option>
+  </select>
+
+  <label>Corrosion / Rust</label>
+  <select id="ins_corrosion">
+    <option value="">Select</option>
+    <option>No Corrosion</option>
+    <option>Minor Corrosion</option>
+    <option>Heavy Corrosion</option>
+  </select>
+
+  <!-- DYNAMIC QUESTIONS -->
+  <div class="section-title">Additional Inspection Questions</div>
+  <div id="inspQuestionsContainer" class="dyn-questions">
+    <p class="hint">If admin adds inspection questions, they will appear here.</p>
+  </div>
+
+  <div class="section-title">Photos</div>
+  <p class="hint">Optional, but recommended if any abnormality is found.</p>
+
+  <label>Photo 1</label>
+  <input type="file" accept="image/*" onchange="previewPhoto(event,1)">
+  <img id="preview1">
+
+  <label>Photo 2</label>
+  <input type="file" accept="image/*" onchange="previewPhoto(event,2)">
+  <img id="preview2">
+
+  <label>Photo 3</label>
+  <input type="file" accept="image/*" onchange="previewPhoto(event,3)">
+  <img id="preview3">
+
+  <label style="margin-top:18px;">Overall Comments / Corrective Actions</label>
+  <textarea id="ins_comments"></textarea>
+
+  <button class="btn btn-blue" onclick="submitInspection()">Submit Inspection</button>
 
 </div>
 
 <script>
+/* -------------------------
+     GLOBAL / COMMON
+-------------------------- */
 const params = new URLSearchParams(window.location.search);
 const dbId = params.get("id");
-document.getElementById("dbIdHeader").innerText = dbId || "";
+const ELECTRICIAN_KEY = "9999";
+let questionsGlobal = {};
+let photo1 = null, photo2 = null, photo3 = null;
 
-let photo1Data = null;
-let photo2Data = null;
-let photo3Data = null;
-
-let panelObj = null;
-let inspQuestions = {};
-
-// Load panel data
-if (dbId) {
-    loadPanelFromFirebase(dbId, function(p) {
-        if (!p) {
-            document.body.innerHTML = "<h2 style='text-align:center;color:red;margin-top:40px;'>No data found for this panel.</h2>";
-            return;
-        }
-        panelObj = p;
-
-        document.getElementById("dbNum").innerText = p.dbNumber || dbId;
-        document.getElementById("volt").innerText = p.voltage || "";
-        document.getElementById("breaker").innerText = p.mainBreaker || "";
-        document.getElementById("cable").innerText = p.cableSize || "";
-        document.getElementById("earth").innerText = p.earthStatus || "";
-        document.getElementById("location").innerText = p.location || "";
-        document.getElementById("purpose").innerText = p.purpose || "";
-
-        document.getElementById("specVoltage").value = p.voltage || "";
-        document.getElementById("specBreaker").value = p.mainBreaker || "";
-        document.getElementById("specCable").value = p.cableSize || "";
-        document.getElementById("specEarth").value = p.earthStatus || "";
-        document.getElementById("specLocation").value = p.location || "";
-        document.getElementById("specPurpose").value = p.purpose || "";
-
-        renderSpecCircuits(p.circuits || null);
-        loadInspectionQuestions();
-    });
+/* -------------------------
+       LOAD DB INFO
+-------------------------- */
+if (!dbId) {
+  document.getElementById("dbTitle").innerText = "Invalid DB ID in URL!";
 } else {
-    document.body.innerHTML = "<h2 style='text-align:center;color:red;margin-top:40px;'>No panel ID provided.</h2>";
-}
-
-/*********** CIRCUITS EDITING ***********/
-function renderSpecCircuits(circuits) {
-    const container = document.getElementById("specCircuitsContainer");
-    container.innerHTML = "";
-
-    if (circuits) {
-        const list = Array.isArray(circuits) ? circuits : Object.values(circuits);
-        list.forEach(c => {
-            addSpecCircuitRow(c.name || "", c.breaker || "", c.load || "");
-        });
-    } else {
-        addSpecCircuitRow();
+  document.getElementById("dbTitle").innerText = "DB – " + dbId;
+  loadPanelFromFirebase(dbId, p => {
+    if (!p) {
+      document.getElementById("dbInfo").innerText = "Panel data not found in database.";
+      return;
     }
-}
-
-function addSpecCircuitRow(name = "", breaker = "", load = "") {
-    const container = document.getElementById("specCircuitsContainer");
-    const row = document.createElement("div");
-    row.className = "spec-circuit-row";
-    row.innerHTML = `
-        <input type="text" class="spec-c-name" placeholder="Circuit name" value="${name}">
-        <input type="text" class="spec-c-breaker" placeholder="Breaker (e.g. 10A)" value="${breaker}">
-        <input type="text" class="spec-c-load" placeholder="Load / Description" value="${load}">
-        <button type="button" class="spec-circuit-remove-btn" onclick="removeSpecCircuitRow(this)">X</button>
+    let html = `
+      <b>Location:</b> ${p.location || ""}<br>
+      <b>Voltage:</b> ${p.voltage || ""}<br>
+      <b>Main Breaker:</b> ${p.mainBreaker || ""}<br>
+      <b>Cable Size:</b> ${p.cableSize || ""}<br>
+      <b>Purpose:</b> ${p.purpose || ""}<br>
     `;
-    container.appendChild(row);
-}
-
-function removeSpecCircuitRow(btn) {
-    const row = btn.parentElement;
-    row.parentElement.removeChild(row);
-}
-
-function collectSpecCircuits() {
-    const rows = document.querySelectorAll(".spec-circuit-row");
-    const circuits = [];
-    rows.forEach(row => {
-        const name = row.querySelector(".spec-c-name").value.trim();
-        const br = row.querySelector(".spec-c-breaker").value.trim();
-        const ld = row.querySelector(".spec-c-load").value.trim();
-        if (name || br || ld) {
-            circuits.push({ name, breaker: br, load: ld });
-        }
-    });
-    return circuits.length ? circuits : null;
-}
-
-/*********** SAVE DB SPEC ***********/
-function saveDbSpec() {
-    if (!dbId || !panelObj) {
-        alert("Panel data not loaded yet.");
-        return;
+    if (p.earthStatus) html += `<b>Earth:</b> ${p.earthStatus}<br>`;
+    if (p.image) {
+      html += `<br><img src="${p.image}" style="width:100%;border-radius:10px;">`;
     }
-
-    panelObj.voltage = document.getElementById("specVoltage").value;
-    panelObj.mainBreaker = document.getElementById("specBreaker").value;
-    panelObj.cableSize = document.getElementById("specCable").value;
-    panelObj.earthStatus = document.getElementById("specEarth").value;
-    panelObj.location = document.getElementById("specLocation").value;
-    panelObj.purpose = document.getElementById("specPurpose").value;
-    panelObj.circuits = collectSpecCircuits();
-
-    savePanelToFirebase(dbId, panelObj, function() {
-        alert("DB specification updated.");
-    });
+    document.getElementById("dbInfo").innerHTML = html;
+  });
 }
 
-/*********** INSPECTION PHOTOS ***********/
-function handlePhoto(inputElem, previewId, index) {
-    const file = inputElem.files[0];
-    if (!file) {
-        if (index === 1) photo1Data = null;
-        if (index === 2) photo2Data = null;
-        if (index === 3) photo3Data = null;
-        document.getElementById(previewId).style.display = "none";
-        return;
+/* -------------------------
+       DEFAULT DATETIME
+-------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+  const now = new Date();
+  const dt = document.getElementById("ins_datetime");
+  if (dt) {
+    dt.value = now.toISOString().slice(0,16);
+  }
+  loadQuestions();
+});
+
+/* -------------------------
+       ELECTRICIAN LOGIN
+-------------------------- */
+function login() {
+  const val = document.getElementById("loginKey").value.trim();
+  const err = document.getElementById("loginError");
+  if (val === ELECTRICIAN_KEY) {
+    if (!dbId) {
+      err.innerText = "Invalid DB – cannot continue.";
+      return;
     }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = document.getElementById(previewId);
-        img.src = e.target.result;
-        img.style.display = "block";
-
-        if (index === 1) photo1Data = e.target.result;
-        if (index === 2) photo2Data = e.target.result;
-        if (index === 3) photo3Data = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    document.getElementById("formCard").style.display = "block";
+    err.innerText = "";
+  } else {
+    err.innerText = "Incorrect key!";
+  }
 }
 
-/*********** DYNAMIC INSPECTION QUESTIONS ***********/
-function loadInspectionQuestions() {
-  firebase.database().ref("questions").once("value", snap => {
-    inspQuestions = snap.val() || {};
+/* -------------------------
+        PHOTO PREVIEW
+-------------------------- */
+function previewPhoto(event, num) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (num === 1) {
+      photo1 = e.target.result;
+      const img = document.getElementById("preview1");
+      img.src = photo1;
+      img.style.display = "block";
+    }
+    if (num === 2) {
+      photo2 = e.target.result;
+      const img = document.getElementById("preview2");
+      img.src = photo2;
+      img.style.display = "block";
+    }
+    if (num === 3) {
+      photo3 = e.target.result;
+      const img = document.getElementById("preview3");
+      img.src = photo3;
+      img.style.display = "block";
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+/* -------------------------
+   LOAD & RENDER QUESTIONS
+-------------------------- */
+function loadQuestions() {
+  firebase.database().ref("questions").on("value", snap => {
+    questionsGlobal = snap.val() || {};
     renderInspectionQuestions();
   });
 }
 
 function renderInspectionQuestions() {
-  const container = document.getElementById("inspExtraQuestions");
+  const container = document.getElementById("inspQuestionsContainer");
   if (!container) return;
 
-  const entries = Object.entries(inspQuestions)
+  const entries = Object.entries(questionsGlobal)
     .filter(([id, q]) => q.applyInspection && q.active !== false);
 
   if (!entries.length) {
-    container.innerHTML = "<p style='font-size:13px;color:#666;'>No extra inspection questions defined.</p>";
+    container.innerHTML = "<p class='hint'>No extra inspection questions defined by admin.</p>";
     return;
   }
 
   let html = "";
   entries.forEach(([id, q]) => {
-    html += renderInspectionQuestionField(id, q);
+    html += renderQuestionFieldHtml("insp", id, q);
   });
+
   container.innerHTML = html;
 }
 
-function renderInspectionQuestionField(id, q) {
-  const baseId = `q_insp_${id}`;
+function renderQuestionFieldHtml(sectionPrefix, id, q) {
+  const baseId = `q_${sectionPrefix}_${id}`;
   let fieldHtml = "";
 
   if (q.type === "text") {
-    fieldHtml = `<input type="text" id="${baseId}" style="width:100%;">`;
+    fieldHtml = `<input type="text" id="${baseId}" style="max-width:100%;">`;
   } else if (q.type === "number") {
-    fieldHtml = `<input type="number" id="${baseId}" style="width:150px;">`;
+    fieldHtml = `<input type="number" id="${baseId}" style="max-width:200px;">`;
   } else if (q.type === "yesno") {
     fieldHtml = `
       <select id="${baseId}">
@@ -421,73 +454,106 @@ function renderInspectionQuestionField(id, q) {
       .join("");
     fieldHtml = `<select id="${baseId}">${optionsHtml}</select>`;
   } else {
-    fieldHtml = `<input type="text" id="${baseId}" style="width:100%;">`;
+    fieldHtml = `<input type="text" id="${baseId}" style="max-width:100%;">`;
   }
 
   return `
     <div style="margin-top:10px;">
-      <label style="font-weight:bold;">${q.text}</label><br>
+      <label style="font-weight:bold;">${q.text}</label>
       ${fieldHtml}
     </div>
   `;
 }
 
-function collectInspectionExtras() {
+function collectDynamicAnswers(sectionPrefix) {
   const result = {};
-  Object.entries(inspQuestions).forEach(([id, q]) => {
-    if (!q.applyInspection || q.active === false) return;
-    const input = document.getElementById(`q_insp_${id}`);
+  Object.entries(questionsGlobal).forEach(([id, q]) => {
+    let applies = false;
+    if (sectionPrefix === "insp" && q.applyInspection) applies = true;
+    if (!applies || q.active === false) return;
+    const input = document.getElementById(`q_${sectionPrefix}_${id}`);
     if (!input) return;
     const val = (input.value || "").toString().trim();
-    if (val) result[id] = val;
+    if (val) {
+      result[id] = val;
+    }
   });
   return Object.keys(result).length ? result : null;
 }
 
-/*********** SAVE INSPECTION ***********/
-function saveInspection() {
-    if (!dbId) {
-        alert("No panel ID in URL.");
-        return;
-    }
+/* -------------------------
+      SUBMIT INSPECTION
+-------------------------- */
+function submitInspection() {
+  if (!dbId) {
+    alert("Invalid DB ID in URL.");
+    return;
+  }
 
-    const name = document.getElementById("elecName").value.trim();
-    if (!name) {
-        alert("Please enter electrician name.");
-        return;
-    }
+  const name = document.getElementById("ins_name").value.trim();
+  if (!name) {
+    alert("Please enter electrician name.");
+    return;
+  }
 
-    const data = {
-        dbId: dbId,
-        electricianName: name,
-        breakerStatus: document.getElementById("breakerStatus").value,
-        cleanStatus: document.getElementById("cleanStatus").value,
-        lockedStatus: document.getElementById("lockedStatus").value,
-        coveredStatus: document.getElementById("coveredStatus").value,
-        comments: document.getElementById("comments").value,
-        photo1: photo1Data || null,
-        photo2: photo2Data || null,
-        photo3: photo3Data || null,
-        extraAnswers: collectInspectionExtras(),
-        timestamp: new Date().toISOString()
-    };
+  const datetimeLocal = document.getElementById("ins_datetime").value;
 
-    firebase.database().ref("inspections/" + dbId).push(data, function(err) {
-        if (err) {
-            alert("Error saving inspection: " + err);
-        } else {
-            alert("Inspection saved successfully.");
-        }
-    });
-}
+  // Detailed fields
+  const breakerCond = document.getElementById("ins_breakerCond").value;
+  const tightHeat   = document.getElementById("ins_tightHeat").value;
+  const clean       = document.getElementById("ins_clean").value;
+  const overload    = document.getElementById("ins_overload").value;
+  const smell       = document.getElementById("ins_smell").value;
+  const door        = document.getElementById("ins_door").value;
+  const lock        = document.getElementById("ins_lock").value;
+  const cable       = document.getElementById("ins_cable").value;
+  const earth       = document.getElementById("ins_earth").value;
+  const phase       = document.getElementById("ins_phase").value;
+  const loose       = document.getElementById("ins_loose").value;
+  const corrosion   = document.getElementById("ins_corrosion").value;
+  const comments    = document.getElementById("ins_comments").value;
 
-/*********** FAULT PAGE ***********/
-function goToFault() {
-    if (!dbId) {
-        alert("No panel ID in URL.");
-        return;
-    }
-    location.href = "fault.html?id=" + encodeURIComponent(dbId);
+  const extraAnswers = collectDynamicAnswers("insp");
+
+  // Map to admin's expected main status fields
+  const data = {
+    dbId: dbId,
+    timestamp: new Date().toISOString(),
+    datetimeLocal: datetimeLocal,
+    electricianName: name,
+
+    // core fields used by admin.html
+    breakerStatus: breakerCond || "",
+    cleanStatus: clean || "",
+    lockedStatus: lock || "",
+    coveredStatus: door || "",
+    comments: comments || "",
+
+    // detailed inspection fields
+    breakerCondition: breakerCond,
+    tightnessHeating: tightHeat,
+    cleanliness: clean,
+    overloadSigns: overload,
+    burningSmell: smell,
+    doorCondition: door,
+    lockCondition: lock,
+    cableCondition: cable,
+    earthCondition: earth,
+    phaseSequence: phase,
+    looseConnections: loose,
+    corrosionStatus: corrosion,
+
+    extraAnswers,
+    photo1,
+    photo2,
+    photo3
+  };
+
+  saveInspection(dbId, data, () => {
+    alert("Inspection saved successfully.");
+    // Go back to panel page for same DB
+    window.location.href = "panel.html?id=" + encodeURIComponent(dbId);
+  });
 }
 </script>
 
