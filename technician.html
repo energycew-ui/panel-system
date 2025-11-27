@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Technician – Compressor / Generator</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- Your shared config & helpers -->
+  <script src="data.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f4f4;
+    }
+    .topbar {
+      background: #0c0c0c;
+      padding: 18px 0 22px 0;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+      color: #fff;
+    }
+    .topbar img {
+      width: 110px;
+      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
+    }
+    .title {
+      margin-top: 8px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #ffd65a;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    .card {
+      background: #fff;
+      padding: 18px;
+      max-width: 900px;
+      margin: 16px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    h2, h3 {
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 9px;
+      margin-top: 4px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    textarea {
+      height: 80px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 11px;
+      margin-top: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      color: #fff;
+    }
+    .btn-green { background:#008b55; }
+    .btn-blue  { background:#007bff; }
+
+    .mode-badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #e6f0ff;
+      color: #174ea6;
+      margin-bottom: 6px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .tab-btn {
+      flex: 1 1 200px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      background: #eee;
+    }
+    .tab-btn.active {
+      background: #008b55;
+      color: #fff;
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    .info-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 14px;
+    }
+    .info-col {
+      flex: 1 1 220px;
+    }
+
+    .preview-img {
+      width: 100%;
+      max-width: 260px;
+      border-radius: 10px;
+      border: 2px solid #444;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .section-title {
+      margin-top: 18px;
+      font-size: 15px;
+      font-weight: bold;
+      border-left: 4px solid #ffb300;
+      padding-left: 8px;
+    }
+
+    small.hint {
+      color: #777;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="logo.png" alt="Logo">
+  <div class="title">Technician Portal</div>
+  <div class="subtitle">Compressor & Generator Inspection / Maintenance</div>
+</div>
+
+<div class="card" id="assetInfoCard">
+  <span class="mode-badge" id="assetTypeBadge"></span>
+  <h2 id="assetTitle">Loading...</h2>
+  <div class="info-row">
+    <div class="info-col">
+      <b>ID:</b> <span id="assetId"></span><br>
+      <b>Location:</b> <span id="assetLocation"></span><br>
+      <b>Model:</b> <span id="assetModel"></span><br>
+      <b>Capacity:</b> <span id="assetCapacity"></span><br>
+      <b>Extra:</b> <span id="assetExtra"></span>
+    </div>
+    <div class="info-col" style="text-align:center;">
+      <img id="assetImage" class="preview-img" alt="Asset Image">
+    </div>
+  </div>
+</div>
+
+<div class="card" id="formsCard">
+
+  <div class="tabs">
+    <button class="tab-btn active" id="btnInsp" onclick="showTab('insp')">
+      Daily Inspection Form
+    </button>
+    <button class="tab-btn" id="btnMaint" onclick="showTab('maint')">
+      Maintenance Form
+    </button>
+  </div>
+
+  <!-- INSPECTION FORM -->
+  <div class="tab-content active" id="tabInsp">
+    <h3 id="inspTitle">Inspection</h3>
+
+    <label>Date & Time</label>
+    <input type="datetime-local" id="insp_datetime">
+
+    <label>Technician Name</label>
+    <input type="text" id="insp_name">
+
+    <div id="inspFixedFields"></div>
+
+    <div class="section-title">Additional Questions</div>
+    <div id="inspQuestionsContainer">
+      <p style="font-size:13px;color:#666;">Loading questions...</p>
+    </div>
+
+    <div class="section-title">Photos</div>
+
+    <label>Photo 1</label>
+    <input type="file" accept="image/*" onchange="previewPhoto(event,'insp',1)">
+    <img id="inspPreview1" class="preview-img">
+
+    <label>Photo 2</label>
+    <input type="file" accept="image/*" onchange="previewPhoto(event,'insp',2)">
+    <img id="inspPreview2" class="preview-img">
+
+    <label>Photo 3</label>
+    <input type="file" accept="image/*" onchange="previewPhoto(event,'insp',3)">
+    <img id="inspPreview3" class="preview-img">
+
+    <label>Remarks</label>
+    <textarea id="insp_remarks"></textarea>
+
+    <button class="btn btn-green" onclick="submitInspection()">Submit Inspection</button>
+  </div>
+
+  <!-- MAINTENANCE FORM -->
+  <div class="tab-content" id="tabMaint">
+    <h3 id="maintTitle">Maintenance</h3>
+
+    <label>Date & Time</label>
+    <input type="datetime-local" id="maint_datetime">
+
+    <label>Technician Name</label>
+    <input type="text" id="maint_name">
+
+    <label>Work Performed / Maintenance Type</label>
+    <input type="text" id="maint_work" placeholder="e.g. Oil change, filter replacement">
+
+    <label>Parts Replaced</label>
+    <textarea id="maint_parts" placeholder="List of parts replaced (if any)"></textarea>
+
+    <div class="section-title">Additional Questions</div>
+    <div id="maintQuestionsContainer">
+      <p style="font-size:13px;color:#666;">Loading questions...</p>
+    </div>
+
+    <div class="section-title">Photos</div>
+
+    <label>Photo 1</label>
+    <input type="file" accept="image/*" onchange="previewPhoto(event,'maint',1)">
+    <img id="maintPreview1" class="preview-img">
+
+    <label>Photo 2</label>
+    <input type="file" accept="image/*" onchange="previewPhoto(event,'maint',2)">
+    <img id="maintPreview2" class="preview-img">
+
+    <label>Photo 3</label>
+    <input type="file" accept="image/*" onchange="previewPhoto(event,'maint',3)">
+    <img id="maintPreview3" class="preview-img">
+
+    <label>Remarks / Details</label>
+    <textarea id="maint_remarks"></textarea>
+
+    <button class="btn btn-blue" onclick="submitMaintenance()">Submit Maintenance</button>
+  </div>
+</div>
+
+<script>
+// ---------- AUTH CHECK ----------
+if (sessionStorage.getItem("technicianLogged") !== "true") {
+  alert("Technician not logged in. Please use QR + Technician PIN.");
+  window.location.href = "index.html";
+}
+
+// ---------- BASIC CONTEXT ----------
+const params = new URLSearchParams(window.location.search);
+const assetId = params.get("id") || "";
+document.getElementById("assetId").innerText = assetId;
+
+let assetType = null;  // "compressor" or "generator"
+if (/^comp/i.test(assetId)) {
+  assetType = "compressor";
+} else if (/^gen/i.test(assetId)) {
+  assetType = "generator";
+} else {
+  assetType = "unknown";
+}
+
+const badge = document.getElementById("assetTypeBadge");
+if (assetType === "compressor") {
+  badge.textContent = "COMPRESSOR";
+} else if (assetType === "generator") {
+  badge.textContent = "GENERATOR";
+} else {
+  badge.textContent = "UNKNOWN ASSET";
+}
+
+// ---------- DEFAULT DATE/TIME ----------
+document.addEventListener("DOMContentLoaded", () => {
+  const now = new Date();
+  const dt = now.toISOString().slice(0,16);
+  document.getElementById("insp_datetime").value = dt;
+  document.getElementById("maint_datetime").value = dt;
+});
+
+// ---------- LOAD ASSET INFO FROM FIREBASE ----------
+function loadAssetInfo() {
+  const imgEl = document.getElementById("assetImage");
+  const locEl = document.getElementById("assetLocation");
+  const modelEl = document.getElementById("assetModel");
+  const capEl = document.getElementById("assetCapacity");
+  const extraEl = document.getElementById("assetExtra");
+  const titleEl = document.getElementById("assetTitle");
+
+  if (!assetId || assetType === "unknown") {
+    titleEl.textContent = "Unknown Asset (" + assetId + ")";
+    return;
+  }
+
+  if (assetType === "compressor") {
+    firebase.database().ref("compressors/" + assetId).once("value").then(snap => {
+      const c = snap.val() || {};
+      titleEl.textContent = "Compressor – " + (c.compressorId || assetId);
+      locEl.textContent = c.location || "";
+      modelEl.textContent = c.model || "";
+      capEl.textContent = c.capacity || "";
+      extraEl.textContent = c.compressorType || "";
+      if (c.image) {
+        imgEl.src = c.image;
+        imgEl.style.display = "block";
+      }
+      setupFixedInspectionFields();
+    });
+  } else if (assetType === "generator") {
+    firebase.database().ref("generators/" + assetId).once("value").then(snap => {
+      const g = snap.val() || {};
+      titleEl.textContent = "Generator – " + (g.generatorId || assetId);
+      locEl.textContent = g.location || "";
+      modelEl.textContent = g.model || "";
+      capEl.textContent = g.capacityKVA || g.capacity || "";
+      extraEl.textContent = g.fuelType || "";
+      if (g.image) {
+        imgEl.src = g.image;
+        imgEl.style.display = "block";
+      }
+      setupFixedInspectionFields();
+    });
+  }
+}
+
+// ---------- FIXED FIELDS FOR INSPECTION ----------
+function setupFixedInspectionFields() {
+  const container = document.getElementById("inspFixedFields");
+  let html = "";
+  if (assetType === "generator") {
+    document.getElementById("inspTitle").textContent = "Generator Daily Inspection";
+    html = `
+      <label>Fuel Level (%)</label>
+      <input type="number" id="insp_fuel" placeholder="0-100">
+
+      <label>Oil Level</label>
+      <input type="text" id="insp_oil">
+
+      <label>Battery Condition</label>
+      <input type="text" id="insp_battery">
+
+      <label>Water Level</label>
+      <input type="text" id="insp_water">
+
+      <label>Voltage Output</label>
+      <input type="text" id="insp_voltage" placeholder="e.g. 400V">
+
+      <label>Frequency (Hz)</label>
+      <input type="number" id="insp_freq" step="0.1">
+
+      <label>Temperature (°C)</label>
+      <input type="number" id="insp_temp" step="0.1">
+
+      <label>Running Hours</label>
+      <input type="number" id="insp_hours">
+
+      <label>Any Warning Indication</label>
+      <input type="text" id="insp_warning" placeholder="Describe if any warning shows">
+    `;
+  } else if (assetType === "compressor") {
+    document.getElementById("inspTitle").textContent = "Compressor Daily Inspection";
+    html = `
+      <label>Oil Level</label>
+      <input type="text" id="insp_oil">
+
+      <label>Filter Condition</label>
+      <input type="text" id="insp_filter" placeholder="OK / Needs cleaning / Replace">
+
+      <label>Air and Oil Leak Check</label>
+      <input type="text" id="insp_leak" placeholder="OK / Leak observed">
+
+      <label>Hour Meter Reading</label>
+      <input type="number" id="insp_hours">
+
+      <label>Any Abnormality</label>
+      <input type="text" id="insp_abnormal" placeholder="Noise, vibration, smell, etc.">
+    `;
+  } else {
+    html = "<p style='color:red;'>Unknown asset type – cannot build fixed inspection fields.</p>";
+  }
+  container.innerHTML = html;
+}
+
+// ---------- DYNAMIC QUESTIONS ----------
+let questionsGlobal = {};
+
+function loadQuestions() {
+  firebase.database().ref("questions").on("value", snap => {
+    questionsGlobal = snap.val() || {};
+    renderInspectionQuestions();
+    renderMaintenanceQuestions();
+  });
+}
+
+// Helper: render field based on type
+function renderQuestionFieldHtml(fieldId, q) {
+  let fieldHtml = "";
+  if (q.type === "text") {
+    fieldHtml = `<input type="text" id="${fieldId}">`;
+  } else if (q.type === "number") {
+    fieldHtml = `<input type="number" id="${fieldId}">`;
+  } else if (q.type === "yesno") {
+    fieldHtml = `
+      <select id="${fieldId}">
+        <option value=""></option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    `;
+  } else if (q.type === "dropdown") {
+    const opts = (q.options || []);
+    const optionsHtml = ['<option value=""></option>']
+      .concat(opts.map(o => `<option value="${o}">${o}</option>`))
+      .join("");
+    fieldHtml = `<select id="${fieldId}">${optionsHtml}</select>`;
+  } else {
+    fieldHtml = `<input type="text" id="${fieldId}">`;
+  }
+  return `
+    <div style="margin-top:8px;">
+      <label>${q.text}</label>
+      ${fieldHtml}
+    </div>
+  `;
+}
+
+function renderInspectionQuestions() {
+  const container = document.getElementById("inspQuestionsContainer");
+  const entries = Object.entries(questionsGlobal);
+
+  let filtered = [];
+  if (assetType === "compressor") {
+    filtered = entries.filter(([id,q]) => q.applyCompressorInspection && q.active !== false);
+  } else if (assetType === "generator") {
+    filtered = entries.filter(([id,q]) => q.applyGeneratorInspection && q.active !== false);
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = "<p style='font-size:13px;color:#666;'>No extra questions defined for this inspection.</p>";
+    return;
+  }
+
+  let html = "";
+  filtered.forEach(([id,q]) => {
+    const fieldId = `q_insp_${id}`;
+    html += renderQuestionFieldHtml(fieldId, q);
+  });
+
+  container.innerHTML = html;
+}
+
+function renderMaintenanceQuestions() {
+  const container = document.getElementById("maintQuestionsContainer");
+  const entries = Object.entries(questionsGlobal);
+
+  let filtered = [];
+  if (assetType === "compressor") {
+    filtered = entries.filter(([id,q]) => q.applyCompressorMaintenance && q.active !== false);
+  } else if (assetType === "generator") {
+    filtered = entries.filter(([id,q]) => q.applyGeneratorMaintenance && q.active !== false);
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = "<p style='font-size:13px;color:#666;'>No extra questions defined for this maintenance.</p>";
+    return;
+  }
+
+  let html = "";
+  filtered.forEach(([id,q]) => {
+    const fieldId = `q_maint_${id}`;
+    html += renderQuestionFieldHtml(fieldId, q);
+  });
+
+  container.innerHTML = html;
+}
+
+// Collect answers for insp/maint
+function collectDynamic(sectionPrefix) {
+  const out = {};
+  Object.entries(questionsGlobal).forEach(([id,q]) => {
+    let use = false;
+    if (sectionPrefix === "insp" && assetType === "compressor" && q.applyCompressorInspection) use = true;
+    if (sectionPrefix === "insp" && assetType === "generator"  && q.applyGeneratorInspection) use = true;
+    if (sectionPrefix === "maint" && assetType === "compressor" && q.applyCompressorMaintenance) use = true;
+    if (sectionPrefix === "maint" && assetType === "generator"  && q.applyGeneratorMaintenance) use = true;
+    if (!use || q.active === false) return;
+
+    const el = document.getElementById(`q_${sectionPrefix}_${id}`);
+    if (!el) return;
+    const v = (el.value || "").toString().trim();
+    if (v) out[id] = v;
+  });
+  return Object.keys(out).length ? out : null;
+}
+
+// ---------- PHOTO HANDLING ----------
+let inspPhoto1 = null, inspPhoto2 = null, inspPhoto3 = null;
+let maintPhoto1 = null, maintPhoto2 = null, maintPhoto3 = null;
+
+function previewPhoto(event, formType, num) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    const imgId = formType === "insp" ? "inspPreview" + num : "maintPreview" + num;
+    const img = document.getElementById(imgId);
+    img.src = dataUrl;
+    img.style.display = "block";
+
+    if (formType === "insp") {
+      if (num === 1) inspPhoto1 = dataUrl;
+      if (num === 2) inspPhoto2 = dataUrl;
+      if (num === 3) inspPhoto3 = dataUrl;
+    } else {
+      if (num === 1) maintPhoto1 = dataUrl;
+      if (num === 2) maintPhoto2 = dataUrl;
+      if (num === 3) maintPhoto3 = dataUrl;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ---------- SUBMIT INSPECTION ----------
+function submitInspection() {
+  const name = document.getElementById("insp_name").value.trim();
+  if (!name) {
+    alert("Enter technician name.");
+    return;
+  }
+
+  const datetimeLocal = document.getElementById("insp_datetime").value;
+
+  let data = {
+    assetId,
+    assetType,
+    timestamp: new Date().toISOString(),
+    datetimeLocal,
+    technicianName: name,
+    extraAnswers: collectDynamic("insp"),
+    photo1: inspPhoto1,
+    photo2: inspPhoto2,
+    photo3: inspPhoto3,
+    remarks: document.getElementById("insp_remarks").value.trim()
+  };
+
+  if (assetType === "generator") {
+    data.fuelLevel       = document.getElementById("insp_fuel").value;
+    data.oilLevel        = document.getElementById("insp_oil").value;
+    data.batteryCond     = document.getElementById("insp_battery").value;
+    data.waterLevel      = document.getElementById("insp_water").value;
+    data.voltageOutput   = document.getElementById("insp_voltage").value;
+    data.frequencyHz     = document.getElementById("insp_freq").value;
+    data.temperatureC    = document.getElementById("insp_temp").value;
+    data.runningHours    = document.getElementById("insp_hours").value;
+    data.warningIndicate = document.getElementById("insp_warning").value;
+  } else if (assetType === "compressor") {
+    data.oilLevel      = document.getElementById("insp_oil").value;
+    data.filterCond    = document.getElementById("insp_filter").value;
+    data.leakCheck     = document.getElementById("insp_leak").value;
+    data.hourReading   = document.getElementById("insp_hours").value;
+    data.abnormality   = document.getElementById("insp_abnormal").value;
+  } else {
+    alert("Unknown asset type. Cannot submit.");
+    return;
+  }
+
+  let path = "";
+  if (assetType === "compressor") {
+    path = "compressorInspections/" + assetId;
+  } else if (assetType === "generator") {
+    path = "generatorInspections/" + assetId;
+  }
+
+  firebase.database().ref(path).push(data, err => {
+    if (err) {
+      alert("Error saving inspection: " + err);
+    } else {
+      alert("Inspection submitted successfully.");
+      window.location.reload();
+    }
+  });
+}
+
+// ---------- SUBMIT MAINTENANCE ----------
+function submitMaintenance() {
+  const name = document.getElementById("maint_name").value.trim();
+  if (!name) {
+    alert("Enter technician name.");
+    return;
+  }
+
+  const datetimeLocal = document.getElementById("maint_datetime").value;
+
+  let data = {
+    assetId,
+    assetType,
+    timestamp: new Date().toISOString(),
+    datetimeLocal,
+    technicianName: name,
+    workDone: document.getElementById("maint_work").value.trim(),
+    partsReplaced: document.getElementById("maint_parts").value.trim(),
+    extraAnswers: collectDynamic("maint"),
+    photo1: maintPhoto1,
+    photo2: maintPhoto2,
+    photo3: maintPhoto3,
+    remarks: document.getElementById("maint_remarks").value.trim()
+  };
+
+  let path = "";
+  if (assetType === "compressor") {
+    path = "compressorMaintenance/" + assetId;
+  } else if (assetType === "generator") {
+    path = "generatorMaintenance/" + assetId;
+  } else {
+    alert("Unknown asset type. Cannot submit.");
+    return;
+  }
+
+  firebase.database().ref(path).push(data, err => {
+    if (err) {
+      alert("Error saving maintenance record: " + err);
+    } else {
+      alert("Maintenance record submitted.");
+      window.location.reload();
+    }
+  });
+}
+
+// ---------- TAB SWITCH ----------
+function showTab(which) {
+  const inspBtn  = document.getElementById("btnInsp");
+  const maintBtn = document.getElementById("btnMaint");
+  const inspTab  = document.getElementById("tabInsp");
+  const maintTab = document.getElementById("tabMaint");
+
+  if (which === "insp") {
+    inspBtn.classList.add("active");
+    maintBtn.classList.remove("active");
+    inspTab.classList.add("active");
+    maintTab.classList.remove("active");
+  } else {
+    maintBtn.classList.add("active");
+    inspBtn.classList.remove("active");
+    maintTab.classList.add("active");
+    inspTab.classList.remove("active");
+  }
+}
+
+// ---------- INIT ----------
+loadAssetInfo();
+loadQuestions();
+</script>
+
+</body>
+</html>

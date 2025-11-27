@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Technician Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f4f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .box {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      text-align: center;
+      width: 320px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    h2 {
+      margin-top: 0;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 18px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 18px;
+      cursor: pointer;
+      background: #008b55;
+      color: white;
+      border: none;
+      border-radius: 6px;
+    }
+    #error {
+      color: red;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>Technician Access</h2>
+  <input type="password" id="pin" placeholder="Enter Technician PIN">
+  <button onclick="checkPIN()">Login</button>
+  <div id="error"></div>
+</div>
+
+<script>
+const TECHNICIAN_PIN = "7070";
+
+function getID() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");   // DB-01 / COMP-01 / GEN-01 / etc.
+}
+
+function checkPIN() {
+  const p = document.getElementById("pin").value;
+  const err = document.getElementById("error");
+  if (p === TECHNICIAN_PIN) {
+    sessionStorage.setItem("technicianLogged", "true");
+    const id = getID();
+    if (!id) {
+      err.innerText = "Invalid or missing ID in URL.";
+      return;
+    }
+    // Go to technician main page with same ID
+    location.href = "technician.html?id=" + encodeURIComponent(id);
+  } else {
+    err.innerText = "Incorrect PIN";
+  }
+}
+</script>
+
+</body>
+</html>
