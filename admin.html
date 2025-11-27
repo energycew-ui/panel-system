@@ -10,1393 +10,1583 @@
   <!-- Your Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
   <script src="data.js"></script>
 
+  <!-- QR Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
+      margin: 0;
+      background: #f2f4f7;
     }
 
+    /* BASIC TOPBAR (used by premium header) */
     .topbar {
-      background: #0c0c0c;
-      color: #fff;
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-    }
-    .topbar-left {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    .topbar img {
-      height: 48px;
-    }
-    .topbar-title {
-      font-size: 20px;
-      font-weight: bold;
-      color: #ffd54f;
-    }
-    .topbar-subtitle {
-      font-size: 12px;
-      color: #ddd;
-    }
-    .topbar-right {
-      font-size: 13px;
-      text-align: right;
-    }
-
-    .adminWrapper {
-      display: flex;
-      height: calc(100vh - 70px);
-    }
-
-    .sidebar {
-      width: 260px;
       background: #111;
-      color: #eee;
-      overflow-y: auto;
-      box-shadow: 3px 0 8px rgba(0,0,0,0.3);
+      color: #ffc800;
+      padding: 12px 24px 16px 24px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
-    .sidebar h2 {
-      margin: 15px;
-      font-size: 16px;
-      color: #ffca28;
-      border-bottom: 1px solid #333;
-      padding-bottom: 8px;
-    }
-    .tab-button {
-      display: block;
-      width: 100%;
-      padding: 10px 15px;
-      text-align: left;
-      border: none;
-      background: none;
-      color: #ddd;
-      cursor: pointer;
-      font-size: 14px;
-      border-left: 3px solid transparent;
-    }
-    .tab-button:hover {
-      background: #222;
-    }
-    .tab-button.active {
-      background: #263238;
-      border-left-color: #ffca28;
-      color: #fff;
+
+    .topbar-title {
+      font-size: 22px;
       font-weight: bold;
     }
 
-    .mainContent {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
+    /* TABS */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      background: #1e1e1e;
+      padding: 8px;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
+    .tab-btn {
+      border: none;
+      padding: 10px 18px;
+      font-size: 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      background: #333;
+      color: #eee;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .tab-btn:hover {
+      background: #444;
+      transform: translateY(-1px);
+    }
+
+    .tab-btn.active {
+      background: #ffc800;
+      color: #111;
+      font-weight: bold;
+    }
+
+    .tab-wrapper {
+      padding: 20px;
+      max-width: 1100px;
+      margin: 0 auto 40px auto;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* LOGIN */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    #loginBox {
+      background: #fff;
+      padding: 25px 30px;
+      border-radius: 10px;
+      max-width: 320px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    }
+    #loginBox input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    #loginBox button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 15px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #c40000;
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+    }
+    #loginError {
+      color: red;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .login-logo {
+      width: 140px;
+      height: auto;
+      margin-bottom: 10px;
+    }
+
+    /* CARD STYLE */
     .card {
       background: #fff;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      margin-bottom: 20px;
     }
 
-    h1, h2, h3 {
+    h2, h3 {
       margin-top: 0;
     }
 
-    .form-row {
+    /* FORM ELEMENTS */
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input[type="text"],
+    input[type="file"],
+    select {
+      padding: 8px;
+      font-size: 16px;
+    }
+    input[type="text"],
+    input[type="file"] {
+      width: 300px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    #previewImage,
+    #previewTransformerImage {
+      width: 200px;
+      margin-top: 10px;
+      border: 2px solid #444;
+      border-radius: 6px;
+      display: none;
+    }
+
+    /* CIRCUITS (ENTRY TAB) */
+    .circuit-row {
       display: flex;
+      gap: 8px;
+      margin-top: 8px;
       flex-wrap: wrap;
+    }
+    .circuit-row input {
+      flex: 1;
+      min-width: 120px;
+    }
+    .circuit-remove-btn {
+      background: #c40000;
+      color: white;
+      border-radius: 4px;
+      padding: 0 8px;
+      cursor: pointer;
+    }
+
+    /* QR PREVIEW */
+    #qrPreview, #trQrPreview {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .dangerBanner {
+      background: #c40000;
+      color: #fff;
+      padding: 10px 12px;
+      font-weight: bold;
+      border-radius: 8px;
+      max-width: 460px;
+      margin: 0 auto 15px auto;
+      font-size: 16px;
+    }
+    #qrCanvas, #trQrCanvas {
+      border: 1px solid #ccc;
+      padding: 10px;
+      background: #fff;
+    }
+    #qrDBname, #trQrName {
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: 12px;
+      color: #111;
+    }
+
+    /* TABLES */
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    th {
+      background: #333;
+      color: white;
+      padding: 8px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+    tr:nth-child(even) { background: #f9f9f9; }
+
+    .photo-btn {
+      background: #007bff;
+      color: white;
+      padding: 4px 6px;
+      border-radius: 5px;
+      cursor: pointer;
+      border: none;
+      font-size: 12px;
+    }
+
+    .filterBox {
+      display: flex;
       gap: 10px;
       margin-bottom: 10px;
+      flex-wrap: wrap;
     }
-    .form-group {
-      flex: 1 1 220px;
-      min-width: 180px;
-    }
-    .form-group label {
-      font-size: 13px;
-      display: block;
-      margin-bottom: 3px;
-    }
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      box-sizing: border-box;
+    .filterBox input, .filterBox select {
       padding: 6px 8px;
-      font-size: 13px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    textarea {
-      resize: vertical;
-      min-height: 60px;
+      font-size: 14px;
     }
 
     .primary-btn {
-      background: #1976d2;
-      color: #fff;
-      border-radius: 6px;
-      border: none;
-      padding: 8px 16px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: bold;
+      background:#007bff;
+      color:#fff;
     }
-    .primary-btn:hover {
-      background: #125a9d;
-    }
-
-    .secondary-btn {
-      background: #455a64;
-      color: #fff;
-      border-radius: 6px;
-      border: none;
-      padding: 6px 12px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: bold;
-    }
-    .secondary-btn:hover {
-      background: #263238;
-    }
-
     .danger-btn {
-      background: #c62828;
-      color: #fff;
-      border-radius: 6px;
-      border: none;
-      padding: 5px 10px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: bold;
+      background:#c40000;
+      color:#fff;
     }
-    .danger-btn:hover {
-      background: #8e0000;
+    .secondary-btn {
+      background:#555;
+      color:#fff;
     }
 
+    /* SUMMARY CARDS */
     .summary-row {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 10px;
+      margin: 10px 0 5px 0;
     }
     .summary-card {
-      flex: 1 1 200px;
-      background: #fafafa;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      padding: 10px;
-      box-sizing: border-box;
+      background: #f6f8fc;
+      border-radius: 10px;
+      padding: 8px 12px;
+      min-width: 150px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-size: 13px;
     }
     .summary-title {
-      font-size: 12px;
-      color: #666;
+      font-weight: bold;
+      color: #444;
+      margin-bottom: 2px;
     }
     .summary-value {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
-      margin-top: 5px;
+      color: #111;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 6px;
-    }
-    th {
-      background: #f5f5f5;
-    }
-    tr:nth-child(even) {
-      background: #fafafa;
-    }
-
-    .filterBox {
-      margin: 10px 0;
-      font-size: 13px;
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-    }
-    .filterBox input,
-    .filterBox select {
-      padding: 4px 6px;
-      font-size: 12px;
-    }
-
-    .tag {
+    /* BADGES */
+    .badge {
       display: inline-block;
       padding: 2px 6px;
+      border-radius: 999px;
       font-size: 11px;
-      border-radius: 10px;
-      background: #e3f2fd;
-      color: #1976d2;
-      margin-right: 3px;
-      margin-top: 3px;
-    }
-
-    .status-ok {
-      color: #2e7d32;
       font-weight: bold;
     }
-    .status-bad {
-      color: #c62828;
-      font-weight: bold;
+    .badge-ok {
+      background: #e5f8e8;
+      color: #0b7a2a;
+    }
+    .badge-warn {
+      background: #fff4e5;
+      color: #b26b00;
+    }
+    .badge-bad {
+      background: #fde7e7;
+      color: #b00020;
+    }
+    .badge-info {
+      background: #e6f0ff;
+      color: #174ea6;
     }
 
-    .imageThumb {
-      width: 80px;
-      height: 80px;
-      object-fit: cover;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+    /* MASTER DB TABLE SPECIFIC */
+    .master-main-row {
       cursor: pointer;
     }
-
-    .overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.75);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
+    .master-main-row:hover {
+      background: #f1f5ff;
     }
-    .overlay img {
-      max-width: 90%;
-      max-height: 90%;
-      border-radius: 10px;
-      box-shadow: 0 0 15px #000;
+    .master-details-row td {
+      background: #f9fbff;
+      border-top: none;
     }
-
-    .loginOverlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.85);
+    .master-details-wrapper {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
+      flex-wrap: wrap;
+      gap: 20px;
     }
-    .loginBox {
-      background: #ffffff;
-      padding: 25px;
-      border-radius: 12px;
-      width: 320px;
+    .master-details-left {
+      flex: 1 1 60%;
+      min-width: 250px;
+    }
+    .master-details-right {
+      flex: 1 1 35%;
+      min-width: 200px;
       text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
-    .loginBox h2 {
-      margin-top: 0;
+    .master-details-image {
+      max-width: 100%;
+      max-height: 240px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      object-fit: cover;
     }
-    .loginBox input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-    .loginBox button {
-      width: 100%;
-      margin-top: 15px;
-      padding: 10px;
-      font-size: 16px;
-      cursor: pointer;
-      background: #1976d2;
-      color: #fff;
-      border-radius: 6px;
-      border: none;
-      font-weight: bold;
-    }
-    .loginBox #loginError {
-      margin-top: 8px;
-      color: red;
-      font-size: 13px;
+    .master-circuit-box {
+      background:#fafafa;
+      border:1px solid #ddd;
+      border-radius:6px;
+      padding:8px;
+      margin-bottom:6px;
+      font-size:13px;
     }
 
-    @media (max-width: 900px) {
-      .adminWrapper {
-        flex-direction: column;
-      }
-      .sidebar {
-        width: 100%;
-        display: flex;
-        overflow-x: auto;
-      }
-      .sidebar h2 {
-        display: none;
-      }
-      .tab-button {
-        flex: 1 1 auto;
-        white-space: nowrap;
-        font-size: 12px;
-        padding: 8px;
-      }
-      .mainContent {
-        height: auto;
-      }
+    /* PREMIUM HEADER DESIGN */
+    .premium-header {
+      position: relative;
+      padding: 20px 0 28px 0;
+      background: #0c0c0c;
     }
 
-    .photo-btn {
-      background: #00796b;
-      color: #fff;
-      border-radius: 5px;
-      border: none;
-      padding: 4px 8px;
-      cursor: pointer;
-      font-size: 11px;
-      margin-right: 4px;
+    .logo-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .photo-btn:hover {
-      background: #004d40;
+
+    .topbar-logo {
+      width: 110px;
+      height: auto;
+      margin-bottom: 10px;
+      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.45));
+      opacity: 1;
+      animation: fadeInDown 0.7s ease-out;
+    }
+
+    .premium-title {
+      background: linear-gradient(90deg, #ffd65a, #ffb300);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-align: center;
+      animation: fadeInUp 0.7s ease-out;
+    }
+
+    .header-separator {
+      width: 80%;
+      height: 2px;
+      margin: 12px auto 0 auto;
+      background: linear-gradient(90deg, #ffefc1, #ffb300, #ffefc1);
+      border-radius: 2px;
+      animation: fadeIn 1.2s ease-out;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
   </style>
 </head>
+
 <body>
 
-<div class="loginOverlay" id="loginOverlay">
-  <div class="loginBox">
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay">
+  <div id="loginBox">
+    <img src="logo.png" alt="Chenab Logo" class="login-logo">
     <h2>Admin Login</h2>
-    <input type="password" id="adminPin" placeholder="Enter Admin PIN">
-    <button onclick="checkAdminPIN()">Login</button>
+    <input type="password" id="adminPassword" placeholder="Password">
+    <button onclick="checkLogin()">Login</button>
     <div id="loginError"></div>
   </div>
 </div>
 
-<div class="topbar">
-  <div class="topbar-left">
-    <img src="logo.png" alt="Logo">
-    <div>
-      <div class="topbar-title">Electrical Safety Admin Panel</div>
-      <div class="topbar-subtitle">Panels • Transformers • LUX • Faults • Technician Reports</div>
+<!-- MAIN ADMIN DASHBOARD -->
+<div id="adminWrapper" style="display:none;">
+
+  <!-- PREMIUM HEADER -->
+  <div class="topbar premium-header">
+    <div class="logo-wrapper">
+      <img src="logo.png" class="topbar-logo" alt="Chenab Engineering Logo">
     </div>
-  </div>
-  <div class="topbar-right">
-    <div id="adminUserLabel">Admin</div>
-    <div id="dateTimeLabel"></div>
-  </div>
-</div>
-
-<div class="adminWrapper">
-  <div class="sidebar">
-    <h2>Entries</h2>
-    <button class="tab-button active" onclick="showTab('tab-db-entry', this)">DB Entry</button>
-    <button class="tab-button" onclick="showTab('tab-transformer-entry', this)">Transformer Entry</button>
-    <button class="tab-button" onclick="showTab('tab-compressor-entry', this)">Compressor Entry</button>
-    <button class="tab-button" onclick="showTab('tab-generator-entry', this)">Generator Entry</button>
-
-    <h2>Reports</h2>
-    <button class="tab-button" onclick="showTab('tab-db-inspections', this)">DB Inspection Reports</button>
-    <button class="tab-button" onclick="showTab('tab-fault-reports', this)">Fault Reports</button>
-    <button class="tab-button" onclick="showTab('tab-transformer-reports', this)">Transformer Reports</button>
-    <button class="tab-button" onclick="showTab('tab-lux-reports', this)">LUX Reports</button>
-    <button class="tab-button" onclick="showTab('tab-compressor-inspections', this)">Compressor Inspection Reports</button>
-    <button class="tab-button" onclick="showTab('tab-compressor-maint', this)">Compressor Maintenance Reports</button>
-    <button class="tab-button" onclick="showTab('tab-generator-inspections', this)">Generator Inspection Reports</button>
-    <button class="tab-button" onclick="showTab('tab-generator-maint', this)">Generator Maintenance Reports</button>
-
-    <h2>Tools</h2>
-    <button class="tab-button" onclick="showTab('tab-master-db', this)">Master DB Report</button>
-    <button class="tab-button" onclick="showTab('tab-questions', this)">Form Questions</button>
+    <div class="topbar-title premium-title">
+      Admin Dashboard – Electrical & Transformer System
+    </div>
+    <div class="header-separator"></div>
   </div>
 
-  <div class="mainContent">
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-target="tab-entry">DB Entry</button>
+    <button class="tab-btn" data-target="tab-transformer-entry">Transformer Entry</button>
+    <button class="tab-btn" data-target="tab-inspections">DB Inspection Reports</button>
+    <button class="tab-btn" data-target="tab-faults">Fault Reports</button>
+    <button class="tab-btn" data-target="tab-transformer-reports">Transformer Reports</button>
+    <button class="tab-btn" data-target="tab-lux-reports">LUX Reports</button>
+    <button class="tab-btn" data-target="tab-master">Master DB Report</button>
+    <button class="tab-btn" data-target="tab-questions">Form Questions</button>
+  </div>
+
+  <div class="tab-wrapper">
 
     <!-- TAB 1: DB ENTRY -->
-    <div class="tab-content" id="tab-db-entry" style="display:block;">
+    <div class="tab-content active" id="tab-entry">
       <div class="card">
-        <h2>DB Entry</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>DB ID</label>
-            <input type="text" id="db_id">
+        <h2>DB Entry / Panel Data</h2>
+
+        <label>DB Number</label>
+        <input id="db" type="text">
+
+        <label>Voltage Rating</label>
+        <input id="volt" type="text">
+
+        <label>Main Breaker Capacity</label>
+        <input id="breaker" type="text">
+
+        <label>Main Cable Size</label>
+        <input id="cable" type="text">
+
+        <label>Earth Status</label>
+        <input id="earth" type="text">
+
+        <label>Location</label>
+        <input id="location" type="text">
+
+        <label>Purpose</label>
+        <input id="purpose" type="text">
+
+        <label>Upload Panel Picture (Optional)</label>
+        <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
+        <br>
+        <img id="previewImage" alt="Preview">
+        <br>
+        <button type="button" class="secondary-btn" onclick="removeImage()">Remove Picture</button>
+
+        <h3 style="margin-top:20px;">Circuits (Name / Breaker / Load)</h3>
+        <div id="circuitsContainer"></div>
+        <button type="button" class="secondary-btn" onclick="addCircuitRow()">Add Circuit</button>
+
+        <h3 style="margin-top:20px;">Extra DB Questions</h3>
+        <div id="dbQuestionsContainer"></div>
+
+        <br><br>
+        <button class="primary-btn" onclick="savePanel()">Save DB Data</button>
+
+        <hr>
+
+        <h3>Generate DB QR Code</h3>
+        <button class="secondary-btn" onclick="generateQR()">Generate QR Code</button>
+
+        <div id="qrPreview">
+          <div class="dangerBanner">
+            ⚠️ DANGER – ELECTRICAL PANEL – DO NOT TOUCH ⚠️
           </div>
-          <div class="form-group">
-            <label>Location</label>
-            <input type="text" id="db_location">
-          </div>
-          <div class="form-group">
-            <label>Feeder</label>
-            <input type="text" id="db_feeder">
-          </div>
-          <div class="form-group">
-            <label>Rating</label>
-            <input type="text" id="db_rating">
-          </div>
+          <canvas id="qrCanvas" width="250" height="250"></canvas>
+          <div id="qrDBname"></div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Panel Type</label>
-            <input type="text" id="db_panelType">
-          </div>
-          <div class="form-group">
-            <label>Panel Make</label>
-            <input type="text" id="db_panelMake">
-          </div>
-          <div class="form-group">
-            <label>Risk Category</label>
-            <select id="db_risk">
-              <option value="">Select</option>
-              <option value="L">Low</option>
-              <option value="M">Medium</option>
-              <option value="H">High</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Remarks</label>
-            <input type="text" id="db_remarks">
-          </div>
-        </div>
-
-        <button class="primary-btn" onclick="saveDBEntry()">Save DB Entry</button>
+        <button id="downloadQR" style="display:none;" class="primary-btn" onclick="downloadQR()">
+          Download DB QR Sheet
+        </button>
       </div>
 
       <div class="card">
-        <h3>Existing DBs</h3>
-        <div id="dbEntryTable"></div>
+        <h2>All Panels (DBs)</h2>
+        <button class="secondary-btn" onclick="showPanels()">Refresh Panel List</button>
+        <div id="panelList" style="margin-top:10px;"></div>
       </div>
     </div>
 
     <!-- TAB 2: TRANSFORMER ENTRY -->
-    <div class="tab-content" id="tab-transformer-entry" style="display:none;">
+    <div class="tab-content" id="tab-transformer-entry">
       <div class="card">
         <h2>Transformer Entry</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Transformer ID</label>
-            <input type="text" id="tr_id">
+
+        <label>Transformer ID (e.g. TR-001)</label>
+        <input id="tr_id" type="text">
+
+        <label>Transformer Rating (kVA)</label>
+        <input id="tr_rating" type="text">
+
+        <label>Primary Voltage (V)</label>
+        <input id="tr_vin" type="text">
+
+        <label>Secondary Voltage (V)</label>
+        <input id="tr_vout" type="text">
+
+        <label>Location</label>
+        <input id="tr_location" type="text">
+
+        <label>Purpose / Feeder</label>
+        <input id="tr_purpose" type="text">
+
+        <label>Upload Transformer Picture (Optional)</label>
+        <input type="file" id="tr_imageInput" accept="image/*" onchange="previewTransformerImage(event)">
+        <br>
+        <img id="previewTransformerImage" alt="Transformer Preview">
+        <br>
+        <button type="button" class="secondary-btn" onclick="removeTransformerImage()">Remove Picture</button>
+
+        <br><br>
+        <button class="primary-btn" onclick="saveTransformerEntry()">Save Transformer</button>
+
+        <hr>
+
+        <h3>Generate Transformer QR Code</h3>
+        <button class="secondary-btn" onclick="generateTransformerQR()">Generate Transformer QR</button>
+
+        <div id="trQrPreview">
+          <div class="dangerBanner">
+            ⚠️ HIGH VOLTAGE TRANSFORMER – AUTHORIZED ONLY ⚠️
           </div>
-          <div class="form-group">
-            <label>Location</label>
-            <input type="text" id="tr_location">
-          </div>
-          <div class="form-group">
-            <label>Capacity (kVA)</label>
-            <input type="number" id="tr_capacity">
-          </div>
-          <div class="form-group">
-            <label>Make</label>
-            <input type="text" id="tr_make">
-          </div>
+          <canvas id="trQrCanvas" width="250" height="250"></canvas>
+          <div id="trQrName"></div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Voltage Level</label>
-            <input type="text" id="tr_voltage">
-          </div>
-          <div class="form-group">
-            <label>Oil Type</label>
-            <input type="text" id="tr_oilType">
-          </div>
-          <div class="form-group">
-            <label>Risk Category</label>
-            <select id="tr_risk">
-              <option value="">Select</option>
-              <option value="L">Low</option>
-              <option value="M">Medium</option>
-              <option value="H">High</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Remarks</label>
-            <input type="text" id="tr_remarks">
-          </div>
-        </div>
-
-        <button class="primary-btn" onclick="saveTransformerEntry()">Save Transformer Entry</button>
+        <button id="downloadTrQR" style="display:none;" class="primary-btn" onclick="downloadTransformerQR()">
+          Download Transformer QR Sheet
+        </button>
       </div>
 
       <div class="card">
-        <h3>Existing Transformers</h3>
-        <div id="transformerEntryTable"></div>
-      </div>
-    </div>
-    <!-- TAB 3: COMPRESSOR ENTRY -->
-    <div class="tab-content" id="tab-compressor-entry" style="display:none;">
-      <div class="card">
-        <h2>Compressor Entry</h2>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Compressor ID</label>
-            <input type="text" id="comp_id">
-          </div>
-          <div class="form-group">
-            <label>Location</label>
-            <input type="text" id="comp_location">
-          </div>
-          <div class="form-group">
-            <label>Model</label>
-            <input type="text" id="comp_model">
-          </div>
-          <div class="form-group">
-            <label>Capacity</label>
-            <input type="text" id="comp_capacity">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Pressure Rating</label>
-            <input type="text" id="comp_pressure">
-          </div>
-          <div class="form-group">
-            <label>Compressor Type</label>
-            <input type="text" id="comp_type">
-          </div>
-          <div class="form-group">
-            <label>Upload Image</label>
-            <input type="file" id="comp_img" accept="image/*">
-          </div>
-        </div>
-
-        <button class="primary-btn" onclick="saveCompressorEntry()">Save Compressor Entry</button>
-      </div>
-
-      <div class="card">
-        <h3>Existing Compressors</h3>
-        <div id="compressorEntryTable"></div>
+        <h2>All Transformers</h2>
+        <button class="secondary-btn" onclick="showTransformers()">Refresh Transformer List</button>
+        <div id="transformerList" style="margin-top:10px;"></div>
       </div>
     </div>
 
-    <!-- TAB 4: GENERATOR ENTRY -->
-    <div class="tab-content" id="tab-generator-entry" style="display:none;">
+    <!-- TAB 3: DB INSPECTION REPORTS -->
+    <div class="tab-content" id="tab-inspections">
       <div class="card">
-        <h2>Generator Entry</h2>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Generator ID</label>
-            <input type="text" id="gen_id">
-          </div>
-          <div class="form-group">
-            <label>Location</label>
-            <input type="text" id="gen_location">
-          </div>
-          <div class="form-group">
-            <label>Model</label>
-            <input type="text" id="gen_model">
-          </div>
-          <div class="form-group">
-            <label>Capacity (kVA)</label>
-            <input type="number" id="gen_capacity">
-          </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">DB Inspection Reports</h2>
+          <button class="secondary-btn" onclick="exportInspectionsCSV()">Export CSV</button>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Fuel Type</label>
-            <input type="text" id="gen_fuel">
-          </div>
-          <div class="form-group">
-            <label>Upload Image</label>
-            <input type="file" id="gen_img" accept="image/*">
-          </div>
-        </div>
-
-        <button class="primary-btn" onclick="saveGeneratorEntry()">Save Generator Entry</button>
-      </div>
-
-      <div class="card">
-        <h3>Existing Generators</h3>
-        <div id="generatorEntryTable"></div>
-      </div>
-    </div>
-
-    <!-- TAB 5: DB INSPECTION REPORTS -->
-    <div class="tab-content" id="tab-db-inspections" style="display:none;">
-      <div class="card">
-        <h2>DB Inspection Reports</h2>
+        <div id="insSummary" class="summary-row"></div>
 
         <div class="filterBox">
-          <input type="text" id="dbIns_filterId" placeholder="Filter by DB ID">
-          <input type="text" id="dbIns_filterElec" placeholder="Filter by Electrician">
-          <input type="date" id="dbIns_filterDate">
-          <button class="secondary-btn" onclick="applyDBInspectionFilters()">Apply</button>
+          <input type="text" id="filterDB_i" placeholder="Filter by DB Number">
+          <input type="text" id="filterElec_i" placeholder="Filter by Electrician">
+          <label style="font-weight:normal;">From:
+            <input type="date" id="filterFrom_i">
+          </label>
+          <label style="font-weight:normal;">To:
+            <input type="date" id="filterTo_i">
+          </label>
+          <button class="secondary-btn" onclick="applyInspectionFilters()">Apply Filters</button>
         </div>
 
-        <div class="summary-row" id="dbInspectionSummary"></div>
-
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-            <h3 style="margin:0;">All DB Inspections</h3>
-            <button class="secondary-btn" onclick="exportDBInspectionsCSV()">Export CSV</button>
-          </div>
-          <div id="dbInspectionTable"></div>
-        </div>
+        <div id="inspectionTable"></div>
       </div>
     </div>
 
-    <!-- TAB 6: FAULT REPORTS -->
-    <div class="tab-content" id="tab-fault-reports" style="display:none;">
+    <!-- TAB 4: FAULT REPORTS -->
+    <div class="tab-content" id="tab-faults">
       <div class="card">
-        <h2>Fault Reports</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">Fault Reports</h2>
+          <button class="secondary-btn" onclick="exportFaultsCSV()">Export CSV</button>
+        </div>
+
+        <div id="faultSummary" class="summary-row"></div>
 
         <div class="filterBox">
-          <input type="text" id="fault_filterId" placeholder="Filter by DB ID">
-          <input type="text" id="fault_filterElec" placeholder="Filter by Electrician">
-          <input type="date" id="fault_filterDate">
-          <button class="secondary-btn" onclick="applyFaultFilters()">Apply</button>
+          <input type="text" id="filterDB_f" placeholder="Filter by DB Number">
+          <input type="text" id="filterElec_f" placeholder="Filter by Electrician">
+          <label style="font-weight:normal;">From:
+            <input type="date" id="filterFrom_f">
+          </label>
+          <label style="font-weight:normal;">To:
+            <input type="date" id="filterTo_f">
+          </label>
+          <select id="filterLoss_f">
+            <option value="">Loss: All</option>
+            <option value="Yes">Loss: Yes</option>
+            <option value="No">Loss: No</option>
+          </select>
+          <button class="secondary-btn" onclick="applyFaultFilters()">Apply Filters</button>
         </div>
 
-        <div class="summary-row" id="faultSummary"></div>
-
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-            <h3 style="margin:0;">All Fault Reports</h3>
-            <button class="secondary-btn" onclick="exportFaultsCSV()">Export CSV</button>
-          </div>
-          <div id="faultTable"></div>
-        </div>
+        <div id="faultTable"></div>
       </div>
     </div>
 
-    <!-- TAB 7: TRANSFORMER REPORTS -->
-    <div class="tab-content" id="tab-transformer-reports" style="display:none;">
+    <!-- TAB 5: TRANSFORMER REPORTS -->
+    <div class="tab-content" id="tab-transformer-reports">
       <div class="card">
-        <h2>Transformer Inspection Reports</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">Transformer Inspection Reports</h2>
+          <button class="secondary-btn" onclick="exportTransformersCSV()">Export CSV</button>
+        </div>
+
+        <div id="trSummary" class="summary-row"></div>
 
         <div class="filterBox">
-          <input type="text" id="trRpt_filterId" placeholder="Filter by Transformer ID">
-          <input type="text" id="trRpt_filterTech" placeholder="Filter by Technician">
-          <input type="date" id="trRpt_filterDate">
-          <button class="secondary-btn" onclick="applyTransformerFilters()">Apply</button>
+          <input type="text" id="filterTR_id" placeholder="Filter by Transformer ID">
+          <input type="text" id="filterTR_elec" placeholder="Filter by Electrician">
+          <label style="font-weight:normal;">From:
+            <input type="date" id="filterTR_from">
+          </label>
+          <label style="font-weight:normal;">To:
+            <input type="date" id="filterTR_to">
+          </label>
+          <button class="secondary-btn" onclick="applyTransformerFilters()">Apply Filters</button>
         </div>
 
-        <div class="summary-row" id="transformerSummary"></div>
-
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-            <h3 style="margin:0;">Transformer Reports</h3>
-            <button class="secondary-btn" onclick="exportTransformerCSV()">Export CSV</button>
-          </div>
-          <div id="transformerTable"></div>
-        </div>
+        <div id="transformerTable"></div>
       </div>
     </div>
-    <!-- TAB 8: LUX REPORTS -->
-    <div class="tab-content" id="tab-lux-reports" style="display:none;">
 
+    <!-- TAB 6: LUX REPORTS -->
+    <div class="tab-content" id="tab-lux-reports">
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
           <h2 style="margin:0;">LUX Monitoring Reports</h2>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="secondary-btn" onclick="exportLuxCSV()">Export CSV</button>
-            <button class="secondary-btn" onclick="exportLuxPDF()">Export PDF</button>
-            <button class="secondary-btn" onclick="setLuxSort('maxDesc')">Sort Lux ⬇</button>
-            <button class="secondary-btn" onclick="setLuxSort('maxAsc')">Sort Lux ⬆</button>
-            <button class="secondary-btn" onclick="setLuxSort('none')">Clear Sort</button>
-          </div>
+          <button class="secondary-btn" onclick="exportLuxCSV()">Export CSV</button>
         </div>
-      </div>
 
-      <div class="summary-row" id="luxSummary"></div>
+        <div id="luxSummary" class="summary-row"></div>
 
-      <div class="card">
-        <h3>LUX Records Table</h3>
+        <div class="filterBox">
+          <input type="text" id="filterLX_dept" placeholder="Filter by Department">
+          <input type="text" id="filterLX_elec" placeholder="Filter by Electrician">
+          <label style="font-weight:normal;">From:
+            <input type="date" id="filterLX_from">
+          </label>
+          <label style="font-weight:normal;">To:
+            <input type="date" id="filterLX_to">
+          </label>
+          <button class="secondary-btn" onclick="applyLuxFilters()">Apply Filters</button>
+        </div>
+
         <div id="luxTable"></div>
       </div>
-
     </div>
 
-    <!-- TAB 9: COMPRESSOR INSPECTION REPORTS -->
-    <div class="tab-content" id="tab-compressor-inspections" style="display:none;">
+    <!-- TAB 7: MASTER DB REPORT -->
+    <div class="tab-content" id="tab-master">
       <div class="card">
-        <h2>Compressor Inspection Reports</h2>
-
-        <div class="filterBox">
-          <input type="text" id="compIns_filterId" placeholder="Filter by Compressor ID">
-          <input type="text" id="compIns_filterTech" placeholder="Filter by Technician">
-          <input type="date" id="compIns_filterDate">
-          <button class="secondary-btn" onclick="applyCompressorInspectionFilters()">Apply</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">Master DB Report (All DBs & Circuits)</h2>
+          <button class="secondary-btn" onclick="exportMasterCSV()">Export CSV</button>
         </div>
 
-        <div class="summary-row" id="compInspectionSummary"></div>
+        <div id="masterSummary" class="summary-row"></div>
 
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 style="margin:0;">All Compressor Inspections</h3>
-            <button class="secondary-btn" onclick="exportCompInspectionsCSV()">Export CSV</button>
-          </div>
-          <div id="compInspectionTable"></div>
-        </div>
+        <button class="secondary-btn" onclick="loadMasterReport()">Reload Data</button>
+        <div id="masterContainer" style="margin-top:15px;"></div>
       </div>
     </div>
 
-    <!-- TAB 10: COMPRESSOR MAINTENANCE REPORTS -->
-    <div class="tab-content" id="tab-compressor-maint" style="display:none;">
+    <!-- TAB 8: FORM QUESTIONS -->
+    <div class="tab-content" id="tab-questions">
       <div class="card">
-        <h2>Compressor Maintenance Reports</h2>
+        <h2>Form Questions (Dynamic)</h2>
+        <p style="font-size:13px;">
+          Add or remove questions here. They will automatically appear in DB Entry,
+          Electrician Inspection and Fault forms depending on where you tick.
+        </p>
 
-        <div class="filterBox">
-          <input type="text" id="compMaint_filterId" placeholder="Filter by Compressor ID">
-          <input type="text" id="compMaint_filterTech" placeholder="Filter by Technician">
-          <input type="date" id="compMaint_filterDate">
-          <button class="secondary-btn" onclick="applyCompressorMaintenanceFilters()">Apply</button>
-        </div>
+        <h3 style="margin-top:20px;">Add New Question</h3>
 
-        <div class="summary-row" id="compMaintenanceSummary"></div>
+        <label>Question Text</label>
+        <input type="text" id="qText" style="width:100%;max-width:500px;">
 
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 style="margin:0;">All Compressor Maintenance Records</h3>
-            <button class="secondary-btn" onclick="exportCompMaintenanceCSV()">Export CSV</button>
-          </div>
-          <div id="compMaintenanceTable"></div>
-        </div>
-      </div>
-    </div>
+        <label>Answer Type</label>
+        <select id="qType">
+          <option value="text">Text</option>
+          <option value="number">Number</option>
+          <option value="yesno">Yes / No</option>
+          <option value="dropdown">Dropdown (custom options)</option>
+        </select>
 
-    <!-- TAB 11: GENERATOR INSPECTION REPORTS -->
-    <div class="tab-content" id="tab-generator-inspections" style="display:none;">
-      <div class="card">
-        <h2>Generator Inspection Reports</h2>
+        <label>Options (for dropdown, comma separated)</label>
+        <input type="text" id="qOptions"
+               placeholder="Example: OK, Needs repair, Not accessible"
+               style="width:100%;max-width:500px;">
 
-        <div class="filterBox">
-          <input type="text" id="genIns_filterId" placeholder="Filter by Generator ID">
-          <input type="text" id="genIns_filterTech" placeholder="Filter by Technician">
-          <input type="date" id="genIns_filterDate">
-          <button class="secondary-btn" onclick="applyGeneratorInspectionFilters()">Apply</button>
-        </div>
+        <label>Applies To</label>
+        <label style="font-weight:normal;"><input type="checkbox" id="qApplyDb" checked> DB Entry</label>
+        <label style="font-weight:normal;"><input type="checkbox" id="qApplyInsp" checked> Inspection</label>
+        <label style="font-weight:normal;"><input type="checkbox" id="qApplyFault" checked> Fault</label>
 
-        <div class="summary-row" id="genInspectionSummary"></div>
+        <br>
+        <button class="primary-btn" onclick="addQuestion()">Add Question</button>
 
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 style="margin:0;">All Generator Inspections</h3>
-            <button class="secondary-btn" onclick="exportGenInspectionsCSV()">Export CSV</button>
-          </div>
-          <div id="genInspectionTable"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 12: GENERATOR MAINTENANCE REPORTS -->
-    <div class="tab-content" id="tab-generator-maint" style="display:none;">
-      <div class="card">
-        <h2>Generator Maintenance Reports</h2>
-
-        <div class="filterBox">
-          <input type="text" id="genMaint_filterId" placeholder="Filter by Generator ID">
-          <input type="text" id="genMaint_filterTech" placeholder="Filter by Technician">
-          <input type="date" id="genMaint_filterDate">
-          <button class="secondary-btn" onclick="applyGeneratorMaintenanceFilters()">Apply</button>
-        </div>
-
-        <div class="summary-row" id="genMaintenanceSummary"></div>
-
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 style="margin:0;">All Generator Maintenance</h3>
-            <button class="secondary-btn" onclick="exportGenMaintenanceCSV()">Export CSV</button>
-          </div>
-          <div id="genMaintenanceTable"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 13: MASTER DB -->
-    <div class="tab-content" id="tab-master-db" style="display:none;">
-      <div class="card">
-        <h2>Master DB Report</h2>
-        <button class="secondary-btn" onclick="exportMasterDB()">Export CSV</button>
-        <div id="masterDBTable"></div>
-      </div>
-    </div>
-
-    <!-- TAB 14: FORM QUESTIONS -->
-    <div class="tab-content" id="tab-questions" style="display:none;">
-      <div class="card">
-        <h2>Form Questions Manager</h2>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Question Text</label>
-            <input type="text" id="q_text">
-          </div>
-          <div class="form-group">
-            <label>Type</label>
-            <select id="q_type">
-              <option value="text">Text</option>
-              <option value="number">Number</option>
-              <option value="yesno">Yes/No</option>
-              <option value="dropdown">Dropdown</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Dropdown Options (comma separated)</label>
-            <input type="text" id="q_options" placeholder="Only for dropdown">
-          </div>
-        </div>
-
-        <h3>Apply Question To:</h3>
-        <div class="form-row">
-          <label><input type="checkbox" id="apply_db_entry"> DB Entry</label>
-          <label><input type="checkbox" id="apply_db_inspection"> DB Inspection</label>
-          <label><input type="checkbox" id="apply_fault"> Fault Report</label>
-          <label><input type="checkbox" id="apply_transformer"> Transformer Report</label>
-          <label><input type="checkbox" id="apply_lux"> LUX Report</label>
-          <label><input type="checkbox" id="apply_comp_ins"> Compressor Inspection</label>
-          <label><input type="checkbox" id="apply_comp_maint"> Compressor Maintenance</label>
-          <label><input type="checkbox" id="apply_gen_ins"> Generator Inspection</label>
-          <label><input type="checkbox" id="apply_gen_maint"> Generator Maintenance</label>
-        </div>
-
-        <button class="primary-btn" onclick="addNewQuestion()">Add Question</button>
+        <hr>
 
         <h3>Existing Questions</h3>
-        <div id="questionsTable"></div>
+        <div id="questionsList"></div>
       </div>
     </div>
-  </div> <!-- END mainContent -->
-</div> <!-- END adminWrapper -->
 
-<!-- FULL-SCREEN PHOTO VIEWER -->
-<div class="overlay" id="photoOverlay" onclick="closePhotoOverlay()">
-  <img id="overlayImage" src="">
+  </div>
 </div>
 
-<!-- jsPDF for PDF export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <script>
-/* ---------------------------------------------------
-    LOGIN SYSTEM
---------------------------------------------------- */
-const ADMIN_PIN = "1234";
-
-function checkAdminPIN() {
-  const entered = document.getElementById("adminPin").value.trim();
-  if (entered === ADMIN_PIN) {
-    sessionStorage.setItem("adminLogged", "1");
-    document.getElementById("loginOverlay").style.display = "none";
-  } else {
-    document.getElementById("loginError").innerText = "Incorrect PIN";
-  }
-}
-
-if (sessionStorage.getItem("adminLogged") === "1") {
-  document.getElementById("loginOverlay").style.display = "none";
-}
-
-/* ---------------------------------------------------
-    DATE & TIME CLOCK
---------------------------------------------------- */
-function updateClock() {
-  const now = new Date();
-  document.getElementById("dateTimeLabel").textContent = now.toLocaleString();
-}
-
-setInterval(updateClock, 1000);
-updateClock();
-
-/* ---------------------------------------------------
-    TAB SWITCHING FUNCTION
---------------------------------------------------- */
-function showTab(id, btn) {
-  document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
-  const el = document.getElementById(id);
-  if (el) el.style.display = "block";
-
-  document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
-  if (btn) btn.classList.add("active");
-}
-
-/* ---------------------------------------------------
-    IMAGE VIEWER
---------------------------------------------------- */
-function openPhoto(src) {
-  const overlay = document.getElementById("photoOverlay");
-  const img = document.getElementById("overlayImage");
-  img.src = src;
-  overlay.style.display = "flex";
-}
-function closePhotoOverlay() {
-  document.getElementById("photoOverlay").style.display = "none";
-}
-
-/* ---------------------------------------------------
-    GLOBAL ARRAYS FOR ALL REPORTS
---------------------------------------------------- */
-let dbInspectionsGlobal = [];
+/* ------------ LOGIN ------------ */
+const ADMIN_PASSWORD = "1234";
+let questionsGlobal = {};
+let inspectionsGlobal = [];
 let faultsGlobal = [];
+let masterPanelsGlobal = null;
 let transformerReportsGlobal = [];
 let luxReportsGlobal = [];
 
-let compressorInspectionsGlobal = [];
-let compressorMaintenanceGlobal = [];
-let generatorInspectionsGlobal = [];
-let generatorMaintenanceGlobal = [];
+function checkLogin() {
+  const pwd = document.getElementById("adminPassword").value.trim();
+  const error = document.getElementById("loginError");
 
-let masterPanelsGlobal = null;
-let questionsGlobal = {};
+  if (pwd === ADMIN_PASSWORD) {
+    sessionStorage.setItem("adminDashboardLogged", "true");
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("adminWrapper").style.display = "block";
+    afterLoginInit();
+  } else {
+    error.textContent = "Incorrect password.";
+  }
+}
 
-/* ---------------------------------------------------
-      LOAD DB ENTRY (Firebase)
---------------------------------------------------- */
-function loadDBEntries() {
-  firebase.database().ref("panels").on("value", snap => {
-    const data = snap.val() || {};
-    masterPanelsGlobal = data;
+window.addEventListener("load", () => {
+  if (sessionStorage.getItem("adminDashboardLogged") === "true") {
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("adminWrapper").style.display = "block";
+    afterLoginInit();
+  }
+});
 
-    let html = `
-      <table>
-        <tr>
-          <th>DB ID</th>
-          <th>Location</th>
-          <th>Feeder</th>
-          <th>Rating</th>
-          <th>Panel Type</th>
-          <th>Panel Make</th>
-          <th>Risk</th>
-          <th>Remarks</th>
-        </tr>
-    `;
+/* ------------ AFTER LOGIN INIT ------------ */
+function afterLoginInit() {
+  initTabs();
+  renderCircuits(null);
+  showPanels();
+  loadReports();
+  loadMasterReport();
+  loadQuestions();
+  showTransformers();
+  loadTransformerReports();
+  loadLuxReports();
 
-    Object.values(data).forEach(p => {
-      html += `
-        <tr>
-          <td>${p.dbId || ""}</td>
-          <td>${p.location || ""}</td>
-          <td>${p.feeder || ""}</td>
-          <td>${p.rating || ""}</td>
-          <td>${p.panelType || ""}</td>
-          <td>${p.panelMake || ""}</td>
-          <td>${p.risk || ""}</td>
-          <td>${p.remarks || ""}</td>
-        </tr>
-      `;
+  // 🔧 Auto-load DB for editing when coming from panel.html
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get("edit");
+  if (editId) {
+    // Switch to DB Entry tab
+    const entryBtn = document.querySelector('.tab-btn[data-target="tab-entry"]');
+    if (entryBtn) entryBtn.click();
+
+    loadPanelFromFirebase(editId, p => {
+      if (p) {
+        editPanel(editId);
+      } else {
+        alert("Panel not found: " + editId);
+      }
     });
 
-    html += "</table>";
-    document.getElementById("dbEntryTable").innerHTML = html;
+    window.scrollTo(0, 0);
+  }
+}
+
+/* ------------ TABS HANDLING ------------ */
+function initTabs() {
+  const buttons = document.querySelectorAll(".tab-btn");
+  const tabs = document.querySelectorAll(".tab-content");
+
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-target");
+
+      buttons.forEach(b => b.classList.remove("active"));
+      tabs.forEach(t => t.classList.remove("active"));
+
+      btn.classList.add("active");
+      document.getElementById(targetId).classList.add("active");
+    });
   });
 }
 
-/* SAVE DB ENTRY */
-function saveDBEntry() {
-  const id = document.getElementById("db_id").value.trim();
-  if (!id) return alert("Enter DB ID");
+/* ------------ IMAGE HANDLING (DB ENTRY) ------------ */
+let uploadedImage = null;
 
-  const obj = {
-    dbId: id,
-    location: document.getElementById("db_location").value,
-    feeder: document.getElementById("db_feeder").value,
-    rating: document.getElementById("db_rating").value,
-    panelType: document.getElementById("db_panelType").value,
-    panelMake: document.getElementById("db_panelMake").value,
-    risk: document.getElementById("db_risk").value,
-    remarks: document.getElementById("db_remarks").value,
+function previewAndCompress(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const maxWidth = 800;
+      const scale = maxWidth / img.width;
+      canvas.width = maxWidth;
+      canvas.height = img.height * scale;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      uploadedImage = canvas.toDataURL("image/jpeg", 0.7);
+
+      const preview = document.getElementById("previewImage");
+      preview.src = uploadedImage;
+      preview.style.display = "block";
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  uploadedImage = null;
+  document.getElementById("previewImage").style.display = "none";
+  document.getElementById("imageInput").value = "";
+}
+
+/* ------------ TRANSFORMER IMAGE ------------ */
+let uploadedTransformerImage = null;
+
+function previewTransformerImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const maxWidth = 800;
+      const scale = maxWidth / img.width;
+      canvas.width = maxWidth;
+      canvas.height = img.height * scale;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      uploadedTransformerImage = canvas.toDataURL("image/jpeg", 0.7);
+
+      const preview = document.getElementById("previewTransformerImage");
+      preview.src = uploadedTransformerImage;
+      preview.style.display = "block";
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeTransformerImage() {
+  uploadedTransformerImage = null;
+  document.getElementById("previewTransformerImage").style.display = "none";
+  document.getElementById("tr_imageInput").value = "";
+}
+
+/* ------------ CIRCUITS (DB ENTRY) ------------ */
+function addCircuitRow(name = "", breaker = "", load = "") {
+  const container = document.getElementById("circuitsContainer");
+  const row = document.createElement("div");
+  row.className = "circuit-row";
+  row.innerHTML = `
+    <input class="c-name" placeholder="Circuit name" value="${name}">
+    <input class="c-breaker" placeholder="Breaker (e.g. 10A)" value="${breaker}">
+    <input class="c-load" placeholder="Load / Description" value="${load}">
+    <button type="button" class="circuit-remove-btn" onclick="this.parentElement.remove()">X</button>
+  `;
+  container.appendChild(row);
+}
+
+function renderCircuits(circuits) {
+  const container = document.getElementById("circuitsContainer");
+  container.innerHTML = "";
+  if (circuits) {
+    const list = Array.isArray(circuits) ? circuits : Object.values(circuits);
+    list.forEach(c => addCircuitRow(c.name || "", c.breaker || "", c.load || ""));
+  } else {
+    addCircuitRow();
+  }
+}
+
+function collectCircuitsFromForm() {
+  const rows = document.querySelectorAll(".circuit-row");
+  const circuits = [];
+  rows.forEach(row => {
+    const name = row.querySelector(".c-name").value.trim();
+    const br   = row.querySelector(".c-breaker").value.trim();
+    const ld   = row.querySelector(".c-load").value.trim();
+    if (name || br || ld) {
+      circuits.push({ name, breaker: br, load: ld });
+    }
+  });
+  return circuits.length ? circuits : null;
+}
+
+/* ------------ SAVE PANEL (DB ENTRY) ------------ */
+function savePanel() {
+  const id = document.getElementById("db").value.trim();
+  if (!id) {
+    alert("Enter DB Number!");
+    return;
+  }
+
+  const data = {
+    dbNumber: id,
+    voltage: document.getElementById("volt").value,
+    mainBreaker: document.getElementById("breaker").value,
+    cableSize: document.getElementById("cable").value,
+    earthStatus: document.getElementById("earth").value,
+    location: document.getElementById("location").value,
+    purpose: document.getElementById("purpose").value,
+    image: uploadedImage || null,
+    circuits: collectCircuitsFromForm(),
+    extraAnswers: collectDynamicAnswers("db")
   };
 
-  firebase.database().ref("panels/" + id).set(obj, err => {
-    if (err) alert("Error saving DB");
-    else alert("DB Saved");
+  savePanelToFirebase(id, data, () => {
+    alert("Panel saved to Firebase successfully!");
+    showPanels();
+    loadMasterReport(); // Master DB auto updates
   });
 }
 
-/* ---------------------------------------------------
-      TRANSFORMER ENTRY
---------------------------------------------------- */
-function loadTransformerEntries() {
-  firebase.database().ref("transformers").on("value", snap => {
-    const data = snap.val() || {};
+/* ------------ EDIT / DELETE / LIST PANELS (DB ENTRY) ------------ */
+function editPanel(id) {
+  loadPanelFromFirebase(id, p => {
+    if (!p) {
+      alert("Panel not found!");
+      return;
+    }
 
-    let html = `
-      <table>
-        <tr>
-          <th>ID</th>
-          <th>Location</th>
-          <th>Capacity</th>
-          <th>Make</th>
-          <th>Voltage</th>
-          <th>Oil Type</th>
-          <th>Risk</th>
-          <th>Remarks</th>
-        </tr>
-    `;
+    document.getElementById("db").value        = p.dbNumber || id;
+    document.getElementById("volt").value      = p.voltage || "";
+    document.getElementById("breaker").value   = p.mainBreaker || "";
+    document.getElementById("cable").value     = p.cableSize || "";
+    document.getElementById("earth").value     = p.earthStatus || "";
+    document.getElementById("location").value  = p.location || "";
+    document.getElementById("purpose").value   = p.purpose || "";
 
-    Object.values(data).forEach(t => {
+    uploadedImage = p.image || null;
+    const preview = document.getElementById("previewImage");
+    if (uploadedImage) {
+      preview.src = uploadedImage;
+      preview.style.display = "block";
+    } else {
+      preview.style.display = "none";
+    }
+
+    renderCircuits(p.circuits || null);
+
+    const entryBtn = document.querySelector('.tab-btn[data-target="tab-entry"]');
+    if (entryBtn) entryBtn.click();
+    window.scrollTo(0, 0);
+  });
+}
+
+function deletePanel(id) {
+  if (!confirm("Are you sure you want to delete panel " + id + " ?")) return;
+  firebase.database().ref("panels/" + id).remove().then(() => {
+    alert("Panel " + id + " deleted.");
+    showPanels();
+    loadMasterReport();
+  });
+}
+
+function showPanels() {
+  loadAllPanels(all => {
+    const div = document.getElementById("panelList");
+    if (!all) {
+      div.innerHTML = "<p>No panels in database.</p>";
+      return;
+    }
+    let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+    Object.keys(all).forEach(id => {
+      const p = all[id];
       html += `
         <tr>
-          <td>${t.transformerId || ""}</td>
-          <td>${t.location || ""}</td>
-          <td>${t.capacity || ""}</td>
-          <td>${t.make || ""}</td>
-          <td>${t.voltage || ""}</td>
-          <td>${t.oilType || ""}</td>
-          <td>${t.risk || ""}</td>
-          <td>${t.remarks || ""}</td>
+          <td>${p.dbNumber || id}</td>
+          <td>${p.location || ""}</td>
+          <td>${p.purpose || ""}</td>
+          <td>
+            <button class="secondary-btn" onclick="editPanel('${id}')">Edit</button>
+            <button class="danger-btn" onclick="deletePanel('${id}')">Delete</button>
+          </td>
         </tr>
       `;
     });
-
     html += "</table>";
-    document.getElementById("transformerEntryTable").innerHTML = html;
+    div.innerHTML = html;
   });
 }
 
+/* ------------ TRANSFORMER ENTRY ------------ */
 function saveTransformerEntry() {
   const id = document.getElementById("tr_id").value.trim();
-  if (!id) return alert("Enter Transformer ID");
-
-  const obj = {
+  if (!id) {
+    alert("Enter Transformer ID (e.g. TR-001)");
+    return;
+  }
+  const data = {
     transformerId: id,
+    rating: document.getElementById("tr_rating").value,
+    vin: document.getElementById("tr_vin").value,
+    vout: document.getElementById("tr_vout").value,
     location: document.getElementById("tr_location").value,
-    capacity: document.getElementById("tr_capacity").value,
-    make: document.getElementById("tr_make").value,
-    voltage: document.getElementById("tr_voltage").value,
-    oilType: document.getElementById("tr_oilType").value,
-    risk: document.getElementById("tr_risk").value,
-    remarks: document.getElementById("tr_remarks").value
+    purpose: document.getElementById("tr_purpose").value,
+    image: uploadedTransformerImage || null
   };
-
-  firebase.database().ref("transformers/" + id).set(obj, err => {
-    if (err) alert("Error saving transformer");
-    else alert("Transformer Saved");
+  firebase.database().ref("transformers/" + id).set(data, err => {
+    if (err) alert("Error saving transformer: " + err);
+    else {
+      alert("Transformer saved.");
+      showTransformers();
+    }
   });
 }
 
-/* ---------------------------------------------------
-      COMPRESSOR ENTRY
---------------------------------------------------- */
-function loadCompressorEntries() {
-  firebase.database().ref("compressors").on("value", snap => {
-    const data = snap.val() || {};
-
-    let html = `
-      <table>
-        <tr>
-          <th>ID</th>
-          <th>Location</th>
-          <th>Model</th>
-          <th>Capacity</th>
-          <th>Pressure</th>
-          <th>Type</th>
-        </tr>
-    `;
-
-    Object.values(data).forEach(c => {
-      html += `
-        <tr>
-          <td>${c.compressorId || ""}</td>
-          <td>${c.location || ""}</td>
-          <td>${c.model || ""}</td>
-          <td>${c.capacity || ""}</td>
-          <td>${c.pressure || ""}</td>
-          <td>${c.compressorType || ""}</td>
-        </tr>
-      `;
-    });
-
-    html += "</table>";
-    document.getElementById("compressorEntryTable").innerHTML = html;
-  });
-}
-
-function saveCompressorEntry() {
-  const id = document.getElementById("comp_id").value.trim();
-  if (!id) return alert("Enter Compressor ID");
-
-  const file = document.getElementById("comp_img").files[0];
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    const obj = {
-      compressorId: id,
-      location: document.getElementById("comp_location").value,
-      model: document.getElementById("comp_model").value,
-      capacity: document.getElementById("comp_capacity").value,
-      pressure: document.getElementById("comp_pressure").value,
-      compressorType: document.getElementById("comp_type").value,
-      image: e.target.result
-    };
-
-    firebase.database().ref("compressors/" + id).set(obj, err => {
-      if (err) alert("Error saving compressor");
-      else alert("Compressor Saved");
-    });
-  };
-
-  if (file) reader.readAsDataURL(file);
-  else reader.onload({ target: { result: null } });
-}
-
-/* ---------------------------------------------------
-      GENERATOR ENTRY
---------------------------------------------------- */
-function loadGeneratorEntries() {
-  firebase.database().ref("generators").on("value", snap => {
-    const data = snap.val() || {};
-
-    let html = `
-      <table>
-        <tr>
-          <th>ID</th>
-          <th>Location</th>
-          <th>Model</th>
-          <th>Capacity</th>
-          <th>Fuel Type</th>
-        </tr>
-    `;
-
-    Object.values(data).forEach(g => {
-      html += `
-        <tr>
-          <td>${g.generatorId || ""}</td>
-          <td>${g.location || ""}</td>
-          <td>${g.model || ""}</td>
-          <td>${g.capacity || ""}</td>
-          <td>${g.fuelType || ""}</td>
-        </tr>
-      `;
-    });
-
-    html += "</table>";
-    document.getElementById("generatorEntryTable").innerHTML = html;
-  });
-}
-
-function saveGeneratorEntry() {
-  const id = document.getElementById("gen_id").value.trim();
-  if (!id) return alert("Enter Generator ID");
-
-  const file = document.getElementById("gen_img").files[0];
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    const obj = {
-      generatorId: id,
-      location: document.getElementById("gen_location").value,
-      model: document.getElementById("gen_model").value,
-      capacity: document.getElementById("gen_capacity").value,
-      fuelType: document.getElementById("gen_fuel").value,
-      image: e.target.result
-    };
-
-    firebase.database().ref("generators/" + id).set(obj, err => {
-      if (err) alert("Error saving generator");
-      else alert("Generator Saved");
-    });
-  };
-
-  if (file) reader.readAsDataURL(file);
-  else reader.onload({ target: { result: null } });
-}
-</script>
-<script>
-/* ---------------------------------------------------
-    DB INSPECTION REPORTS
---------------------------------------------------- */
-function loadDBInspections() {
-  firebase.database().ref("inspections").on("value", snap => {
-    const data = snap.val() || {};
-
-    let list = [];
-    Object.keys(data).forEach(dbId => {
-      Object.values(data[dbId]).forEach(v => {
-        list.push({ dbId, ...v });
-      });
-    });
-
-    dbInspectionsGlobal = list;
-    renderDBInspectionSummary(list);
-    renderDBInspectionTable(list);
-  });
-}
-
-function applyDBInspectionFilters() {
-  const fId = document.getElementById("dbIns_filterId").value.toLowerCase();
-  const fName = document.getElementById("dbIns_filterElec").value.toLowerCase();
-  const fDate = document.getElementById("dbIns_filterDate").value;
-
-  let filtered = dbInspectionsGlobal.filter(r =>
-    (fId === "" || r.dbId.toLowerCase().includes(fId)) &&
-    (fName === "" || (r.electricianName || "").toLowerCase().includes(fName)) &&
-    (fDate === "" || (r.timestamp || "").startsWith(fDate))
-  );
-  renderDBInspectionSummary(filtered);
-  renderDBInspectionTable(filtered);
-}
-
-function renderDBInspectionSummary(list) {
-  const div = document.getElementById("dbInspectionSummary");
+function showTransformers() {
+  const div = document.getElementById("transformerList");
   if (!div) return;
+  firebase.database().ref("transformers").once("value").then(snap => {
+    const all = snap.val();
+    if (!all) {
+      div.innerHTML = "<p>No transformers in database.</p>";
+      return;
+    }
+    let html = "<table><tr><th>ID</th><th>Rating</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+    Object.keys(all).forEach(id => {
+      const t = all[id];
+      html += `
+        <tr>
+          <td>${t.transformerId || id}</td>
+          <td>${t.rating || ""}</td>
+          <td>${t.location || ""}</td>
+          <td>${t.purpose || ""}</td>
+          <td>
+            <button class="secondary-btn" onclick="editTransformer('${id}')">Edit</button>
+            <button class="danger-btn" onclick="deleteTransformer('${id}')">Delete</button>
+          </td>
+        </tr>
+      `;
+    });
+    html += "</table>";
+    div.innerHTML = html;
+  });
+}
+
+function editTransformer(id) {
+  firebase.database().ref("transformers/" + id).once("value").then(snap => {
+    const t = snap.val();
+    if (!t) {
+      alert("Transformer not found.");
+      return;
+    }
+    document.getElementById("tr_id").value = t.transformerId || id;
+    document.getElementById("tr_rating").value = t.rating || "";
+    document.getElementById("tr_vin").value = t.vin || "";
+    document.getElementById("tr_vout").value = t.vout || "";
+    document.getElementById("tr_location").value = t.location || "";
+    document.getElementById("tr_purpose").value = t.purpose || "";
+    uploadedTransformerImage = t.image || null;
+    const preview = document.getElementById("previewTransformerImage");
+    if (uploadedTransformerImage) {
+      preview.src = uploadedTransformerImage;
+      preview.style.display = "block";
+    } else {
+      preview.style.display = "none";
+    }
+    const trBtn = document.querySelector('.tab-btn[data-target="tab-transformer-entry"]');
+    if (trBtn) trBtn.click();
+    window.scrollTo(0, 0);
+  });
+}
+
+function deleteTransformer(id) {
+  if (!confirm("Delete transformer " + id + " ?")) return;
+  firebase.database().ref("transformers/" + id).remove().then(() => {
+    alert("Transformer deleted.");
+    showTransformers();
+  });
+}
+
+/* ------------ QR PREVIEW + DOWNLOAD (DB ENTRY) ------------ */
+let qr;
+
+function generateQR() {
+  const id = document.getElementById("db").value.trim();
+  if (!id) {
+    alert("Enter DB Number first!");
+    return;
+  }
+
+  const url = "https://energycew-ui.github.io/panel-system/panel.html?id=" + encodeURIComponent(id);
+
+  qr = new QRious({
+    element: document.getElementById("qrCanvas"),
+    value: url,
+    size: 250
+  });
+
+  document.getElementById("qrDBname").innerText = id;
+  document.getElementById("downloadQR").style.display = "inline-block";
+}
+
+function downloadQR() {
+  const id = document.getElementById("db").value.trim();
+  if (!id) return;
+
+  const qrCanvasEl = document.getElementById("qrCanvas");
+  const W = 700, H = 900;
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = W;
+  finalCanvas.height = H;
+  const ctx = finalCanvas.getContext("2d");
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  const logo = new Image();
+  logo.src = "logo.png";
+
+  logo.onload = () => {
+    const logoW = 420;
+    const logoH = (logo.height / logo.width) * logoW;
+    ctx.drawImage(logo, (W - logoW) / 2, 40, logoW, logoH);
+
+    ctx.fillStyle = "#c40000";
+    ctx.fillRect(45, 200, W - 80, 70);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("DANGER–ELECTRICAL PANEL–DO NOT TOUCH", W / 2, 245);
+
+    ctx.drawImage(qrCanvasEl, (W - 300) / 2, 300, 300, 300);
+
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 36px Arial";
+    ctx.fillText(id, W / 2, 640);
+
+    ctx.font = "20px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText("Technician Signature:", 80, 720);
+    ctx.beginPath();
+    ctx.moveTo(80, 745);
+    ctx.lineTo(W - 80, 745);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#000000";
+    ctx.stroke();
+
+    const link = document.createElement("a");
+    link.download = id + "_QR_sheet.png";
+    link.href = finalCanvas.toDataURL();
+    link.click();
+  };
+
+  logo.onerror = () => {
+    alert("Logo not found (logo.png). QR sheet will be generated without logo.");
+  };
+}
+
+/* ------------ TRANFORMER QR + DOWNLOAD ------------ */
+let trQR;
+
+function generateTransformerQR() {
+  const id = document.getElementById("tr_id").value.trim();
+  if (!id) {
+    alert("Enter Transformer ID first!");
+    return;
+  }
+
+  const url = "https://energycew-ui.github.io/panel-system/transformer.html?id=" + encodeURIComponent(id);
+
+  trQR = new QRious({
+    element: document.getElementById("trQrCanvas"),
+    value: url,
+    size: 250
+  });
+
+  document.getElementById("trQrName").innerText = id;
+  document.getElementById("downloadTrQR").style.display = "inline-block";
+}
+
+function downloadTransformerQR() {
+  const id = document.getElementById("tr_id").value.trim();
+  if (!id) return;
+
+  const qrCanvasEl = document.getElementById("trQrCanvas");
+  const W = 700, H = 900;
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = W;
+  finalCanvas.height = H;
+  const ctx = finalCanvas.getContext("2d");
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  const logo = new Image();
+  logo.src = "logo.png";
+
+  logo.onload = () => {
+    const logoW = 420;
+    const logoH = (logo.height / logo.width) * logoW;
+    ctx.drawImage(logo, (W - logoW) / 2, 40, logoW, logoH);
+
+    ctx.fillStyle = "#ffcc00";
+    ctx.fillRect(45, 200, W - 80, 70);
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("HIGH VOLTAGE TRANSFORMER – AUTHORIZED ONLY", W / 2, 245);
+
+    ctx.drawImage(qrCanvasEl, (W - 300) / 2, 300, 300, 300);
+
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 36px Arial";
+    ctx.fillText(id, W / 2, 640);
+
+    const link = document.createElement("a");
+    link.download = id + "_Transformer_QR_sheet.png";
+    link.href = finalCanvas.toDataURL();
+    link.click();
+  };
+
+  logo.onerror = () => {
+    alert("Logo not found (logo.png). QR sheet will be generated without logo.");
+  };
+}
+
+/* ------------ HELPER: STATUS BADGES ------------ */
+function badgeForStatus(value, okValues = [], warnValues = [], badValues = []) {
+  if (!value) return "";
+  const v = value.toLowerCase();
+  if (okValues.some(x => v === x.toLowerCase())) {
+    return `<span class="badge badge-ok">${value}</span>`;
+  }
+  if (warnValues.some(x => v === x.toLowerCase())) {
+    return `<span class="badge badge-warn">${value}</span>`;
+  }
+  if (badValues.some(x => v === x.toLowerCase())) {
+    return `<span class="badge badge-bad">${value}</span>`;
+  }
+  return `<span class="badge badge-info">${value}</span>`;
+}
+
+/* ------------ DB INSPECTION + FAULT REPORTS ------------ */
+
+function loadReports() {
+  firebase.database().ref("inspections").once("value", snap => {
+    let data = snap.val() || {};
+    inspectionsGlobal = convertInspectionData(data);
+    renderInspectionTable(inspectionsGlobal);
+    updateInspectionSummary(inspectionsGlobal);
+  });
+
+  firebase.database().ref("faults").once("value", snap => {
+    let data = snap.val() || {};
+    faultsGlobal = convertFaultData(data);
+    renderFaultTable(faultsGlobal);
+    updateFaultSummary(faultsGlobal);
+  });
+}
+
+function convertInspectionData(data) {
+  let list = [];
+  for (let db in data) {
+    for (let key in data[db]) {
+      list.push({
+        dbId: db,
+        recordKey: key,
+        ...data[db][key]
+      });
+    }
+  }
+  return list;
+}
+
+function convertFaultData(data) {
+  let list = [];
+  for (let db in data) {
+    for (let key in data[db]) {
+      list.push({
+        dbId: db,
+        recordKey: key,
+        ...data[db][key]
+      });
+    }
+  }
+  return list;
+}
+
+/* INSPECTION SUMMARY */
+function updateInspectionSummary(list) {
+  const container = document.getElementById("insSummary");
+  if (!container) return;
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No inspection records.</p>";
+    return;
+  }
 
   const total = list.length;
-  let ok = 0, no = 0;
-  list.forEach(r => {
-    if ((r.cleanStatus || "").toLowerCase() === "clean") ok++;
-    else no++;
-  });
+  const byDb = new Set(list.map(r => r.dbId)).size;
+  const recent = list.filter(r => {
+    if (!r.timestamp) return false;
+    const d = r.timestamp.substring(0,10);
+    const today = new Date().toISOString().substring(0,10);
+    return d === today;
+  }).length;
 
-  div.innerHTML = `
+  container.innerHTML = `
     <div class="summary-card">
-      <div class="summary-title">Total Reports</div>
+      <div class="summary-title">Total Inspections</div>
       <div class="summary-value">${total}</div>
     </div>
     <div class="summary-card">
-      <div class="summary-title">Clean Panels</div>
-      <div class="summary-value">${ok}</div>
+      <div class="summary-title">Panels Inspected</div>
+      <div class="summary-value">${byDb}</div>
     </div>
     <div class="summary-card">
-      <div class="summary-title">Not Clean</div>
-      <div class="summary-value">${no}</div>
+      <div class="summary-title">Today</div>
+      <div class="summary-value">${recent}</div>
     </div>
   `;
 }
 
-function renderDBInspectionTable(list) {
-  if (!document.getElementById("dbInspectionTable")) return;
+/* FAULT SUMMARY */
+function updateFaultSummary(list) {
+  const container = document.getElementById("faultSummary");
+  if (!container) return;
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No fault records.</p>";
+    return;
+  }
+
+  const total = list.length;
+  const byDb = new Set(list.map(r => r.dbId)).size;
+  let totalDowntime = 0;
+  let lossYes = 0;
+  list.forEach(r => {
+    if (r.downtimeMinutes) totalDowntime += Number(r.downtimeMinutes) || 0;
+    if (r.productionLoss === "Yes") lossYes++;
+  });
+  const totalHours = (totalDowntime / 60).toFixed(1);
+
+  container.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-title">Total Faults</div>
+      <div class="summary-value">${total}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Panels with Faults</div>
+      <div class="summary-value">${byDb}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Production Loss Cases</div>
+      <div class="summary-value">${lossYes}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Downtime (hrs)</div>
+      <div class="summary-value">${totalHours}</div>
+    </div>
+  `;
+}
+
+/* RENDER INSPECTIONS TABLE (with delete) */
+function renderInspectionTable(list) {
+  if (!document.getElementById("inspectionTable")) return;
 
   let html = `
     <table>
-      <tr>
+    <tr>
         <th>Date</th>
         <th>DB</th>
         <th>Electrician</th>
         <th>Breaker</th>
-        <th>Clean?</th>
-        <th>Locked?</th>
-        <th>Covered?</th>
-        <th>Comments</th>
+        <th>Clean</th>
+        <th>Locked</th>
+        <th>Covered</th>
+        <th>Comments / Extra</th>
         <th>Photos</th>
-      </tr>
+        <th>Action</th>
+    </tr>
   `;
 
   list.forEach(r => {
+    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
+
+    const breakerHtml = badgeForStatus(
+      r.breakerStatus,
+      ["OK"],
+      [],
+      ["Needs repair", "Not accessible"]
+    );
+    const cleanHtml = badgeForStatus(
+      r.cleanStatus,
+      ["Clean"],
+      ["Needs cleaning"],
+      ["Not accessible"]
+    );
+    const lockedHtml = badgeForStatus(
+      r.lockedStatus,
+      ["Locked"],
+      [],
+      ["Unlocked", "Not lockable"]
+    );
+    const coveredHtml = badgeForStatus(
+      r.coveredStatus,
+      ["Covered", "Not required"],
+      [],
+      ["Not covered"]
+    );
+
+    let extraText = "";
+    if (r.extraAnswers && questionsGlobal) {
+      extraText = Object.entries(r.extraAnswers).map(([qid,val]) => {
+        const q = questionsGlobal[qid];
+        const label = q ? q.text : qid;
+        return `${label}: ${val}`;
+      }).join("; ");
+    }
+
+    const commentsCell = (r.comments || "") + (extraText ? `<br><small>${extraText}</small>` : "");
+
     html += `
       <tr>
-        <td>${new Date(r.timestamp).toLocaleString()}</td>
-        <td>${r.dbId}</td>
+        <td>${dateStr}</td>
+        <td><span class="badge badge-info">${r.dbId}</span></td>
         <td>${r.electricianName || ""}</td>
-        <td>${r.breakerStatus || ""}</td>
-        <td>${r.cleanStatus || ""}</td>
-        <td>${r.lockedStatus || ""}</td>
-        <td>${r.coveredStatus || ""}</td>
-        <td>${r.comments || ""}</td>
+        <td>${breakerHtml}</td>
+        <td>${cleanHtml}</td>
+        <td>${lockedHtml}</td>
+        <td>${coveredHtml}</td>
+        <td>${commentsCell}</td>
         <td>
-          ${r.photo1 ? `<button class="photo-btn" onclick="openPhoto('${r.photo1}')">1</button>` : ""}
-          ${r.photo2 ? `<button class="photo-btn" onclick="openPhoto('${r.photo2}')">2</button>` : ""}
-          ${r.photo3 ? `<button class="photo-btn" onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+            ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
+            ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
+            ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+        </td>
+        <td>
+          <button class="danger-btn" onclick="deleteInspection('${r.dbId}','${r.recordKey}')">Delete</button>
         </td>
       </tr>
     `;
   });
 
   html += "</table>";
-  document.getElementById("dbInspectionTable").innerHTML = html;
+  document.getElementById("inspectionTable").innerHTML = html;
 }
 
-function exportDBInspectionsCSV() {
-  let csv = "Date,DB,Electrician,Breaker,Clean,Locked,Covered,Comments\n";
-  dbInspectionsGlobal.forEach(r => {
-    csv += `"${new Date(r.timestamp).toLocaleString()}","${r.dbId}","${r.electricianName}",`;
-    csv += `"${r.breakerStatus}","${r.cleanStatus}","${r.lockedStatus}","${r.coveredStatus}","${r.comments}"\n`;
-  });
-  downloadCSV(csv, "DB_Inspections.csv");
-}
-
-/* ---------------------------------------------------
-    FAULT REPORTS
---------------------------------------------------- */
-function loadFaults() {
-  firebase.database().ref("faults").on("value", snap => {
-    const data = snap.val() || {};
-
-    let list = [];
-    Object.keys(data).forEach(dbId => {
-      Object.values(data[dbId]).forEach(v => {
-        list.push({ dbId, ...v });
-      });
-    });
-
-    faultsGlobal = list;
-    renderFaultSummary(list);
-    renderFaultTable(list);
-  });
-}
-
-function applyFaultFilters() {
-  const fId = document.getElementById("fault_filterId").value.toLowerCase();
-  const fName = document.getElementById("fault_filterElec").value.toLowerCase();
-  const fDate = document.getElementById("fault_filterDate").value;
-
-  let filtered = faultsGlobal.filter(r =>
-    (fId === "" || r.dbId.toLowerCase().includes(fId)) &&
-    (fName === "" || (r.electricianName || "").toLowerCase().includes(fName)) &&
-    (fDate === "" || (r.timestamp || "").startsWith(fDate))
-  );
-  renderFaultSummary(filtered);
-  renderFaultTable(filtered);
-}
-
-function renderFaultSummary(list) {
-  const total = list.length;
-  const today = new Date().toISOString().slice(0,10);
-  const tCount = list.filter(r => (r.timestamp || "").startsWith(today)).length;
-
-  document.getElementById("faultSummary").innerHTML = `
-    <div class="summary-card">
-      <div class="summary-title">Total Faults</div>
-      <div class="summary-value">${total}</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-title">Today</div>
-      <div class="summary-value">${tCount}</div>
-    </div>
-  `;
-}
-
+/* RENDER FAULTS TABLE (with delete) */
 function renderFaultTable(list) {
+  if (!document.getElementById("faultTable")) return;
+
   let html = `
     <table>
-      <tr>
+    <tr>
         <th>Date</th>
         <th>DB</th>
         <th>Electrician</th>
-        <th>Type</th>
-        <th>Description</th>
+        <th>Fault Type</th>
+        <th>Description / Extra</th>
         <th>Start</th>
         <th>End</th>
-        <th>Downtime (min)</th>
-        <th>Prod Loss</th>
+        <th>Downtime</th>
+        <th>Production Loss</th>
         <th>Photos</th>
-      </tr>
+        <th>Action</th>
+    </tr>
   `;
 
   list.forEach(r => {
+    const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
+    const downtime = r.downtimeMinutes != null ? Number(r.downtimeMinutes) : null;
+    let downtimeHtml = "";
+    if (downtime == null) {
+      downtimeHtml = "";
+    } else if (downtime === 0) {
+      downtimeHtml = `<span class="badge badge-ok">0 min</span>`;
+    } else if (downtime <= 30) {
+      downtimeHtml = `<span class="badge badge-warn">${downtime} min</span>`;
+    } else {
+      downtimeHtml = `<span class="badge badge-bad">${downtime} min</span>`;
+    }
+
+    let lossHtml = "";
+    if (r.productionLoss === "Yes") {
+      lossHtml = `<span class="badge badge-bad">Yes</span>`;
+    } else if (r.productionLoss === "No") {
+      lossHtml = `<span class="badge badge-ok">No</span>`;
+    } else {
+      lossHtml = r.productionLoss || "";
+    }
+
+    let extraText = "";
+    if (r.extraAnswers && questionsGlobal) {
+      extraText = Object.entries(r.extraAnswers).map(([qid,val]) => {
+        const q = questionsGlobal[qid];
+        const label = q ? q.text : qid;
+        return `${label}: ${val}`;
+      }).join("; ");
+    }
+
+    const descCell = (r.description || "") + (extraText ? `<br><small>${extraText}</small>` : "");
+
     html += `
       <tr>
-        <td>${new Date(r.timestamp).toLocaleString()}</td>
-        <td>${r.dbId}</td>
+        <td>${dateStr}</td>
+        <td><span class="badge badge-info">${r.dbId}</span></td>
         <td>${r.electricianName || ""}</td>
         <td>${r.faultType || ""}</td>
-        <td>${r.description || ""}</td>
+        <td>${descCell}</td>
         <td>${r.startTime || ""}</td>
         <td>${r.endTime || ""}</td>
-        <td>${r.downtimeMinutes || ""}</td>
-        <td>${r.productionLoss || ""}<br>${r.productionLossDesc || ""}</td>
+        <td>${downtimeHtml}</td>
+        <td>${lossHtml}<br>${r.productionLossDesc || ""}</td>
         <td>
-          ${r.photo1 ? `<button class="photo-btn" onclick="openPhoto('${r.photo1}')">1</button>` : ""}
-          ${r.photo2 ? `<button class="photo-btn" onclick="openPhoto('${r.photo2}')">2</button>` : ""}
-          ${r.photo3 ? `<button class="photo-btn" onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+            ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
+            ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
+            ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+        </td>
+        <td>
+          <button class="danger-btn" onclick="deleteFault('${r.dbId}','${r.recordKey}')">Delete</button>
         </td>
       </tr>
     `;
@@ -1406,564 +1596,682 @@ function renderFaultTable(list) {
   document.getElementById("faultTable").innerHTML = html;
 }
 
-function exportFaultsCSV() {
-  let csv = "Date,DB,Electrician,FaultType,Description,Start,End,Downtime,Loss,LossDesc\n";
-  faultsGlobal.forEach(r => {
-    csv += `"${new Date(r.timestamp).toLocaleString()}","${r.dbId}","${r.electricianName}",`;
-    csv += `"${r.faultType}","${r.description}","${r.startTime}","${r.endTime}",`;
-    csv += `"${r.downtimeMinutes}","${r.productionLoss}","${r.productionLossDesc}"\n`;
-  });
-  downloadCSV(csv, "FaultReports.csv");
+/* PHOTO VIEWER */
+function openPhoto(src) {
+  let win = window.open();
+  win.document.write(`<img src="${src}" style="width:100%;">`);
 }
 
-/* ---------------------------------------------------
-    TRANSFORMER REPORTS
---------------------------------------------------- */
-function loadTransformerReports() {
-  firebase.database().ref("transformerReports").on("value", snap => {
-    const data = snap.val() || {};
+/* DELETE INSPECTION / FAULT RECORDS */
+function deleteInspection(dbId, key) {
+  if (!confirm("Delete this inspection record?")) return;
+  firebase.database().ref("inspections/" + dbId + "/" + key).remove().then(() => {
+    alert("Inspection deleted.");
+    loadReports();
+  });
+}
 
-    let list = [];
-    Object.keys(data).forEach(trId => {
-      Object.values(data[trId]).forEach(v => {
-        list.push({ trId, ...v });
-      });
+function deleteFault(dbId, key) {
+  if (!confirm("Delete this fault record?")) return;
+  firebase.database().ref("faults/" + dbId + "/" + key).remove().then(() => {
+    alert("Fault report deleted.");
+    loadReports();
+  });
+}
+
+/* FILTERS: INSPECTIONS */
+function applyInspectionFilters() {
+  let fDB = document.getElementById("filterDB_i").value.toLowerCase();
+  let fElec = document.getElementById("filterElec_i").value.toLowerCase();
+  let from = document.getElementById("filterFrom_i").value;
+  let to = document.getElementById("filterTo_i").value;
+
+  let filtered = inspectionsGlobal.filter(r => {
+    const dbMatch = (fDB === "" || r.dbId.toLowerCase().includes(fDB));
+    const elecMatch = (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec));
+    if (!r.timestamp) return false;
+    const day = r.timestamp.substring(0,10);
+    const fromOk = (!from || day >= from);
+    const toOk = (!to || day <= to);
+    return dbMatch && elecMatch && fromOk && toOk;
+  });
+
+  renderInspectionTable(filtered);
+  updateInspectionSummary(filtered);
+}
+
+/* FILTERS: FAULTS */
+function applyFaultFilters() {
+  let fDB = document.getElementById("filterDB_f").value.toLowerCase();
+  let fElec = document.getElementById("filterElec_f").value.toLowerCase();
+  let from = document.getElementById("filterFrom_f").value;
+  let to = document.getElementById("filterTo_f").value;
+  let lossFilter = document.getElementById("filterLoss_f").value;
+
+  let filtered = faultsGlobal.filter(r => {
+    const dbMatch = (fDB === "" || r.dbId.toLowerCase().includes(fDB));
+    const elecMatch = (fElec === "" || (r.electricianName || "").toLowerCase().includes(fElec));
+    if (!r.timestamp) return false;
+    const day = r.timestamp.substring(0,10);
+    const fromOk = (!from || day >= from);
+    const toOk = (!to || day <= to);
+    const lossOk = (!lossFilter || r.productionLoss === lossFilter);
+    return dbMatch && elecMatch && fromOk && toOk && lossOk;
+  });
+
+  renderFaultTable(filtered);
+  updateFaultSummary(filtered);
+}
+
+/* ------------ MASTER DB REPORT (TABLE + INLINE DETAILS) ------------ */
+function loadMasterReport() {
+  const container = document.getElementById("masterContainer");
+  if (!container) return;
+  container.innerHTML = "Loading...";
+
+  loadAllPanels(function(all) {
+    masterPanelsGlobal = all;
+    if (!all) {
+      container.innerHTML = "<p>No panels found.</p>";
+      document.getElementById("masterSummary").innerHTML = "";
+      return;
+    }
+
+    const ids = Object.keys(all);
+    let totalCircuits = 0;
+    ids.forEach(id => {
+      const p = all[id];
+      if (p.circuits && Array.isArray(p.circuits)) {
+        totalCircuits += p.circuits.length;
+      }
     });
 
-    transformerReportsGlobal = list;
-    renderTransformerSummary(list);
-    renderTransformerTable(list);
+    document.getElementById("masterSummary").innerHTML = `
+      <div class="summary-card">
+        <div class="summary-title">Total DB Panels</div>
+        <div class="summary-value">${ids.length}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-title">Total Circuits</div>
+        <div class="summary-value">${totalCircuits}</div>
+      </div>
+    `;
+
+    let html = `
+      <table>
+        <tr>
+          <th>DB</th>
+          <th>Voltage</th>
+          <th>Breaker</th>
+          <th>Cable</th>
+          <th>Earth</th>
+          <th>Location</th>
+          <th>Circuits</th>
+          <th>Action</th>
+        </tr>
+    `;
+
+    ids.forEach(id => {
+      const p = all[id];
+      const circuitCount = (p.circuits && Array.isArray(p.circuits)) ? p.circuits.length : 0;
+      const rowId = `master-details-${id}`;
+
+      html += `
+        <tr class="master-main-row" onclick="toggleMasterDetails('${id}')">
+          <td>${p.dbNumber || id}</td>
+          <td>${p.voltage || ""}</td>
+          <td>${p.mainBreaker || ""}</td>
+          <td>${p.cableSize || ""}</td>
+          <td>${p.earthStatus || ""}</td>
+          <td>${p.location || ""}</td>
+          <td>${circuitCount}</td>
+          <td>
+            <button class="secondary-btn" onclick="event.stopPropagation(); toggleMasterDetails('${id}')">View</button>
+          </td>
+        </tr>
+        <tr id="${rowId}" class="master-details-row" style="display:none;">
+          <td colspan="8">
+            <div class="master-details-wrapper">
+              <div class="master-details-left">
+                <h4>Circuits</h4>
+      `;
+
+      if (p.circuits && Array.isArray(p.circuits) && p.circuits.length) {
+        p.circuits.forEach(c => {
+          html += `
+            <div class="master-circuit-box">
+              <b>${c.name || ""}</b><br>
+              Breaker: ${c.breaker || ""}<br>
+              Load: ${c.load || ""}
+            </div>
+          `;
+        });
+      } else {
+        html += `<p>No circuits recorded.</p>`;
+      }
+
+      if (p.extraAnswers && questionsGlobal) {
+        html += `<h4 style="margin-top:12px;">Extra DB Info</h4>`;
+        Object.entries(p.extraAnswers).forEach(([qid,val]) => {
+          const q = questionsGlobal[qid];
+          const label = q ? q.text : qid;
+          html += `<p><b>${label}:</b> ${val}</p>`;
+        });
+      }
+
+      html += `
+              </div>
+              <div class="master-details-right">
+                <h4>Panel Image</h4>
+      `;
+
+      if (p.image) {
+        html += `<img src="${p.image}" class="master-details-image" alt="Panel image">`;
+      } else {
+        html += `<p style="font-size:13px;color:#666;">No image available.</p>`;
+      }
+
+      html += `
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `</table>`;
+    container.innerHTML = html;
   });
 }
 
-function applyTransformerFilters() {
-  const fId = document.getElementById("trRpt_filterId").value.toLowerCase();
-  const fTech = document.getElementById("trRpt_filterTech").value.toLowerCase();
-  const fDate = document.getElementById("trRpt_filterDate").value;
-
-  let filtered = transformerReportsGlobal.filter(r =>
-    (fId === "" || r.trId.toLowerCase().includes(fId)) &&
-    (fTech === "" || (r.technicianName || "").toLowerCase().includes(fTech)) &&
-    (fDate === "" || (r.timestamp || "").startsWith(fDate))
-  );
-  renderTransformerSummary(filtered);
-  renderTransformerTable(filtered);
+function toggleMasterDetails(id) {
+  const row = document.getElementById("master-details-" + id);
+  if (!row) return;
+  row.style.display = (row.style.display === "none" || row.style.display === "") ? "table-row" : "none";
 }
 
-function renderTransformerSummary(list) {
-  const div = document.getElementById("transformerSummary");
-  if (!div) return;
-  div.innerHTML = `
+/* ------------ CSV EXPORT HELPERS ------------ */
+function arrayToCSV(rows) {
+  return rows.map(r => r.map(v => {
+    if (v == null) return "";
+    const s = String(v).replace(/"/g, '""');
+    if (s.search(/("|,|\n)/g) >= 0) {
+      return `"${s}"`;
+    }
+    return s;
+  }).join(",")).join("\n");
+}
+
+function downloadCSV(filename, csv) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/* EXPORT: INSPECTIONS */
+function exportInspectionsCSV() {
+  if (!inspectionsGlobal || !inspectionsGlobal.length) {
+    alert("No inspection data to export.");
+    return;
+  }
+  const rows = [];
+  rows.push(["Timestamp","DB","Electrician","Breaker Status","Clean Status","Locked Status","Covered Status","Comments"]);
+  inspectionsGlobal.forEach(r => {
+    rows.push([
+      r.timestamp || "",
+      r.dbId || "",
+      r.electricianName || "",
+      r.breakerStatus || "",
+      r.cleanStatus || "",
+      r.lockedStatus || "",
+      r.coveredStatus || "",
+      r.comments || ""
+    ]);
+  });
+  const csv = arrayToCSV(rows);
+  downloadCSV("inspections.csv", csv);
+}
+
+/* EXPORT: FAULTS */
+function exportFaultsCSV() {
+  if (!faultsGlobal || !faultsGlobal.length) {
+    alert("No fault data to export.");
+    return;
+  }
+  const rows = [];
+  rows.push(["Timestamp","DB","Electrician","Fault Type","Description","Start Time","End Time","Downtime (min)","Production Loss","Production Loss Desc"]);
+  faultsGlobal.forEach(r => {
+    rows.push([
+      r.timestamp || "",
+      r.dbId || "",
+      r.electricianName || "",
+      r.faultType || "",
+      r.description || "",
+      r.startTime || "",
+      r.endTime || "",
+      r.downtimeMinutes != null ? r.downtimeMinutes : "",
+      r.productionLoss || "",
+      r.productionLossDesc || ""
+    ]);
+  });
+  const csv = arrayToCSV(rows);
+  downloadCSV("faults.csv", csv);
+}
+
+/* EXPORT: MASTER DB + CIRCUITS */
+function exportMasterCSV() {
+  if (!masterPanelsGlobal) {
+    alert("No master DB data loaded yet. Click 'Reload Data' first.");
+    return;
+  }
+  const rows = [];
+  rows.push(["DB","Voltage","Main Breaker","Cable Size","Earth Status","Location","Purpose","Circuit Name","Circuit Breaker","Circuit Load"]);
+
+  Object.keys(masterPanelsGlobal).forEach(id => {
+    const p = masterPanelsGlobal[id];
+    if (p.circuits && Array.isArray(p.circuits) && p.circuits.length) {
+      p.circuits.forEach(c => {
+        rows.push([
+          p.dbNumber || id,
+          p.voltage || "",
+          p.mainBreaker || "",
+          p.cableSize || "",
+          p.earthStatus || "",
+          p.location || "",
+          p.purpose || "",
+          c.name || "",
+          c.breaker || "",
+          c.load || ""
+        ]);
+      });
+    } else {
+      rows.push([
+        p.dbNumber || id,
+        p.voltage || "",
+        p.mainBreaker || "",
+        p.cableSize || "",
+        p.earthStatus || "",
+        p.location || "",
+        p.purpose || "",
+        "",
+        "",
+        ""
+      ]);
+    }
+  });
+
+  const csv = arrayToCSV(rows);
+  downloadCSV("master_panels.csv", csv);
+}
+
+/* ------------ DYNAMIC QUESTIONS (ADMIN + DB ENTRY + REPORTS) ------------ */
+function loadQuestions() {
+  firebase.database().ref("questions").on("value", snap => {
+    questionsGlobal = snap.val() || {};
+    renderQuestionsAdmin();
+    renderDbQuestions();
+    // Re-render tables so extraAnswers labels are resolved
+    renderInspectionTable(inspectionsGlobal || []);
+    renderFaultTable(faultsGlobal || []);
+    // Re-render master if loaded
+    if (masterPanelsGlobal) loadMasterReport();
+  });
+}
+
+function addQuestion() {
+  const text = document.getElementById("qText").value.trim();
+  const type = document.getElementById("qType").value;
+  const optionsStr = document.getElementById("qOptions").value.trim();
+  const applyDb = document.getElementById("qApplyDb").checked;
+  const applyInspection = document.getElementById("qApplyInsp").checked;
+  const applyFault = document.getElementById("qApplyFault").checked;
+
+  if (!text) {
+    alert("Please enter question text.");
+    return;
+  }
+  if (!applyDb && !applyInspection && !applyFault) {
+    alert("Select at least one section (DB / Inspection / Fault).");
+    return;
+  }
+
+  let options = [];
+  if (type === "dropdown" && optionsStr) {
+    options = optionsStr.split(",").map(s => s.trim()).filter(Boolean);
+  }
+
+  const data = {
+    text,
+    type,
+    options,
+    applyDb,
+    applyInspection,
+    applyFault,
+    active: true
+  };
+
+  firebase.database().ref("questions").push(data, err => {
+    if (err) alert("Error adding question: " + err);
+    else {
+      document.getElementById("qText").value = "";
+      document.getElementById("qOptions").value = "";
+      alert("Question added.");
+    }
+  });
+}
+
+function renderQuestionsAdmin() {
+  const container = document.getElementById("questionsList");
+  if (!container) return;
+
+  const entries = Object.entries(questionsGlobal);
+  if (!entries.length) {
+    container.innerHTML = "<p>No questions defined yet.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <tr>
+        <th>Question</th>
+        <th>Type</th>
+        <th>Applies To</th>
+        <th>Active</th>
+        <th>Action</th>
+      </tr>
+  `;
+
+  entries.forEach(([id, q]) => {
+    const applies = [
+      q.applyDb ? "DB" : null,
+      q.applyInspection ? "Inspection" : null,
+      q.applyFault ? "Fault" : null
+    ].filter(Boolean).join(", ");
+
+    html += `
+      <tr>
+        <td>${q.text}</td>
+        <td>${q.type}</td>
+        <td>${applies}</td>
+        <td>${q.active === false ? "No" : "Yes"}</td>
+        <td>
+          <button class="secondary-btn" onclick="toggleQuestionActive('${id}')">
+            ${q.active === false ? "Activate" : "Deactivate"}
+          </button>
+          <button class="danger-btn" onclick="deleteQuestion('${id}')">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+  container.innerHTML = html;
+}
+
+function toggleQuestionActive(id) {
+  const q = questionsGlobal[id];
+  if (!q) return;
+  const newVal = !(q.active === false ? false : true);
+  firebase.database().ref("questions/" + id + "/active").set(newVal);
+}
+
+function deleteQuestion(id) {
+  if (!confirm("Delete this question?")) return;
+  firebase.database().ref("questions/" + id).remove();
+}
+
+function renderDbQuestions() {
+  const container = document.getElementById("dbQuestionsContainer");
+  if (!container) return;
+
+  const entries = Object.entries(questionsGlobal)
+    .filter(([id, q]) => q.applyDb && q.active !== false);
+
+  if (!entries.length) {
+    container.innerHTML = "<p style='font-size:13px;color:#666;'>No extra DB questions defined.</p>";
+    return;
+  }
+
+  let html = "";
+  entries.forEach(([id, q]) => {
+    html += renderQuestionFieldHtml("db", id, q);
+  });
+
+  container.innerHTML = html;
+}
+
+function renderQuestionFieldHtml(sectionPrefix, id, q) {
+  const baseId = `q_${sectionPrefix}_${id}`;
+  let fieldHtml = "";
+
+  if (q.type === "text") {
+    fieldHtml = `<input type="text" id="${baseId}" style="width:100%;max-width:400px;">`;
+  } else if (q.type === "number") {
+    fieldHtml = `<input type="number" id="${baseId}" style="width:150px;">`;
+  } else if (q.type === "yesno") {
+    fieldHtml = `
+      <select id="${baseId}">
+        <option value=""></option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    `;
+  } else if (q.type === "dropdown") {
+    const opts = (q.options || []);
+    const optionsHtml = ['<option value=""></option>']
+      .concat(opts.map(o => `<option value="${o}">${o}</option>`))
+      .join("");
+    fieldHtml = `<select id="${baseId}">${optionsHtml}</select>`;
+  } else {
+    fieldHtml = `<input type="text" id="${baseId}" style="width:100%;max-width:400px;">`;
+  }
+
+  return `
+    <div style="margin-top:10px;">
+      <label style="font-weight:bold;">${q.text}</label><br>
+      ${fieldHtml}
+    </div>
+  `;
+}
+
+/* collect answers for current section (db/insp/fault) */
+function collectDynamicAnswers(sectionPrefix) {
+  const result = {};
+  Object.entries(questionsGlobal).forEach(([id, q]) => {
+    let apply = false;
+    if (sectionPrefix === "db" && q.applyDb) apply = true;
+    if (sectionPrefix === "insp" && q.applyInspection) apply = true;
+    if (sectionPrefix === "fault" && q.applyFault) apply = true;
+    if (!apply || q.active === false) return;
+
+    const input = document.getElementById(`q_${sectionPrefix}_${id}`);
+    if (!input) return;
+    const val = (input.value || "").toString().trim();
+    if (val) {
+      result[id] = val;
+    }
+  });
+
+  return Object.keys(result).length ? result : null;
+}
+
+/* ------------ TRANSFORMER REPORTS (from transformer.html) ------------ */
+function loadTransformerReports() {
+  firebase.database().ref("transformerInspections").once("value", snap => {
+    const data = snap.val() || {};
+    const list = [];
+    for (let trId in data) {
+      for (let key in data[trId]) {
+        list.push({
+          transformerId: trId,
+          recordKey: key,
+          ...data[trId][key]
+        });
+      }
+    }
+    transformerReportsGlobal = list;
+    renderTransformerTable(list);
+    updateTransformerSummary(list);
+  });
+}
+
+function updateTransformerSummary(list) {
+  const container = document.getElementById("trSummary");
+  if (!container) return;
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No transformer reports.</p>";
+    return;
+  }
+  const total = list.length;
+  const transformersCount = new Set(list.map(r => r.transformerId)).size;
+  const today = new Date().toISOString().slice(0,10);
+  const todayCount = list.filter(r => (r.timestamp || "").slice(0,10) === today).length;
+
+  container.innerHTML = `
     <div class="summary-card">
       <div class="summary-title">Total Reports</div>
-      <div class="summary-value">${list.length}</div>
+      <div class="summary-value">${total}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Transformers</div>
+      <div class="summary-value">${transformersCount}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Today</div>
+      <div class="summary-value">${todayCount}</div>
     </div>
   `;
 }
 
 function renderTransformerTable(list) {
+  const container = document.getElementById("transformerTable");
+  if (!container) return;
+
+  if (!list || !list.length) {
+    container.innerHTML = "<p>No transformer reports.</p>";
+    return;
+  }
+
   let html = `
     <table>
       <tr>
-        <th>Date</th>
+        <th>Date/Time</th>
         <th>Transformer</th>
-        <th>Technician</th>
-        <th>Oil Level</th>
-        <th>Temp</th>
-        <th>Noise</th>
-        <th>Leak</th>
-        <th>Remarks</th>
+        <th>Electrician</th>
+        <th>Oil</th>
+        <th>Temp (Oil/Winding)</th>
+        <th>IR (MΩ)</th>
+        <th>Earth (Ω)</th>
+        <th>Load (A)</th>
         <th>Photos</th>
+        <th>Action</th>
       </tr>
   `;
 
   list.forEach(r => {
+    const dt = r.datetimeLocal 
+      ? r.datetimeLocal.replace("T"," ")
+      : (r.timestamp ? new Date(r.timestamp).toLocaleString() : "");
     html += `
       <tr>
-        <td>${new Date(r.timestamp).toLocaleString()}</td>
-        <td>${r.trId}</td>
-        <td>${r.technicianName || ""}</td>
-        <td>${r.oilLevel || ""}</td>
-        <td>${r.temperature || ""}</td>
-        <td>${r.noise || ""}</td>
-        <td>${r.leakCheck || ""}</td>
-        <td>${r.remarks || ""}</td>
+        <td>${dt}</td>
+        <td>${r.transformerId || ""}</td>
+        <td>${r.electricianName || ""}</td>
+        <td>${r.oilCondition || ""}<br>Level: ${r.oilLevel || ""}</td>
+        <td>${r.oilTemperature || ""} / ${r.windingTemperature || ""}</td>
+        <td>${r.irTest || ""}</td>
+        <td>${r.earthResistance || ""}</td>
+        <td>${r.loadCurrent || ""}</td>
         <td>
-          ${r.photo1 ? `<button class="photo-btn" onclick="openPhoto('${r.photo1}')">1</button>` : ""}
-          ${r.photo2 ? `<button class="photo-btn" onclick="openPhoto('${r.photo2}')">2</button>` : ""}
-          ${r.photo3 ? `<button class="photo-btn" onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+          ${r.photo1 ? `<button class='photo-btn' onclick="openPhoto('${r.photo1}')">1</button>` : ""}
+          ${r.photo2 ? `<button class='photo-btn' onclick="openPhoto('${r.photo2}')">2</button>` : ""}
+          ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
+        </td>
+        <td>
+          <button class="danger-btn" onclick="deleteTransformerReport('${r.transformerId}','${r.recordKey}')">
+            Delete
+          </button>
         </td>
       </tr>
     `;
   });
 
   html += "</table>";
-  document.getElementById("transformerTable").innerHTML = html;
+  container.innerHTML = html;
 }
 
-function exportTransformerCSV() {
-  let csv = "Date,Transformer,Technician,Oil,Temp,Noise,Leak,Remarks\n";
+function applyTransformerFilters() {
+  let fId = document.getElementById("filterTR_id").value.toLowerCase();
+  let fElec = document.getElementById("filterTR_elec").value.toLowerCase();
+  let from = document.getElementById("filterTR_from").value;
+  let to   = document.getElementById("filterTR_to").value;
+
+  let filtered = transformerReportsGlobal.filter(r => {
+    const idMatch   = !fId   || (r.transformerId || "").toLowerCase().includes(fId);
+    const elecMatch = !fElec || (r.electricianName || "").toLowerCase().includes(fElec);
+    const day = (r.timestamp || "").slice(0,10);
+    const fromOk = !from || day >= from;
+    const toOk   = !to   || day <= to;
+    return idMatch && elecMatch && fromOk && toOk;
+  });
+
+  renderTransformerTable(filtered);
+  updateTransformerSummary(filtered);
+}
+
+function deleteTransformerReport(trId, key) {
+  if (!confirm("Delete this transformer report?")) return;
+  firebase.database().ref("transformerInspections/" + trId + "/" + key).remove().then(() => {
+    alert("Report deleted.");
+    loadTransformerReports();
+  });
+}
+
+function exportTransformersCSV() {
+  if (!transformerReportsGlobal.length) {
+    alert("No transformer reports.");
+    return;
+  }
+  const rows = [["DateTime","Transformer","Electrician","OilCondition","OilLevel","OilTemp","WindingTemp","IR","EarthRes","LoadCurrent","Remarks"]];
   transformerReportsGlobal.forEach(r => {
-    csv += `"${new Date(r.timestamp).toLocaleString()}","${r.trId}",`;
-    csv += `"${r.technicianName}","${r.oilLevel}","${r.temperature}","${r.noise}",`;
-    csv += `"${r.leakCheck}","${r.remarks}"\n`;
+    const dt = r.datetimeLocal 
+      ? r.datetimeLocal.replace("T"," ")
+      : (r.timestamp || "");
+    rows.push([
+      dt,
+      r.transformerId || "",
+      r.electricianName || "",
+      r.oilCondition || "",
+      r.oilLevel || "",
+      r.oilTemperature || "",
+      r.windingTemperature || "",
+      r.irTest || "",
+      r.earthResistance || "",
+      r.loadCurrent || "",
+      r.remarks || ""
+    ]);
   });
-  downloadCSV(csv, "TransformerReports.csv");
+  const csv = arrayToCSV(rows);
+  downloadCSV("transformer_reports.csv", csv);
 }
 
-/* ---------------------------------------------------
-    COMPRESSOR INSPECTION REPORTS
---------------------------------------------------- */
-function loadCompressorInspections() {
-  firebase.database().ref("compressorInspections").on("value", snap => {
-    const data = snap.val() || {};
-
-    let list = [];
-    Object.keys(data).forEach(id => {
-      Object.values(data[id]).forEach(v => list.push({ compId: id, ...v }));
-    });
-
-    compressorInspectionsGlobal = list;
-    renderCompInspectionSummary(list);
-    renderCompInspectionTable(list);
-  });
-}
-
-function applyCompressorInspectionFilters() {
-  const fId = document.getElementById("compIns_filterId").value.toLowerCase();
-  const fTech = document.getElementById("compIns_filterTech").value.toLowerCase();
-  const fDate = document.getElementById("compIns_filterDate").value;
-
-  const filtered = compressorInspectionsGlobal.filter(r =>
-    (fId === "" || r.compId.toLowerCase().includes(fId)) &&
-    (fTech === "" || (r.technicianName || "").toLowerCase().includes(fTech)) &&
-    (fDate === "" || (r.timestamp || "").startsWith(fDate))
-  );
-
-  renderCompInspectionSummary(filtered);
-  renderCompInspectionTable(filtered);
-}
-
-function renderCompInspectionSummary(list) {
-  document.getElementById("compInspectionSummary").innerHTML = `
-    <div class="summary-card">
-      <div class="summary-title">Total Inspections</div>
-      <div class="summary-value">${list.length}</div>
-    </div>
-  `;
-}
-
-function renderCompInspectionTable(list) {
-  let html = `
-    <table>
-      <tr>
-        <th>Date</th>
-        <th>Compressor</th>
-        <th>Technician</th>
-        <th>Oil</th>
-        <th>Filter</th>
-        <th>Leak</th>
-        <th>Hours</th>
-        <th>Abnormality</th>
-        <th>Dynamic Q</th>
-        <th>Photos</th>
-      </tr>
-  `;
-
-  list.forEach(r => {
-    let extra = "";
-    if (r.extraAnswers) {
-      extra = Object.entries(r.extraAnswers)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join("<br>");
-    }
-
-    html += `
-      <tr>
-        <td>${new Date(r.timestamp).toLocaleString()}</td>
-        <td>${r.compId}</td>
-        <td>${r.technicianName || ""}</td>
-        <td>${r.oilLevel || ""}</td>
-        <td>${r.filterCond || ""}</td>
-        <td>${r.leakCheck || ""}</td>
-        <td>${r.hourReading || ""}</td>
-        <td>${r.abnormality || ""}</td>
-        <td>${extra}</td>
-        <td>
-          ${r.photo1 ? `<button class="photo-btn" onclick="openPhoto('${r.photo1}')">1</button>` : ""}
-          ${r.photo2 ? `<button class="photo-btn" onclick="openPhoto('${r.photo2}')">2</button>` : ""}
-          ${r.photo3 ? `<button class="photo-btn" onclick="openPhoto('${r.photo3}')">3</button>` : ""}
-        </td>
-      </tr>
-    `;
-  });
-
-  html += "</table>";
-  document.getElementById("compInspectionTable").innerHTML = html;
-}
-
-function exportCompInspectionsCSV() {
-  let csv = "Date,Compressor,Tech,Oil,Filter,Leak,Hours,Abnormality\n";
-  compressorInspectionsGlobal.forEach(r => {
-    csv += `"${new Date(r.timestamp).toLocaleString()}","${r.compId}","`;
-    csv += `${r.technicianName}","${r.oilLevel}","${r.filterCond}",`;
-    csv += `"${r.leakCheck}","${r.hourReading}","${r.abnormality}"\n`;
-  });
-  downloadCSV(csv, "Compressor_Inspections.csv");
-}
-
-/* ---------------------------------------------------
-    COMPRESSOR MAINTENANCE REPORTS
---------------------------------------------------- */
-function loadCompressorMaintenance() {
-  firebase.database().ref("compressorMaintenance").on("value", snap => {
-    const data = snap.val() || {};
-
-    let list = [];
-    Object.keys(data).forEach(id => {
-      Object.values(data[id]).forEach(v => list.push({ compId: id, ...v }));
-    });
-
-    compressorMaintenanceGlobal = list;
-    renderCompMaintenanceSummary(list);
-    renderCompMaintenanceTable(list);
-  });
-}
-
-function applyCompressorMaintenanceFilters() {
-  const fId = document.getElementById("compMaint_filterId").value.toLowerCase();
-  const fTech = document.getElementById("compMaint_filterTech").value.toLowerCase();
-  const fDate = document.getElementById("compMaint_filterDate").value;
-
-  const filtered = compressorMaintenanceGlobal.filter(r =>
-    (fId === "" || r.compId.toLowerCase().includes(fId)) &&
-    (fTech === "" || (r.technicianName || "").toLowerCase().includes(fTech)) &&
-    (fDate === "" || (r.timestamp || "").startsWith(fDate))
-  );
-
-  renderCompMaintenanceSummary(filtered);
-  renderCompMaintenanceTable(filtered);
-}
-
-function renderCompMaintenanceSummary(list) {
-  document.getElementById("compMaintenanceSummary").innerHTML = `
-    <div class="summary-card">
-      <div class="summary-title">Total Maintenance</div>
-      <div class="summary-value">${list.length}</div>
-    </div>
-  `;
-}
-
-function renderCompMaintenanceTable(list) {
-  let html = `
-    <table>
-      <tr>
-        <th>Date</th>
-        <th>Compressor</th>
-        <th>Technician</th>
-        <th>Work Done</th>
-        <th>Parts</th>
-        <th>Dynamic Q</th>
-        <th>Photos</th>
-      </tr>
-  `;
-
-  list.forEach(r => {
-    let extra = "";
-    if (r.extraAnswers) {
-      extra = Object.entries(r.extraAnswers)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join("<br>");
-    }
-
-    html += `
-      <tr>
-        <td>${new Date(r.timestamp).toLocaleString()}</td>
-        <td>${r.compId}</td>
-        <td>${r.technicianName || ""}</td>
-        <td>${r.workDone || ""}</td>
-        <td>${r.partsReplaced || ""}</td>
-        <td>${extra}</td>
-        <td>
-          ${r.photo1 ? `<button class="photo-btn" onclick="openPhoto('${r.photo1}')">1</button>` : ""}
-          ${r.photo2 ? `<button class="photo-btn" onclick="openPhoto('${r.photo2}')">2</button>` : ""}
-          ${r.photo3 ? `<button class="photo-btn" onclick="openPhoto('${r.photo3}')">3</button>` : ""}
-        </td>
-      </tr>
-    `;
-  });
-
-  html += "</table>";
-  document.getElementById("compMaintenanceTable").innerHTML = html;
-}
-
-function exportCompMaintenanceCSV() {
-  let csv = "Date,Compressor,Tech,WorkDone,Parts\n";
-  compressorMaintenanceGlobal.forEach(r => {
-    csv += `"${new Date(r.timestamp).toLocaleString()}","${r.compId}","${r.technicianName}",`;
-    csv += `"${r.workDone}","${r.partsReplaced}"\n`;
-  });
-  downloadCSV(csv, "Compressor_Maintenance.csv");
-}
-
-/* ---------------------------------------------------
-    GENERATOR INSPECTION REPORTS
---------------------------------------------------- */
-function loadGeneratorInspections() {
-  firebase.database().ref("generatorInspections").on("value", snap => {
-    const data = snap.val() || {};
-
-    let list = [];
-    Object.keys(data).forEach(id => {
-      Object.values(data[id]).forEach(v => list.push({ genId: id, ...v }));
-    });
-
-    generatorInspectionsGlobal = list;
-    renderGenInspectionSummary(list);
-    renderGenInspectionTable(list);
-  });
-}
-
-function applyGeneratorInspectionFilters() {
-  const fId = document.getElementById("genIns_filterId").value.toLowerCase();
-  const fTech = document.getElementById("genIns_filterTech").value.toLowerCase();
-  const fDate = document.getElementById("genIns_filterDate").value;
-
-  const filtered = generatorInspectionsGlobal.filter(r =>
-    (fId === "" || r.genId.toLowerCase().includes(fId)) &&
-    (fTech === "" || (r.technicianName || "").toLowerCase().includes(fTech)) &&
-    (fDate === "" || (r.timestamp || "").startsWith(fDate))
-  );
-
-  renderGenInspectionSummary(filtered);
-  renderGenInspectionTable(filtered);
-}
-
-function renderGenInspectionSummary(list) {
-  document.getElementById("genInspectionSummary").innerHTML = `
-    <div class="summary-card">
-      <div class="summary-title">Total Inspections</div>
-      <div class="summary-value">${list.length}</div>
-    </div>
-  `;
-}
-
-function renderGenInspectionTable(list) {
-  let html = `
-    <table>
-      <tr>
-        <th>Date</th>
-        <th>Generator</th>
-        <th>Technician</th>
-        <th>Fuel %</th>
-        <th>Oil</th>
-        <th>Battery</th>
-        <th>Water</th>
-        <th>Voltage</th>
-        <th>Freq</th>
-        <th>Temp</th>
-        <th>Hours</th>
-        <th>Warning</th>
-        <th>Dynamic Q</th>
-        <th>Photos</th>
-      </tr>
-  `;
-
-  list.forEach(r => {
-    let extra = "";
-    if (r.extraAnswers) {
-      extra = Object.entries(r.extraAnswers)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join("<br>");
-    }
-
-    html += `
-      <tr>
-        <td>${new Date(r.timestamp).toLocaleString()}</td>
-        <td>${r.genId}</td>
-        <td>${r.technicianName || ""}</td>
-        <td>${r.fuelLevel || ""}</td>
-        <td>${r.oilLevel || ""}</td>
-        <td>${r.batteryCond || ""}</td>
-        <td>${r.waterLevel || ""}</td>
-        <td>${r.voltageOutput || ""}</td>
-        <td>${r.frequencyHz || ""}</td>
-        <td>${r.temperatureC || ""}</td>
-        <td>${r.runningHours || ""}</td>
-        <td>${r.warningIndicate || ""}</td>
-        <td>${extra}</td>
-        <td>
-          ${r.photo1 ? `<button class="photo-btn" onclick="openPhoto('${r.photo1}')">1</button>` : ""}
-          ${r.photo2 ? `<button class="photo-btn" onclick="openPhoto('${r.photo2}')">2</button>` : ""}
-          ${r.photo3 ? `<button class="photo-btn" onclick="openPhoto('${r.photo3}')">3</button>` : ""}
-        </td>
-      </tr>
-    `;
-  });
-
-  html += "</table>";
-  document.getElementById("genInspectionTable").innerHTML = html;
-}
-
-function exportGenInspectionsCSV() {
-  let csv = "Date,Gen,Tech,Fuel,Oil,Battery,Water,Voltage,Freq,Temp,Hours,Warning\n";
-  generatorInspectionsGlobal.forEach(r => {
-    csv += `"${new Date(r.timestamp).toLocaleString()}","${r.genId}","${r.technicianName}",`;
-    csv += `"${r.fuelLevel}","${r.oilLevel}","${r.batteryCond}","${r.waterLevel}",`;
-    csv += `"${r.voltageOutput}","${r.frequencyHz}","${r.temperatureC}",`;
-    csv += `"${r.runningHours}","${r.warningIndicate}"\n`;
-  });
-  downloadCSV(csv, "Generator_Inspections.csv");
-}
-
-/* ---------------------------------------------------
-    GENERATOR MAINTENANCE REPORTS
---------------------------------------------------- */
-function loadGeneratorMaintenance() {
-  firebase.database().ref("generatorMaintenance").on("value", snap => {
-    const data = snap.val() || {};
-
-    let list = [];
-    Object.keys(data).forEach(id => {
-      Object.values(data[id]).forEach(v => list.push({ genId: id, ...v }));
-    });
-
-    generatorMaintenanceGlobal = list;
-    renderGenMaintenanceSummary(list);
-    renderGenMaintenanceTable(list);
-  });
-}
-
-function applyGeneratorMaintenanceFilters() {
-  const fId = document.getElementById("genMaint_filterId").value.toLowerCase();
-  const fTech = document.getElementById("genMaint_filterTech").value.toLowerCase();
-  const fDate = document.getElementById("genMaint_filterDate").value;
-
-  const filtered = generatorMaintenanceGlobal.filter(r =>
-    (fId === "" || r.genId.toLowerCase().includes(fId)) &&
-    (fTech === "" || (r.technician
-function applyGeneratorMaintenanceFilters() {
-  const fId = document.getElementById("genMaint_filterId").value.toLowerCase();
-  const fTech = document.getElementById("genMaint_filterTech").value.toLowerCase();
-  const fDate = document.getElementById("genMaint_filterDate").value;
-
-  const filtered = generatorMaintenanceGlobal.filter(r =>
-    (fId === "" || r.genId.toLowerCase().includes(fId)) &&
-    (fTech === "" || (r.technicianName || "").toLowerCase().includes(fTech)) &&
-    (fDate === "" || (r.timestamp || "").startsWith(fDate))
-  );
-
-  renderGenMaintenanceSummary(filtered);
-  renderGenMaintenanceTable(filtered);
-}
-
-function renderGenMaintenanceSummary(list) {
-  document.getElementById("genMaintenanceSummary").innerHTML = `
-    <div class="summary-card">
-      <div class="summary-title">Total Maintenance</div>
-      <div class="summary-value">${list.length}</div>
-    </div>
-  `;
-}
-
-function renderGenMaintenanceTable(list) {
-  let html = `
-    <table>
-      <tr>
-        <th>Date</th>
-        <th>Generator</th>
-        <th>Technician</th>
-        <th>Work Done</th>
-        <th>Parts</th>
-        <th>Dynamic Q</th>
-        <th>Photos</th>
-      </tr>
-  `;
-
-  list.forEach(r => {
-    let extra = "";
-    if (r.extraAnswers) {
-      extra = Object.entries(r.extraAnswers)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join("<br>");
-    }
-
-    html += `
-      <tr>
-        <td>${new Date(r.timestamp).toLocaleString()}</td>
-        <td>${r.genId}</td>
-        <td>${r.technicianName || ""}</td>
-        <td>${r.workDone || ""}</td>
-        <td>${r.partsReplaced || ""}</td>
-        <td>${extra}</td>
-        <td>
-          ${r.photo1 ? `<button class="photo-btn" onclick="openPhoto('${r.photo1}')">1</button>` : ""}
-          ${r.photo2 ? `<button class="photo-btn" onclick="openPhoto('${r.photo2}')">2</button>` : ""}
-          ${r.photo3 ? `<button class="photo-btn" onclick="openPhoto('${r.photo3}')">3</button>` : ""}
-        </td>
-      </tr>
-    `;
-  });
-
-  html += "</table>";
-  document.getElementById("genMaintenanceTable").innerHTML = html;
-}
-
-function exportGenMaintenanceCSV() {
-  let csv = "Date,Gen,Tech,WorkDone,Parts\n";
-  generatorMaintenanceGlobal.forEach(r => {
-    csv += `"${new Date(r.timestamp).toLocaleString()}","${r.genId}","${r.technicianName}",`;
-    csv += `"${r.workDone}","${r.partsReplaced}"\n`;
-  });
-  downloadCSV(csv, "Generator_Maintenance.csv");
-}
-
-/* ---------------------------------------------------
-    MASTER DB EXPORT
---------------------------------------------------- */
-function exportMasterDB() {
-  if (!masterPanelsGlobal) return alert("No DB entry data loaded.");
-
-  let csv = "DB ID,Location,Feeder,Rating,PanelType,PanelMake,Risk,Remarks\n";
-  Object.values(masterPanelsGlobal).forEach(p => {
-    csv += `"${p.dbId}","${p.location}","${p.feeder}","${p.rating}",`;
-    csv += `"${p.panelType}","${p.panelMake}","${p.risk}","${p.remarks}"\n`;
-  });
-
-  downloadCSV(csv, "Master_DB.csv");
-}
-/* ---------------------------------------------------
-    LUX REPORTS (LOAD + RENDER + SORT + PDF + COMPARE)
---------------------------------------------------- */
-
-let luxSortMode = "none";            // "none" | "maxDesc" | "maxAsc"
-let luxCompareSelection = [];        // up to 2 photos
-
+/* ------------ LUX REPORTS (from lux.html) ------------ */
 function loadLuxReports() {
-  firebase.database().ref("luxReports").on("value", snap => {
+  firebase.database().ref("luxReports").once("value", snap => {
     const data = snap.val() || {};
-    const list = [];
-
-    Object.keys(data).forEach(key => {
-      const r = data[key];
-      list.push({
-        key,
-        department: r.department || "",
-        monitorType: r.monitorType || "",
-        electricianName: r.electricianName || "",
-        meterModel: r.meterModel || "",
-        calibrationNo: r.calibrationNo || "",
-        calibrationDate: r.calibrationDate || "",
-        date: r.date || "",
-        time: r.time || "",
-        meterPhoto: r.meterPhoto || "",
-        measurements: r.measurements || []
-      });
-    });
-
+    const list = Object.keys(data).map(key => ({
+      key,
+      ...data[key]
+    }));
     luxReportsGlobal = list;
-    updateLuxSummary(list);
     renderLuxTable(list);
+    updateLuxSummary(list);
   });
 }
 
@@ -1974,20 +2282,8 @@ function updateLuxSummary(list) {
     container.innerHTML = "<p>No LUX reports.</p>";
     return;
   }
-
   const total = list.length;
   const depts = new Set(list.map(r => r.department)).size;
-
-  // Total measurements
-  let totalMeas = 0;
-  list.forEach(r => {
-    totalMeas += (r.measurements && r.measurements.length) ? r.measurements.length : 0;
-  });
-
-  // Today count (by date only)
-  const today = new Date().toISOString().slice(0,10);
-  const todayCount = list.filter(r => (r.date || "").slice(0,10) === today).length;
-
   container.innerHTML = `
     <div class="summary-card">
       <div class="summary-title">Total LUX Reports</div>
@@ -1997,20 +2293,7 @@ function updateLuxSummary(list) {
       <div class="summary-title">Departments</div>
       <div class="summary-value">${depts}</div>
     </div>
-    <div class="summary-card">
-      <div class="summary-title">Total Measurements</div>
-      <div class="summary-value">${totalMeas}</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-title">Reports Today</div>
-      <div class="summary-value">${todayCount}</div>
-    </div>
   `;
-}
-
-function setLuxSort(mode) {
-  luxSortMode = mode;          // "none", "maxDesc", "maxAsc"
-  renderLuxTable(luxReportsGlobal);
 }
 
 function renderLuxTable(list) {
@@ -2019,22 +2302,6 @@ function renderLuxTable(list) {
   if (!list || !list.length) {
     container.innerHTML = "<p>No LUX reports.</p>";
     return;
-  }
-
-  // Apply sorting by max measured Lux
-  let data = [...list];
-  if (luxSortMode === "maxDesc" || luxSortMode === "maxAsc") {
-    data.sort((a, b) => {
-      const maxA = (a.measurements || []).reduce((mx, m) => {
-        const v = Number(m.measuredLux) || 0;
-        return v > mx ? v : mx;
-      }, 0);
-      const maxB = (b.measurements || []).reduce((mx, m) => {
-        const v = Number(m.measuredLux) || 0;
-        return v > mx ? v : mx;
-      }, 0);
-      return luxSortMode === "maxDesc" ? maxB - maxA : maxA - maxB;
-    });
   }
 
   let html = `
@@ -2046,11 +2313,11 @@ function renderLuxTable(list) {
         <th>Electrician</th>
         <th>Meter / Calib</th>
         <th>Measurements</th>
-        <th>Photos / Action</th>
+        <th>Action</th>
       </tr>
   `;
 
-  data.forEach(r => {
+  list.forEach(r => {
     const measCount = (r.measurements && r.measurements.length) ? r.measurements.length : 0;
     let measText = "";
     if (measCount) {
@@ -2071,8 +2338,6 @@ function renderLuxTable(list) {
         </td>
         <td>${measText}</td>
         <td>
-          ${r.meterPhoto ? `<button class='photo-btn' onclick="openPhoto('${r.meterPhoto}')">Meter</button>` : ""}
-          ${r.meterPhoto ? `<button class='photo-btn' onclick="addLuxCompare('${r.meterPhoto}')">Compare</button>` : ""}
           <button class="danger-btn" onclick="deleteLuxReport('${r.key}')">Delete</button>
         </td>
       </tr>
@@ -2083,49 +2348,30 @@ function renderLuxTable(list) {
   container.innerHTML = html;
 }
 
-// Photo compare: select 2 meter photos and open side-by-side
-function addLuxCompare(photoUrl) {
-  if (!photoUrl) return;
+function applyLuxFilters() {
+  let fDept = document.getElementById("filterLX_dept").value.toLowerCase();
+  let fElec = document.getElementById("filterLX_elec").value.toLowerCase();
+  let from = document.getElementById("filterLX_from").value;
+  let to   = document.getElementById("filterLX_to").value;
 
-  if (!luxCompareSelection.includes(photoUrl)) {
-    luxCompareSelection.push(photoUrl);
-  }
+  let filtered = luxReportsGlobal.filter(r => {
+    const deptMatch = !fDept || (r.department || "").toLowerCase().includes(fDept);
+    const elecMatch = !fElec || (r.electricianName || "").toLowerCase().includes(fElec);
+    const day = r.date || "";
+    const fromOk = !from || day >= from;
+    const toOk   = !to   || day <= to;
+    return deptMatch && elecMatch && fromOk && toOk;
+  });
 
-  if (luxCompareSelection.length < 2) {
-    alert("First photo selected. Click 'Compare' on another LUX report to open comparison.");
-    return;
-  }
-
-  const [p1, p2] = luxCompareSelection.slice(0, 2);
-  const win = window.open("", "_blank");
-  win.document.write(`
-    <html>
-    <head>
-      <title>LUX Photo Comparison</title>
-      <style>
-        body { margin:0; padding:10px; font-family:Arial,sans-serif; background:#111; color:#fff; }
-        .wrap { display:flex; gap:10px; justify-content:space-around; align-items:flex-start; flex-wrap:wrap; }
-        img { max-width:48%; border:3px solid #fff; border-radius:8px; }
-        h2 { text-align:center; }
-      </style>
-    </head>
-    <body>
-      <h2>LUX Meter Photo Comparison</h2>
-      <div class="wrap">
-        <img src="${p1}" alt="Photo 1">
-        <img src="${p2}" alt="Photo 2">
-      </div>
-    </body>
-    </html>
-  `);
-
-  luxCompareSelection = [];
+  renderLuxTable(filtered);
+  updateLuxSummary(filtered);
 }
 
 function deleteLuxReport(key) {
   if (!confirm("Delete this LUX report?")) return;
-  firebase.database().ref("luxReports/" + key).remove(err => {
-    if (err) alert("Error deleting LUX report");
+  firebase.database().ref("luxReports/" + key).remove().then(() => {
+    alert("LUX report deleted.");
+    loadLuxReports();
   });
 }
 
@@ -2134,264 +2380,26 @@ function exportLuxCSV() {
     alert("No LUX data to export.");
     return;
   }
-  let csv = "Date,Department,Type,Electrician,Meter,CalibrationNo,CalibrationDate,Point,MeasuredLux,LimitLux\n";
+  const rows = [["Date","Dept","Type","Electrician","MeterModel","CalibNo","CalibDate","Remarks","Measurements"]];
   luxReportsGlobal.forEach(r => {
-    (r.measurements || []).forEach(m => {
-      csv += `"${r.date} ${r.time}","${r.department}","${r.monitorType}","${r.electricianName}",`;
-      csv += `"${r.meterModel}","${r.calibrationNo}","${r.calibrationDate}",`;
-      csv += `"${m.point}","${m.measuredLux}","${m.limitLux}"\n`;
-    });
-    if (!r.measurements || !r.measurements.length) {
-      csv += `"${r.date} ${r.time}","${r.department}","${r.monitorType}","${r.electricianName}",`;
-      csv += `"${r.meterModel}","${r.calibrationNo}","${r.calibrationDate}","","",""\n`;
-    }
+    const meas = (r.measurements || []).map((m, i) =>
+      `${i+1}) ${m.point || ""}: ${m.measuredLux || ""} lx (Limit:${m.limitLux || ""})`
+    ).join(" | ");
+    rows.push([
+      (r.date || "") + " " + (r.time || ""),
+      r.department || "",
+      r.monitorType || "",
+      r.electricianName || "",
+      r.meterModel || "",
+      r.calibrationNo || "",
+      r.calibrationDate || "",
+      r.remarks || "",
+      meas
+    ]);
   });
-  downloadCSV(csv, "LUX_Reports.csv");
+  const csv = arrayToCSV(rows);
+  downloadCSV("lux_reports.csv", csv);
 }
-
-function exportLuxPDF() {
-  if (!luxReportsGlobal.length) {
-    alert("No LUX data to export.");
-    return;
-  }
-  if (!window.jspdf) {
-    alert("PDF library (jsPDF) not loaded.");
-    return;
-  }
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: "pt", format: "a4" });
-
-  let y = 60;
-
-  const logo = new Image();
-  logo.src = "logo.png";
-
-  logo.onload = () => {
-    try {
-      pdf.addImage(logo, "PNG", 40, 20, 100, 40);
-    } catch(e) {}
-
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(18);
-    pdf.text("LUX Monitoring Report", 200, 40);
-
-    pdf.setFontSize(10);
-    pdf.text("Generated: " + new Date().toLocaleString(), 200, 55);
-
-    y = 90;
-
-    luxReportsGlobal.forEach((r, idx) => {
-      if (y > 730) {
-        pdf.addPage();
-        y = 60;
-      }
-
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "bold");
-      pdf.text(`Report ${idx+1}`, 40, y); 
-      y += 15;
-
-      pdf.setFont("helvetica", "normal");
-      pdf.text(`Date: ${r.date || ""} ${r.time || ""}`, 40, y); y += 14;
-      pdf.text(`Department: ${r.department || ""}`, 40, y); y += 14;
-      pdf.text(`Type: ${r.monitorType || ""}`, 40, y); y += 14;
-      pdf.text(`Electrician: ${r.electricianName || ""}`, 40, y); y += 14;
-      pdf.text(`Meter: ${r.meterModel || ""}`, 40, y); y += 14;
-      pdf.text(`Calibration: ${r.calibrationNo || ""} (${r.calibrationDate || ""})`, 40, y); y += 18;
-
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Measurements:", 40, y); 
-      y += 14;
-      pdf.setFont("helvetica", "normal");
-
-      (r.measurements || []).forEach((m, i) => {
-        const line = `${i+1}. ${m.point || ""}: ${m.measuredLux || ""} lx (Limit: ${m.limitLux || ""})`;
-        if (y > 730) {
-          pdf.addPage();
-          y = 60;
-        }
-        pdf.text(line, 60, y);
-        y += 12;
-      });
-
-      if (r.meterPhoto) {
-        if (y > 650) {
-          pdf.addPage();
-          y = 60;
-        }
-        try {
-          const img = new Image();
-          img.src = r.meterPhoto;
-          pdf.text("Meter Photo:", 40, y); 
-          y += 12;
-          pdf.addImage(img, "JPEG", 40, y, 200, 140);
-          y += 150;
-        } catch(e) {}
-      }
-
-      pdf.setDrawColor(180);
-      pdf.line(30, y, 560, y);
-      y += 15;
-    });
-
-    pdf.save("LUX_Reports.pdf");
-  };
-
-  logo.onerror = () => {
-    alert("Logo (logo.png) not found. PDF will still generate but without logo.");
-};
-
-/* ---------------------------------------------------
-    FORM QUESTIONS SYSTEM
---------------------------------------------------- */
-
-function loadQuestions() {
-  firebase.database().ref("questions").on("value", snap => {
-    questionsGlobal = snap.val() || {};
-    renderQuestionsTable();
-  });
-}
-
-function addNewQuestion() {
-  const text = document.getElementById("q_text").value.trim();
-  if (!text) return alert("Enter question text.");
-
-  const type = document.getElementById("q_type").value;
-  const optsRaw = document.getElementById("q_options").value.trim();
-  const options = optsRaw ? optsRaw.split(",").map(s => s.trim()).filter(Boolean) : [];
-
-  const q = {
-    text,
-    type,
-    options,
-    applyDbEntry: document.getElementById("apply_db_entry").checked || false,
-    applyDbInspection: document.getElementById("apply_db_inspection").checked || false,
-    applyFault: document.getElementById("apply_fault").checked || false,
-    applyTransformer: document.getElementById("apply_transformer").checked || false,
-    applyLux: document.getElementById("apply_lux").checked || false,
-    applyCompressorInspection: document.getElementById("apply_comp_ins").checked || false,
-    applyCompressorMaintenance: document.getElementById("apply_comp_maint").checked || false,
-    applyGeneratorInspection: document.getElementById("apply_gen_ins").checked || false,
-    applyGeneratorMaintenance: document.getElementById("apply_gen_maint").checked || false,
-    active: true
-  };
-
-  firebase.database().ref("questions").push(q, err => {
-    if (err) alert("Error adding question");
-    else {
-      alert("Question added.");
-      document.getElementById("q_text").value = "";
-      document.getElementById("q_options").value = "";
-      document.querySelectorAll("#tab-questions input[type=checkbox]").forEach(c => c.checked = false);
-    }
-  });
-}
-
-function renderQuestionsTable() {
-  const div = document.getElementById("questionsTable");
-  if (!div) return;
-
-  const entries = Object.entries(questionsGlobal);
-  if (!entries.length) {
-    div.innerHTML = "<p>No questions defined.</p>";
-    return;
-  }
-
-  let html = `
-    <table>
-      <tr>
-        <th>Text</th>
-        <th>Type</th>
-        <th>Applies To</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-  `;
-
-  entries.forEach(([id, q]) => {
-    const tags = [];
-    if (q.applyDbEntry) tags.push("DB Entry");
-    if (q.applyDbInspection) tags.push("DB Inspection");
-    if (q.applyFault) tags.push("Fault");
-    if (q.applyTransformer) tags.push("Transformer");
-    if (q.applyLux) tags.push("LUX");
-    if (q.applyCompressorInspection) tags.push("Comp Insp");
-    if (q.applyCompressorMaintenance) tags.push("Comp Maint");
-    if (q.applyGeneratorInspection) tags.push("Gen Insp");
-    if (q.applyGeneratorMaintenance) tags.push("Gen Maint");
-
-    const status = q.active === false ? "Disabled" : "Active";
-
-    html += `
-      <tr>
-        <td>${q.text || ""}</td>
-        <td>${q.type || ""}</td>
-        <td>${tags.join(", ")}</td>
-        <td>${status}</td>
-        <td>
-          <button class="secondary-btn" onclick="toggleQuestionActive('${id}', ${q.active === false ? "false" : "true"})">
-            ${q.active === false ? "Enable" : "Disable"}
-          </button>
-          <button class="danger-btn" onclick="deleteQuestion('${id}')">Delete</button>
-        </td>
-      </tr>
-    `;
-  });
-
-  html += "</table>";
-  div.innerHTML = html;
-}
-
-function toggleQuestionActive(id, isActive) {
-  const newVal = !isActive;
-  firebase.database().ref("questions/" + id + "/active").set(newVal, err => {
-    if (err) alert("Error updating question.");
-  });
-}
-
-function deleteQuestion(id) {
-  if (!confirm("Delete this question?")) return;
-  firebase.database().ref("questions/" + id).remove(err => {
-    if (err) alert("Error deleting question.");
-  });
-}
-
-/* ---------------------------------------------------
-    CSV DOWNLOAD HELPER
---------------------------------------------------- */
-function downloadCSV(csv, filename) {
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  const url = URL.createObjectURL(blob);
-  link.setAttribute("href", url);
-  link.setAttribute("download", filename);
-  link.style.visibility = "hidden";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-/* ---------------------------------------------------
-    INITIAL LOAD
---------------------------------------------------- */
-window.addEventListener("load", () => {
-  loadDBEntries();
-  loadTransformerEntries();
-  loadCompressorEntries();
-  loadGeneratorEntries();
-
-  loadDBInspections();
-  loadFaults();
-  loadTransformerReports();
-  loadLuxReports();
-
-  loadCompressorInspections();
-  loadCompressorMaintenance();
-  loadGeneratorInspections();
-  loadGeneratorMaintenance();
-
-  loadQuestions();
-});
 </script>
 
 </body>
