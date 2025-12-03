@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LUX Monitoring Report – Print</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      margin: 0;
+      background: #f4f4f4;
+    }
+
+    .topbar {
+      background: #0c0c0c;
+      padding: 12px 0 14px 0;
+      text-align: center;
+      color: #fff;
+    }
+    .topbar span {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 20mm;
+      margin: 20px auto 40px auto;
+      border: 1px solid #000;
+      box-sizing: border-box;
+      background: #fff;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 20px;
+      text-decoration: underline;
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    td, th {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      vertical-align: top;
+    }
+
+    .no-border td,
+    .no-border th {
+      border: none;
+      padding: 2px 4px;
+    }
+
+    .label {
+      font-weight: bold;
+    }
+
+    .value-line {
+      border-bottom: 1px solid #000;
+      min-height: 18px;
+      padding: 2px;
+    }
+
+    .checkbox-value {
+      min-height: 18px;
+      padding: 2px;
+    }
+
+    .sn-cell {
+      width: 30px;
+      text-align: center;
+    }
+
+    .picture-cell {
+      width: 110px;
+      text-align: center;
+    }
+
+    .picture-preview {
+      width: 90px;
+      height: 90px;
+      border: 1px solid #000;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 4px;
+      background: #fafafa;
+    }
+
+    .sign-line {
+      border-bottom: 1px solid #000;
+      height: 28px;
+    }
+
+    .footer {
+      margin-top: 40px;
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .footer span {
+      white-space: nowrap;
+    }
+
+    .actions {
+      max-width: 210mm;
+      margin: 10px auto 0 auto;
+      text-align: right;
+    }
+
+    .print-btn {
+      padding: 6px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid #000;
+      background: #eee;
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        margin: 0;
+        background: #fff;
+      }
+      .page {
+        border: none;
+        margin: 0;
+        padding: 10mm 15mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <span>LUX Monitoring Report – Admin View / Print</span>
+</div>
+
+<div class="actions no-print">
+  <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+</div>
+
+<div class="page" id="pageContent">
+  <h1>LUX MONITORING REPORT</h1>
+
+  <!-- Top meta info table -->
+  <table class="no-border small">
+    <tr>
+      <td class="label" style="width:20%;">Form Code:</td>
+      <td style="width:30%;"><span id="v_formCode">CEWF-ADM-FRM-002</span></td>
+      <td class="label" style="width:20%;">Effective Date:</td>
+      <td style="width:30%;"><span id="v_effectiveDate">20-11-2025</span></td>
+    </tr>
+    <tr>
+      <td class="label">Issue No.:</td>
+      <td><span id="v_issueNo">01</span></td>
+      <td class="label">Revision No.:</td>
+      <td><span id="v_revisionNo">00</span></td>
+    </tr>
+  </table>
+
+  <br>
+
+  <!-- Type of monitoring -->
+  <table>
+    <tr>
+      <td style="width:30%;" class="label">Type of monitoring:</td>
+      <td>
+        <div class="checkbox-value" id="v_typeMonitoring"></div>
+      </td>
+    </tr>
+    <tr>
+      <td class="label">Sampling Location / Department:</td>
+      <td><div class="value-line" id="v_samplingLocation"></div></td>
+    </tr>
+    <tr>
+      <td class="label">Date of Sample Collection:</td>
+      <td><div class="value-line" id="v_sampleDate"></div></td>
+    </tr>
+    <tr>
+      <td class="label">Time of Sample Collection:</td>
+      <td>
+        <div class="value-line">
+          From <span id="v_timeFrom"></span> &nbsp; To <span id="v_timeTo"></span>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td class="label">Sample Collected By:</td>
+      <td><div class="value-line" id="v_collectedBy"></div></td>
+    </tr>
+    <tr>
+      <td class="label">Designation:</td>
+      <td><div class="value-line" id="v_designation"></div></td>
+    </tr>
+    <tr>
+      <td class="label">Equipment Used:</td>
+      <td><div class="value-line" id="v_equipmentUsed"></div></td>
+    </tr>
+    <tr>
+      <td class="label">Model:</td>
+      <td><div class="value-line" id="v_model"></div></td>
+    </tr>
+    <tr>
+      <td class="label">Calibration Certificate No.:</td>
+      <td><div class="value-line" id="v_calibrationNo"></div></td>
+    </tr>
+    <tr>
+      <td class="label">Calibration Date:</td>
+      <td><div class="value-line" id="v_calibrationDate"></div></td>
+    </tr>
+  </table>
+
+  <br>
+
+  <!-- Measurement table -->
+  <table>
+    <tr>
+      <th class="sn-cell">S.N</th>
+      <th>Measurement Point / Area</th>
+      <th style="width:100px;">Limit Values (EPA) Lux</th>
+      <th style="width:110px;">Measured Lux Level</th>
+      <th>Remarks</th>
+      <th class="picture-cell">Picture of Meter</th>
+    </tr>
+
+    <!-- 4 static rows -->
+    <tr>
+      <td class="sn-cell">1</td>
+      <td><div class="value-line" id="v_point1"></div></td>
+      <td><div class="value-line" id="v_limit1"></div></td>
+      <td><div class="value-line" id="v_measured1"></div></td>
+      <td><div class="value-line" id="v_remarks1"></div></td>
+      <td class="picture-cell">
+        <img id="v_img1" class="picture-preview" alt="Meter picture 1">
+      </td>
+    </tr>
+
+    <tr>
+      <td class="sn-cell">2</td>
+      <td><div class="value-line" id="v_point2"></div></td>
+      <td><div class="value-line" id="v_limit2"></div></td>
+      <td><div class="value-line" id="v_measured2"></div></td>
+      <td><div class="value-line" id="v_remarks2"></div></td>
+      <td class="picture-cell">
+        <img id="v_img2" class="picture-preview" alt="Meter picture 2">
+      </td>
+    </tr>
+
+    <tr>
+      <td class="sn-cell">3</td>
+      <td><div class="value-line" id="v_point3"></div></td>
+      <td><div class="value-line" id="v_limit3"></div></td>
+      <td><div class="value-line" id="v_measured3"></div></td>
+      <td><div class="value-line" id="v_remarks3"></div></td>
+      <td class="picture-cell">
+        <img id="v_img3" class="picture-preview" alt="Meter picture 3">
+      </td>
+    </tr>
+
+    <tr>
+      <td class="sn-cell">4</td>
+      <td><div class="value-line" id="v_point4"></div></td>
+      <td><div class="value-line" id="v_limit4"></div></td>
+      <td><div class="value-line" id="v_measured4"></div></td>
+      <td><div class="value-line" id="v_remarks4"></div></td>
+      <td class="picture-cell">
+        <img id="v_img4" class="picture-preview" alt="Meter picture 4">
+      </td>
+    </tr>
+  </table>
+
+  <br>
+
+  <!-- Signatures -->
+  <table class="no-border">
+    <tr>
+      <td style="width:50%;">
+        Signature of Area I/C:
+        <div class="sign-line"></div>
+      </td>
+      <td style="width:50%;">
+        Signature of Admin Manager:
+        <div class="sign-line"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="footer">
+    <span>CONTROLLED DOCUMENT | DON’T COPY WITHOUT PERMISSION</span>
+    &nbsp;&nbsp;&nbsp;
+    <span>Page 1 of 1</span>
+  </div>
+</div>
+
+<script>
+function getParam(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const id = getParam("id");
+  if (!id) {
+    alert("No LUX report ID provided in URL.");
+    return;
+  }
+
+  firebase.database().ref("luxReports/" + id).once("value").then(snap => {
+    const data = snap.val();
+    if (!data) {
+      alert("LUX report not found.");
+      return;
+    }
+    fillReport(data);
+  });
+});
+
+function fillText(id, value) {
+  document.getElementById(id).textContent = value || "";
+}
+
+function fillReport(d) {
+  fillText("v_formCode", d.formCode || "CEWF-ADM-FRM-002");
+  fillText("v_effectiveDate", d.effectiveDate || "20-11-2025");
+  fillText("v_issueNo", d.issueNo || "01");
+  fillText("v_revisionNo", d.revisionNo || "00");
+
+  const typeList = [];
+  if (d.typeSpot) typeList.push(d.typeSpot);
+  if (d.typeArea) typeList.push(d.typeArea);
+  document.getElementById("v_typeMonitoring").textContent = typeList.join(" / ") || "";
+
+  fillText("v_samplingLocation", d.samplingLocation || "");
+  fillText("v_sampleDate", d.sampleDate || "");
+  fillText("v_timeFrom", d.timeFrom || "");
+  fillText("v_timeTo", d.timeTo || "");
+  fillText("v_collectedBy", d.collectedBy || "");
+  fillText("v_designation", d.designation || "");
+  fillText("v_equipmentUsed", d.equipmentUsed || "");
+  fillText("v_model", d.model || "");
+  fillText("v_calibrationNo", d.calibrationNo || "");
+  fillText("v_calibrationDate", d.calibrationDate || "");
+
+  const m = d.measurements || [];
+  for (let i = 1; i <= 4; i++) {
+    const row = m.find(x => x.sn === i) || m[i-1] || {};
+    fillText("v_point"+i, row.point || "");
+    fillText("v_limit"+i, row.limitLux || "");
+    fillText("v_measured"+i, row.measuredLux || "");
+    fillText("v_remarks"+i, row.remarks || "");
+    const imgEl = document.getElementById("v_img"+i);
+    if (row.image) {
+      imgEl.src = row.image;
+    } else {
+      imgEl.style.display = "none";
+    }
+  }
+}
+</script>
+
+</body>
+</html>

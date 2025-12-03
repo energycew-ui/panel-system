@@ -2262,6 +2262,8 @@ function exportTransformersCSV() {
 }
 
 /* ------------ LUX REPORTS (from lux.html) ------------ */
+
+// Load all LUX reports from Firebase into luxReportsGlobal
 function loadLuxReports() {
   firebase.database().ref("luxReports").once("value", snap => {
     const data = snap.val() || {};
@@ -2275,30 +2277,43 @@ function loadLuxReports() {
   });
 }
 
+// Summary cards for LUX tab
 function updateLuxSummary(list) {
   const container = document.getElementById("luxSummary");
   if (!container) return;
+
   if (!list || !list.length) {
     container.innerHTML = "<p>No LUX reports.</p>";
     return;
   }
+
   const total = list.length;
-  const depts = new Set(list.map(r => r.department)).size;
+  const locs = new Set(
+    list.map(r => (r.samplingLocation || r.department || "")).filter(Boolean)
+  ).size;
+
   container.innerHTML = `
     <div class="summary-card">
       <div class="summary-title">Total LUX Reports</div>
       <div class="summary-value">${total}</div>
     </div>
     <div class="summary-card">
-      <div class="summary-title">Departments</div>
-      <div class="summary-value">${depts}</div>
+      <div class="summary-title">Locations / Departments</div>
+      <div class="summary-value">${locs}</div>
     </div>
   `;
 }
 
+// Open printable Word-style view in new tab
+function openLuxPrint(key) {
+  window.open("lux_print.html?id=" + encodeURIComponent(key), "_blank");
+}
+
+// Table in LUX tab
 function renderLuxTable(list) {
   const container = document.getElementById("luxTable");
   if (!container) return;
+
   if (!list || !list.length) {
     container.innerHTML = "<p>No LUX reports.</p>";
     return;
@@ -2308,37 +2323,62 @@ function renderLuxTable(list) {
     <table>
       <tr>
         <th>Date</th>
-        <th>Dept</th>
-        <th>Type</th>
-        <th>Electrician</th>
-        <th>Meter / Calib</th>
+        <th>Location / Dept</th>
+        <th>Type of Monitoring</th>
+        <th>Collected By</th>
+        <th>Meter / Calibration</th>
         <th>Measurements</th>
         <th>Action</th>
       </tr>
   `;
 
   list.forEach(r => {
-    const measCount = (r.measurements && r.measurements.length) ? r.measurements.length : 0;
+    // New structure (Option B): sampleDate / timeFrom / timeTo, samplingLocation, typeSpot/typeArea
+    const dateStr = r.sampleDate || r.date || "";
+    const timePart = r.timeFrom
+      ? `From ${r.timeFrom}${r.timeTo ? " – " + r.timeTo : ""}`
+      : (r.time || "");
+
+    const loc = r.samplingLocation || r.department || "";
+
+    const typeText = [r.typeSpot, r.typeArea, r.monitorType]
+      .filter(Boolean)
+      .join(" / ");
+
+    const meterText = [
+      r.model || r.meterModel || "",
+      (r.calibrationNo ? "Cert: " + r.calibrationNo : ""),
+      (r.calibrationDate ? "(" + r.calibrationDate + ")" : "")
+    ]
+      .filter(Boolean)
+      .join("<br>");
+
     let measText = "";
-    if (measCount) {
-      measText = r.measurements.map((m, i) => {
-        return `${i+1}. ${m.point || ""}: ${m.measuredLux || ""} lx (Limit: ${m.limitLux || ""})`;
-      }).join("<br>");
+    if (Array.isArray(r.measurements) && r.measurements.length) {
+      measText = r.measurements
+        .map((m, i) =>
+          `${i + 1}. ${(m.point || "")}: ${(m.measuredLux || "")} lx${
+            m.limitLux ? ` (Limit: ${m.limitLux})` : ""
+          }`
+        )
+        .join("<br>");
     }
 
     html += `
       <tr>
-        <td>${r.date || ""} ${r.time || ""}</td>
-        <td>${r.department || ""}</td>
-        <td>${r.monitorType || ""}</td>
-        <td>${r.electricianName || ""}</td>
-        <td>
-          ${r.meterModel || ""}<br>
-          Cert: ${r.calibrationNo || ""} (${r.calibrationDate || ""})
-        </td>
+        <td>${dateStr}<br><small>${timePart}</small></td>
+        <td>${loc}</td>
+        <td>${typeText}</td>
+        <td>${r.collectedBy || r.electricianName || ""}</td>
+        <td>${meterText}</td>
         <td>${measText}</td>
         <td>
-          <button class="danger-btn" onclick="deleteLuxReport('${r.key}')">Delete</button>
+          <button class="secondary-btn" onclick="openLuxPrint('${r.key}')">
+            View / Print
+          </button>
+          <button class="danger-btn" onclick="deleteLuxReport('${r.key}')">
+            Delete
+          </button>
         </td>
       </tr>
     `;
@@ -2348,6 +2388,7 @@ function renderLuxTable(list) {
   container.innerHTML = html;
 }
 
+// Filters at top of LUX tab
 function applyLuxFilters() {
   let fDept = document.getElementById("filterLX_dept").value.toLowerCase();
   let fElec = document.getElementById("filterLX_elec").value.toLowerCase();
@@ -2355,11 +2396,15 @@ function applyLuxFilters() {
   let to   = document.getElementById("filterLX_to").value;
 
   let filtered = luxReportsGlobal.filter(r => {
-    const deptMatch = !fDept || (r.department || "").toLowerCase().includes(fDept);
-    const elecMatch = !fElec || (r.electricianName || "").toLowerCase().includes(fElec);
-    const day = r.date || "";
+    const loc = (r.samplingLocation || r.department || "").toLowerCase();
+    const name = (r.collectedBy || r.electricianName || "").toLowerCase();
+    const day = r.sampleDate || r.date || "";
+
+    const deptMatch = !fDept || loc.includes(fDept);
+    const elecMatch = !fElec || name.includes(fElec);
     const fromOk = !from || day >= from;
     const toOk   = !to   || day <= to;
+
     return deptMatch && elecMatch && fromOk && toOk;
   });
 
@@ -2367,6 +2412,7 @@ function applyLuxFilters() {
   updateLuxSummary(filtered);
 }
 
+// Delete LUX report (unchanged)
 function deleteLuxReport(key) {
   if (!confirm("Delete this LUX report?")) return;
   firebase.database().ref("luxReports/" + key).remove().then(() => {
@@ -2375,31 +2421,57 @@ function deleteLuxReport(key) {
   });
 }
 
+// CSV export – compatible with new structure
 function exportLuxCSV() {
   if (!luxReportsGlobal.length) {
     alert("No LUX data to export.");
     return;
   }
-  const rows = [["Date","Dept","Type","Electrician","MeterModel","CalibNo","CalibDate","Remarks","Measurements"]];
+
+  const rows = [
+    [
+      "Date",
+      "Time",
+      "Location/Dept",
+      "Type",
+      "CollectedBy",
+      "MeterModel",
+      "CalibNo",
+      "CalibDate",
+      "Measurements"
+    ]
+  ];
+
   luxReportsGlobal.forEach(r => {
-    const meas = (r.measurements || []).map((m, i) =>
-      `${i+1}) ${m.point || ""}: ${m.measuredLux || ""} lx (Limit:${m.limitLux || ""})`
-    ).join(" | ");
-    rows.push([
-      (r.date || "") + " " + (r.time || ""),
-      r.department || "",
-      r.monitorType || "",
-      r.electricianName || "",
-      r.meterModel || "",
-      r.calibrationNo || "",
-      r.calibrationDate || "",
-      r.remarks || "",
-      meas
-    ]);
+    const date = r.sampleDate || r.date || "";
+    const time = r.timeFrom
+      ? `${r.timeFrom}${r.timeTo ? " – " + r.timeTo : ""}`
+      : (r.time || "");
+
+    const loc  = r.samplingLocation || r.department || "";
+    const type = [r.typeSpot, r.typeArea, r.monitorType]
+      .filter(Boolean)
+      .join(" / ");
+    const name = r.collectedBy || r.electricianName || "";
+    const model = r.model || r.meterModel || "";
+    const calibNo = r.calibrationNo || "";
+    const calibDate = r.calibrationDate || "";
+
+    const meas = (r.measurements || [])
+      .map((m, i) =>
+        `${i + 1}) ${m.point || ""}: ${m.measuredLux || ""} lx${
+          m.limitLux ? ` (Limit:${m.limitLux})` : ""
+        }`
+      )
+      .join(" | ");
+
+    rows.push([date, time, loc, type, name, model, calibNo, calibDate, meas]);
   });
+
   const csv = arrayToCSV(rows);
   downloadCSV("lux_reports.csv", csv);
 }
+
 </script>
 
 </body>
