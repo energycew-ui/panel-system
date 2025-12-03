@@ -120,12 +120,15 @@ function loadTransformerInspection(trId, callback) {
 // ============================
 
 function saveLuxReport(data, callback) {
-  const key = db.ref().push().key;
-  db.ref("luxReports/" + key).set(data, err => {
-    if (err) alert("Error saving LUX report");
-    else if (callback) callback(key);
-  });
+  const key = firebase.database().ref("luxReports").push().key;
+  firebase.database().ref("luxReports/" + key).set(data)
+    .then(() => callback(key))
+    .catch(err => {
+      console.error("Error saving LUX report:", err);
+      alert("Error saving LUX Report!");
+    });
 }
+
 
 function loadAllLuxReports(callback) {
   db.ref("luxReports").once("value").then(snap => {

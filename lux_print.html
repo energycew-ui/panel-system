@@ -334,42 +334,57 @@ function fillText(id, value) {
 }
 
 function fillReport(d) {
-  fillText("v_formCode", d.formCode || "CEWF-ADM-FRM-002");
-  fillText("v_effectiveDate", d.effectiveDate || "20-11-2025");
-  fillText("v_issueNo", d.issueNo || "01");
-  fillText("v_revisionNo", d.revisionNo || "00");
 
-  const typeList = [];
-  if (d.typeSpot) typeList.push(d.typeSpot);
-  if (d.typeArea) typeList.push(d.typeArea);
-  document.getElementById("v_typeMonitoring").textContent = typeList.join(" / ") || "";
+  // Types
+  let types = [];
+  if (d.typeSpot) types.push(d.typeSpot);
+  if (d.typeArea) types.push(d.typeArea);
+  document.getElementById("v_typeMonitoring").textContent = types.join(" / ");
 
-  fillText("v_samplingLocation", d.samplingLocation || "");
-  fillText("v_sampleDate", d.sampleDate || "");
-  fillText("v_timeFrom", d.timeFrom || "");
-  fillText("v_timeTo", d.timeTo || "");
-  fillText("v_collectedBy", d.collectedBy || "");
-  fillText("v_designation", d.designation || "");
-  fillText("v_equipmentUsed", d.equipmentUsed || "");
-  fillText("v_model", d.model || "");
-  fillText("v_calibrationNo", d.calibrationNo || "");
-  fillText("v_calibrationDate", d.calibrationDate || "");
+  // Basic fields
+  fillText("v_samplingLocation", d.samplingLocation);
+  fillText("v_sampleDate", d.sampleDate);
+  fillText("v_timeFrom", d.timeFrom);
+  fillText("v_timeTo", d.timeTo);
+  fillText("v_collectedBy", d.collectedBy);
+  fillText("v_designation", d.designation);
+  fillText("v_equipmentUsed", d.equipmentUsed);
+  fillText("v_model", d.model);
+  fillText("v_calibrationNo", d.calibrationNo);
+  fillText("v_calibrationDate", d.calibrationDate);
 
+  // Measurements
   const m = d.measurements || [];
+
   for (let i = 1; i <= 4; i++) {
-    const row = m.find(x => x.sn === i) || m[i-1] || {};
-    fillText("v_point"+i, row.point || "");
-    fillText("v_limit"+i, row.limitLux || "");
-    fillText("v_measured"+i, row.measuredLux || "");
-    fillText("v_remarks"+i, row.remarks || "");
-    const imgEl = document.getElementById("v_img"+i);
-    if (row.image) {
-      imgEl.src = row.image;
+
+    const row = m.find(x => x.sn === i);
+
+    if (row) {
+      fillText("v_point" + i, row.point);
+      fillText("v_limit" + i, row.limitLux);
+      fillText("v_measured" + i, row.measuredLux);
+      fillText("v_remarks" + i, row.remarks);
+
+      const imgEl = document.getElementById("v_img" + i);
+      if (row.image) {
+        imgEl.src = row.image;
+        imgEl.style.display = "block";
+      } else {
+        imgEl.style.display = "none";
+      }
+
     } else {
-      imgEl.style.display = "none";
+      // empty row
+      fillText("v_point" + i, "");
+      fillText("v_limit" + i, "");
+      fillText("v_measured" + i, "");
+      fillText("v_remarks" + i, "");
+      document.getElementById("v_img" + i).style.display = "none";
     }
   }
 }
+
 </script>
 
 </body>
