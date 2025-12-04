@@ -296,7 +296,7 @@
       border-radius: 10px;
       padding: 8px 12px;
       min-width: 150px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1));
       font-size: 13px;
     }
     .summary-title {
@@ -512,6 +512,11 @@
         <h3 style="margin-top:20px;">Circuits (Name / Breaker / Load)</h3>
         <div id="circuitsContainer"></div>
         <button type="button" class="secondary-btn" onclick="addCircuitRow()">Add Circuit</button>
+
+        <!-- NEW: DISTRIBUTION BREAKERS -->
+        <h3 style="margin-top:20px;">Distribution Breakers (Detailed)</h3>
+        <div id="distBreakersContainer"></div>
+        <button type="button" class="secondary-btn" onclick="addDistBreakerRow()">Add Distribution Breaker</button>
 
         <h3 style="margin-top:20px;">Extra DB Questions</h3>
         <div id="dbQuestionsContainer"></div>
@@ -807,6 +812,7 @@ window.addEventListener("load", () => {
 function afterLoginInit() {
   initTabs();
   renderCircuits(null);
+  renderDistributionBreakers(null);   // NEW: start with empty distribution breaker row
   showPanels();
   loadReports();
   loadMasterReport();
@@ -961,6 +967,59 @@ function collectCircuitsFromForm() {
   return circuits.length ? circuits : null;
 }
 
+/* ------------ DISTRIBUTION BREAKERS (NEW) ------------ */
+function addDistBreakerRow(name = "", rating = "", cableSize = "", loadUse = "", loadCurrent = "") {
+  const container = document.getElementById("distBreakersContainer");
+  const row = document.createElement("div");
+  row.className = "circuit-row";
+  row.innerHTML = `
+    <input class="d-name" placeholder="Name / No." value="${name}">
+    <input class="d-rating" placeholder="Rating (A)" value="${rating}">
+    <input class="d-cable" placeholder="Cable Size" value="${cableSize}">
+    <input class="d-use" placeholder="Load Use" value="${loadUse}">
+    <input class="d-current" placeholder="Load Current (A)" value="${loadCurrent}">
+    <button type="button" class="circuit-remove-btn" onclick="this.parentElement.remove()">X</button>
+  `;
+  container.appendChild(row);
+}
+
+function renderDistributionBreakers(list) {
+  const container = document.getElementById("distBreakersContainer");
+  if (!container) return;
+  container.innerHTML = "";
+  if (list) {
+    const arr = Array.isArray(list) ? list : Object.values(list);
+    arr.forEach(b => {
+      addDistBreakerRow(
+        b.name || "",
+        b.rating || "",
+        b.cableSize || "",
+        b.loadUse || "",
+        b.loadCurrent || ""
+      );
+    });
+  } else {
+    // start with one empty row for convenience
+    addDistBreakerRow();
+  }
+}
+
+function collectDistBreakersFromForm() {
+  const rows = document.querySelectorAll("#distBreakersContainer .circuit-row");
+  const breakers = [];
+  rows.forEach(row => {
+    const name = row.querySelector(".d-name").value.trim();
+    const rating = row.querySelector(".d-rating").value.trim();
+    const cableSize = row.querySelector(".d-cable").value.trim();
+    const loadUse = row.querySelector(".d-use").value.trim();
+    const loadCurrent = row.querySelector(".d-current").value.trim();
+    if (name || rating || cableSize || loadUse || loadCurrent) {
+      breakers.push({ name, rating, cableSize, loadUse, loadCurrent });
+    }
+  });
+  return breakers.length ? breakers : null;
+}
+
 /* ------------ SAVE PANEL (DB ENTRY) ------------ */
 function savePanel() {
   const id = document.getElementById("db").value.trim();
@@ -979,6 +1038,7 @@ function savePanel() {
     purpose: document.getElementById("purpose").value,
     image: uploadedImage || null,
     circuits: collectCircuitsFromForm(),
+    distributionBreakers: collectDistBreakersFromForm(),   // NEW
     extraAnswers: collectDynamicAnswers("db")
   };
 
@@ -1015,6 +1075,7 @@ function editPanel(id) {
     }
 
     renderCircuits(p.circuits || null);
+    renderDistributionBreakers(p.distributionBreakers || null);  // NEW
 
     const entryBtn = document.querySelector('.tab-btn[data-target="tab-entry"]');
     if (entryBtn) entryBtn.click();
@@ -1429,7 +1490,32 @@ function updateFaultSummary(list) {
   `;
 }
 
-/* RENDER INSPECTIONS TABLE (with delete) */
+/* PRINT VIEW OPENERS (NEW) */
+function openInspectionPrint(dbId, recordKey) {
+  window.open(
+    "inspection_print.html?db=" + encodeURIComponent(dbId) +
+    "&id=" + encodeURIComponent(recordKey),
+    "_blank"
+  );
+}
+
+function openFaultPrint(dbId, recordKey) {
+  window.open(
+    "fault_print.html?db=" + encodeURIComponent(dbId) +
+    "&id=" + encodeURIComponent(recordKey),
+    "_blank"
+  );
+}
+
+function openTransformerReportPrint(trId, recordKey) {
+  window.open(
+    "transformer_print.html?tr=" + encodeURIComponent(trId) +
+    "&id=" + encodeURIComponent(recordKey),
+    "_blank"
+  );
+}
+
+/* RENDER INSPECTIONS TABLE (with delete + print) */
 function renderInspectionTable(list) {
   if (!document.getElementById("inspectionTable")) return;
 
@@ -1504,6 +1590,9 @@ function renderInspectionTable(list) {
             ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
         </td>
         <td>
+          <button class="secondary-btn" onclick="openInspectionPrint('${r.dbId}','${r.recordKey}')">
+            View / Print
+          </button>
           <button class="danger-btn" onclick="deleteInspection('${r.dbId}','${r.recordKey}')">Delete</button>
         </td>
       </tr>
@@ -1514,7 +1603,7 @@ function renderInspectionTable(list) {
   document.getElementById("inspectionTable").innerHTML = html;
 }
 
-/* RENDER FAULTS TABLE (with delete) */
+/* RENDER FAULTS TABLE (with delete + print) */
 function renderFaultTable(list) {
   if (!document.getElementById("faultTable")) return;
 
@@ -1586,6 +1675,9 @@ function renderFaultTable(list) {
             ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
         </td>
         <td>
+          <button class="secondary-btn" onclick="openFaultPrint('${r.dbId}','${r.recordKey}')">
+            View / Print
+          </button>
           <button class="danger-btn" onclick="deleteFault('${r.dbId}','${r.recordKey}')">Delete</button>
         </td>
       </tr>
@@ -1702,7 +1794,7 @@ function loadMasterReport() {
         <tr>
           <th>DB</th>
           <th>Voltage</th>
-          <th>Breaker</th>
+          <th>Main Breaker</th>
           <th>Cable</th>
           <th>Earth</th>
           <th>Location</th>
@@ -1748,6 +1840,48 @@ function loadMasterReport() {
         });
       } else {
         html += `<p>No circuits recorded.</p>`;
+      }
+
+      /* NEW: Distribution Breakers section */
+      html += `<h4 style="margin-top:12px;">Distribution Breakers</h4>`;
+      if (p.distributionBreakers && Array.isArray(p.distributionBreakers) && p.distributionBreakers.length) {
+        // table format
+        html += `
+          <table style="margin-top:8px;font-size:13px;">
+            <tr>
+              <th>Name</th>
+              <th>Rating (A)</th>
+              <th>Cable Size</th>
+              <th>Load Use</th>
+              <th>Load Current (A)</th>
+            </tr>
+        `;
+        p.distributionBreakers.forEach(b => {
+          html += `
+            <tr>
+              <td>${b.name || ""}</td>
+              <td>${b.rating || ""}</td>
+              <td>${b.cableSize || ""}</td>
+              <td>${b.loadUse || ""}</td>
+              <td>${b.loadCurrent || ""}</td>
+            </tr>
+          `;
+        });
+        html += `</table>`;
+
+        // short text list under table
+        html += `<div style="margin-top:6px;font-size:12px;">`;
+        p.distributionBreakers.forEach(b => {
+          html += `
+            <div>
+              <b>${b.name || "Breaker"}:</b>
+              ${b.rating || ""} | Cable: ${b.cableSize || ""} | Load: ${b.loadUse || ""} | Current: ${b.loadCurrent || ""}
+            </div>
+          `;
+        });
+        html += `</div>`;
+      } else {
+        html += `<p>No distribution breakers recorded.</p>`;
       }
 
       if (p.extraAnswers && questionsGlobal) {
@@ -1864,19 +1998,26 @@ function exportFaultsCSV() {
   downloadCSV("faults.csv", csv);
 }
 
-/* EXPORT: MASTER DB + CIRCUITS */
+/* EXPORT: MASTER DB + CIRCUITS + DISTRIBUTION BREAKERS */
 function exportMasterCSV() {
   if (!masterPanelsGlobal) {
     alert("No master DB data loaded yet. Click 'Reload Data' first.");
     return;
   }
   const rows = [];
-  rows.push(["DB","Voltage","Main Breaker","Cable Size","Earth Status","Location","Purpose","Circuit Name","Circuit Breaker","Circuit Load"]);
+  rows.push([
+    "DB","Voltage","Main Breaker","Cable Size","Earth Status","Location","Purpose",
+    "Circuit Name","Circuit Breaker","Circuit Load",
+    "Dist Name","Dist Rating","Dist Cable","Dist Load","Dist Current"
+  ]);
 
   Object.keys(masterPanelsGlobal).forEach(id => {
     const p = masterPanelsGlobal[id];
-    if (p.circuits && Array.isArray(p.circuits) && p.circuits.length) {
-      p.circuits.forEach(c => {
+    const circuits = (p.circuits && Array.isArray(p.circuits)) ? p.circuits : [];
+    const dist = (p.distributionBreakers && Array.isArray(p.distributionBreakers)) ? p.distributionBreakers : [];
+
+    if (circuits.length) {
+      circuits.forEach(c => {
         rows.push([
           p.dbNumber || id,
           p.voltage || "",
@@ -1887,10 +2028,12 @@ function exportMasterCSV() {
           p.purpose || "",
           c.name || "",
           c.breaker || "",
-          c.load || ""
+          c.load || "",
+          "", "", "", "", ""
         ]);
       });
     } else {
+      // row without circuits
       rows.push([
         p.dbNumber || id,
         p.voltage || "",
@@ -1899,10 +2042,29 @@ function exportMasterCSV() {
         p.earthStatus || "",
         p.location || "",
         p.purpose || "",
-        "",
-        "",
-        ""
+        "", "", "",
+        "", "", "", "", ""
       ]);
+    }
+
+    if (dist.length) {
+      dist.forEach(b => {
+        rows.push([
+          p.dbNumber || id,
+          p.voltage || "",
+          p.mainBreaker || "",
+          p.cableSize || "",
+          p.earthStatus || "",
+          p.location || "",
+          p.purpose || "",
+          "", "", "",
+          b.name || "",
+          b.rating || "",
+          b.cableSize || "",
+          b.loadUse || "",
+          b.loadCurrent || ""
+        ]);
+      });
     }
   });
 
@@ -2194,6 +2356,9 @@ function renderTransformerTable(list) {
           ${r.photo3 ? `<button class='photo-btn' onclick="openPhoto('${r.photo3}')">3</button>` : ""}
         </td>
         <td>
+          <button class="secondary-btn" onclick="openTransformerReportPrint('${r.transformerId}','${r.recordKey}')">
+            View / Print
+          </button>
           <button class="danger-btn" onclick="deleteTransformerReport('${r.transformerId}','${r.recordKey}')">
             Delete
           </button>
@@ -2239,6 +2404,7 @@ function exportTransformersCSV() {
     return;
   }
   const rows = [["DateTime","Transformer","Electrician","OilCondition","OilLevel","OilTemp","WindingTemp","IR","EarthRes","LoadCurrent","Remarks"]];
+
   transformerReportsGlobal.forEach(r => {
     const dt = r.datetimeLocal 
       ? r.datetimeLocal.replace("T"," ")
@@ -2257,6 +2423,7 @@ function exportTransformersCSV() {
       r.remarks || ""
     ]);
   });
+
   const csv = arrayToCSV(rows);
   downloadCSV("transformer_reports.csv", csv);
 }
@@ -2333,7 +2500,6 @@ function renderLuxTable(list) {
   `;
 
   list.forEach(r => {
-    // New structure (Option B): sampleDate / timeFrom / timeTo, samplingLocation, typeSpot/typeArea
     const dateStr = r.sampleDate || r.date || "";
     const timePart = r.timeFrom
       ? `From ${r.timeFrom}${r.timeTo ? " – " + r.timeTo : ""}`
