@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>LUX Monitoring Report – Print View</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+    }
+    .topbar {
+      background: #0c0c0c;
+      padding: 20px 0 24px;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+    }
+    .topbar img {
+      width: 120px;
+      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
+    }
+    .title {
+      margin-top: 10px;
+      font-size: 24px;
+      font-weight: bold;
+      background: linear-gradient(90deg,#ffd65a,#ffb300);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      padding: 25px 30px 35px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 22px;
+      letter-spacing: 1px;
+    }
+
+    .section-title {
+      margin-top: 22px;
+      font-weight: bold;
+      font-size: 15px;
+      border-left: 4px solid #ffb300;
+      padding-left: 8px;
+      color: #333;
+    }
+
+    table.meta, table.measure {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    table.meta td {
+      padding: 6px 8px;
+      vertical-align: top;
+      border-bottom: 1px solid #ddd;
+    }
+
+    table.meta td.label {
+      width: 160px;
+      background: #fafafa;
+      font-weight: bold;
+    }
+
+    table.measure th, table.measure td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      font-size: 13px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    table.measure th {
+      background: #fdf6da;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    table.measure img {
+      max-width: 140px;
+      border-radius: 6px;
+      border: 1px solid #888;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .no-print {
+      text-align: center;
+      margin: 15px 0;
+    }
+    .no-print button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #c40000;
+      color: #fff;
+      font-weight: bold;
+      font-size: 15px;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+      .page {
+        box-shadow: none;
+        border-radius: 0;
+        margin: 0;
+        width: 100%;
+      }
+      .no-print {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="topbar">
+    <img src="logo.png">
+    <div class="title">LUX Monitoring Report</div>
+  </div>
+
+  <!-- PRINT BUTTON -->
+  <div class="no-print">
+    <button onclick="window.print()">Print / Save PDF</button>
+  </div>
+
+  <!-- MAIN PAGE -->
+  <div class="page" id="reportPage">
+    <h2>LUX MONITORING REPORT</h2>
+
+    <!-- GENERAL INFO -->
+    <div class="section-title">General Information</div>
+    <table class="meta">
+      <tr>
+        <td class="label">Sampling Location</td>
+        <td id="p_location"></td>
+        <td class="label">Monitoring Type</td>
+        <td id="p_type"></td>
+      </tr>
+      <tr>
+        <td class="label">Date</td>
+        <td id="p_date"></td>
+        <td class="label">Time</td>
+        <td id="p_time"></td>
+      </tr>
+      <tr>
+        <td class="label">Collected By</td>
+        <td id="p_collectedBy"></td>
+        <td class="label">Designation</td>
+        <td id="p_designation"></td>
+      </tr>
+    </table>
+
+    <!-- EQUIPMENT -->
+    <div class="section-title">Lux Meter Details</div>
+    <table class="meta">
+      <tr>
+        <td class="label">Equipment Used</td>
+        <td id="p_equipment"></td>
+        <td class="label">Model</td>
+        <td id="p_model"></td>
+      </tr>
+      <tr>
+        <td class="label">Calibration No.</td>
+        <td id="p_calibNo"></td>
+        <td class="label">Calibration Date</td>
+        <td id="p_calibDate"></td>
+      </tr>
+    </table>
+
+    <!-- MEASUREMENTS -->
+    <div class="section-title">Measurements</div>
+    <table class="measure">
+      <thead>
+        <tr>
+          <th style="width:50px;">S/N</th>
+          <th>Sampling Point</th>
+          <th>Limit Lux</th>
+          <th>Measured Lux</th>
+          <th>Remarks</th>
+          <th style="width:140px;">Photo</th>
+        </tr>
+      </thead>
+      <tbody id="measureBody"></tbody>
+    </table>
+
+  </div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const luxId = params.get("id");
+
+  if (!luxId) {
+    document.getElementById("reportPage").innerHTML = "<p>No report ID provided.</p>";
+  } else {
+    firebase.database().ref("luxReports/" + luxId).once("value").then(snap => {
+      const r = snap.val();
+      if (!r) {
+        document.getElementById("reportPage").innerHTML = "<p>Report not found.</p>";
+        return;
+      }
+
+      // META
+      document.getElementById("p_location").textContent = r.samplingLocation || "";
+      document.getElementById("p_type").textContent =
+        (r.typeSpot ? "Spot Sample" : "") +
+        (r.typeSpot && r.typeArea ? " / " : "") +
+        (r.typeArea ? "Area Survey" : "");
+
+      document.getElementById("p_date").textContent = r.sampleDate || "";
+      document.getElementById("p_time").textContent =
+        (r.timeFrom || "") + (r.timeTo ? " - " + r.timeTo : "");
+
+      document.getElementById("p_collectedBy").textContent = r.collectedBy || "";
+      document.getElementById("p_designation").textContent = r.designation || "";
+
+      document.getElementById("p_equipment").textContent = r.equipmentUsed || "";
+      document.getElementById("p_model").textContent = r.model || "";
+      document.getElementById("p_calibNo").textContent = r.calibrationNo || "";
+      document.getElementById("p_calibDate").textContent = r.calibrationDate || "";
+
+      // MEASUREMENTS
+      const tbody = document.getElementById("measureBody");
+      tbody.innerHTML = "";
+
+      if (!r.measurements || !Array.isArray(r.measurements)) return;
+
+      r.measurements.forEach(row => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${row.sn || ""}</td>
+          <td>${row.point || ""}</td>
+          <td>${row.limitLux || ""}</td>
+          <td>${row.measuredLux || ""}</td>
+          <td>${row.remarks || ""}</td>
+          <td>${row.image ? `<img src="${row.image}">` : ""}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+    });
+  }
+</script>
+</body>
+</html>
