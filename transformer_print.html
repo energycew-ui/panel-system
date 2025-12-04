@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Transformer Inspection Report – Print View</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: white;
+    }
+
+    /* HEADER */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo {
+      width: 120px;
+      margin-bottom: 10px;
+    }
+    .title {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #ffd65a, #ffb300);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 5px;
+    }
+    .subtitle {
+      font-size: 15px;
+      color: #444;
+      margin-top: -5px;
+    }
+
+    /* SECTION TITLES */
+    h2 {
+      background: #111;
+      color: #ffc800;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 18px;
+      margin-top: 35px;
+    }
+
+    /* TABLES */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    th {
+      background: #333;
+      color: white;
+      padding: 8px;
+      text-align: left;
+      font-size: 14px;
+    }
+    td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    /* PHOTOS */
+    .photo {
+      width: 260px;
+      border: 1px solid #888;
+      border-radius: 6px;
+      margin: 10px 8px 0 0;
+    }
+  </style>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js?v=5"></script>
+
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <img src="logo.png" class="logo">
+  <div class="title">Transformer Inspection Report</div>
+  <div class="subtitle">Chenab Engineering Works</div>
+</div>
+
+<!-- BASIC INFORMATION -->
+<h2>Basic Information</h2>
+<table>
+  <tr><th>Transformer ID</th><td id="trId"></td></tr>
+  <tr><th>Electrician</th><td id="electrician"></td></tr>
+  <tr><th>Date & Time</th><td id="dt"></td></tr>
+  <tr><th>Remarks</th><td id="remarks"></td></tr>
+</table>
+
+<!-- ELECTRICAL CHECKS -->
+<h2>Electrical Checks</h2>
+<table>
+  <tr><th>Oil Condition</th><td id="oilCondition"></td></tr>
+  <tr><th>Oil Level</th><td id="oilLevel"></td></tr>
+  <tr><th>Oil Temperature</th><td id="oilTemp"></td></tr>
+  <tr><th>Winding Temperature</th><td id="windTemp"></td></tr>
+  <tr><th>IR Test (MΩ)</th><td id="irTest"></td></tr>
+  <tr><th>Earth Resistance (Ω)</th><td id="earthRes"></td></tr>
+  <tr><th>Load Current (A)</th><td id="loadCurrent"></td></tr>
+</table>
+
+<!-- ADDITIONAL QUESTIONS -->
+<h2>Additional Details</h2>
+<table id="extraTable"></table>
+
+<!-- PHOTOS -->
+<h2>Photos</h2>
+<div id="photos"></div>
+
+<script>
+function qs(n) {
+  return new URLSearchParams(window.location.search).get(n);
+}
+
+const trId = qs("tr");
+const recordKey = qs("id");
+
+function loadReport() {
+  firebase.database()
+    .ref(`transformerInspections/${trId}/${recordKey}`)
+    .once("value")
+    .then(snap => {
+      const r = snap.val();
+      if (!r) {
+        alert("Report not found.");
+        return;
+      }
+
+      // BASIC
+      document.getElementById("trId").textContent = trId;
+      document.getElementById("electrician").textContent = r.electricianName || "";
+      document.getElementById("dt").textContent =
+        r.datetimeLocal
+          ? r.datetimeLocal.replace("T", " ")
+          : (r.timestamp ? new Date(r.timestamp).toLocaleString() : "");
+      document.getElementById("remarks").textContent = r.remarks || "";
+
+      // ELECTRICAL
+      document.getElementById("oilCondition").textContent = r.oilCondition || "";
+      document.getElementById("oilLevel").textContent = r.oilLevel || "";
+      document.getElementById("oilTemp").textContent = r.oilTemperature || "";
+      document.getElementById("windTemp").textContent = r.windingTemperature || "";
+      document.getElementById("irTest").textContent = r.irTest || "";
+      document.getElementById("earthRes").textContent = r.earthResistance || "";
+      document.getElementById("loadCurrent").textContent = r.loadCurrent || "";
+
+      // EXTRA ANSWERS
+      const extraTable = document.getElementById("extraTable");
+      extraTable.innerHTML = "";
+      if (r.extraAnswers) {
+        Object.entries(r.extraAnswers).forEach(([qid,val]) => {
+          extraTable.innerHTML += `
+            <tr><th>${qid}</th><td>${val}</td></tr>
+          `;
+        });
+      }
+
+      // PHOTOS
+      const ph = document.getElementById("photos");
+      ph.innerHTML = "";
+      ["photo1","photo2","photo3"].forEach(p => {
+        if (r[p]) {
+          ph.innerHTML += `<img src="${r[p]}" class="photo">`;
+        }
+      });
+    });
+}
+
+window.onload = loadReport;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DB Inspection Report – Print View</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: white;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo {
+      width: 120px;
+      height: auto;
+      margin-bottom: 10px;
+    }
+    .title {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #ffd65a, #ffb300);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 5px;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: #444;
+      margin-top: -5px;
+    }
+    h2 {
+      background: #111;
+      color: #ffc800;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 18px;
+      margin-top: 35px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    th {
+      background: #333;
+      color: white;
+      padding: 8px;
+      text-align: left;
+    }
+    td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      vertical-align: top;
+    }
+    .photo {
+      width: 260px;
+      border: 1px solid #888;
+      border-radius: 6px;
+      margin-top: 6px;
+    }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js?v=5"></script>
+</head>
+
+<body>
+
+<div class="header">
+  <img src="logo.png" class="logo">
+  <div class="title">Electrical DB Inspection Report</div>
+  <div class="subtitle">Chenab Engineering Works</div>
+</div>
+
+<h2>Basic Information</h2>
+<table id="infoTable">
+  <tr><th>DB Number</th><td id="dbId"></td></tr>
+  <tr><th>Electrician</th><td id="electrician"></td></tr>
+  <tr><th>Date</th><td id="date"></td></tr>
+  <tr><th>Comments</th><td id="comments"></td></tr>
+</table>
+
+<h2>Inspection Results</h2>
+<table id="inspectionTable">
+  <tr><th>Breaker</th><td id="breaker"></td></tr>
+  <tr><th>Cleanliness</th><td id="clean"></td></tr>
+  <tr><th>Locked Status</th><td id="locked"></td></tr>
+  <tr><th>Covered</th><td id="covered"></td></tr>
+</table>
+
+<h2>Additional Questions</h2>
+<table id="extraTable"></table>
+
+<h2>Photos</h2>
+<div id="photos"></div>
+
+<script>
+function qs(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+const dbId = qs("db");
+const recordKey = qs("id");
+
+function loadReport() {
+  firebase.database().ref(`inspections/${dbId}/${recordKey}`).once("value").then(snap => {
+    const r = snap.val();
+    if (!r) {
+      alert("Record not found.");
+      return;
+    }
+
+    document.getElementById("dbId").textContent = dbId;
+    document.getElementById("electrician").textContent = r.electricianName || "";
+    document.getElementById("date").textContent = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
+    document.getElementById("comments").textContent = r.comments || "";
+
+    document.getElementById("breaker").textContent = r.breakerStatus || "";
+    document.getElementById("clean").textContent = r.cleanStatus || "";
+    document.getElementById("locked").textContent = r.lockedStatus || "";
+    document.getElementById("covered").textContent = r.coveredStatus || "";
+
+    // Extra Questions
+    const extraTable = document.getElementById("extraTable");
+    extraTable.innerHTML = "";
+    if (r.extraAnswers) {
+      Object.entries(r.extraAnswers).forEach(([qid,val]) => {
+        extraTable.innerHTML += `
+          <tr><th>${qid}</th><td>${val}</td></tr>
+        `;
+      });
+    }
+
+    // Photos
+    const ph = document.getElementById("photos");
+    ph.innerHTML = "";
+
+    ["photo1","photo2","photo3"].forEach(p => {
+      if (r[p]) {
+        ph.innerHTML += `<img src="${r[p]}" class="photo">`;
+      }
+    });
+
+  });
+}
+
+window.onload = loadReport;
+</script>
+
+</body>
+</html>
