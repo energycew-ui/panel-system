@@ -122,18 +122,16 @@ function loadAllLuxReports(callback) {
 
 
 // ============================
-//   LUX CONFIG (ADMIN)
+//   LUX MASTER CONFIG (ADMIN)
 // ============================
 
-// Save Lux Meter master configuration
 function saveLuxConfig(data, callback) {
   db.ref("luxConfig").set(data, err => {
-    if (err) alert("Error saving LUX config");
+    if (err) alert("Error saving LUX configuration");
     else if (callback) callback();
   });
 }
 
-// Load Lux Meter master configuration
 function loadLuxConfig(callback) {
   db.ref("luxConfig").once("value").then(snap => {
     callback(snap.val());
