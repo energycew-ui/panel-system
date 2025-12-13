@@ -12,7 +12,8 @@ const firebaseConfig = {
 };
 
 // ===============================
-//  SAFE INITIALIZATION (FIX #1)
+//  SAFE FIREBASE INITIALIZATION
+//  (THIS WAS THE REAL FIX NEEDED)
 // ===============================
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
@@ -26,14 +27,16 @@ const db = firebase.database();
 //   DB PANEL FUNCTIONS
 // =====================
 function savePanelToFirebase(dbId, data, callback) {
-  db.ref("panels/" + dbId).set(data)
-    .then(() => callback && callback())
-    .catch(err => alert("Error saving DB: " + err.message));
+  db.ref("panels/" + dbId).set(data, function (error) {
+    if (error) alert("Error saving DB: " + error);
+    else if (callback) callback();
+  });
 }
 
 function loadPanelFromFirebase(dbId, callback) {
-  db.ref("panels/" + dbId).once("value")
-    .then(s => callback(s.val()));
+  db.ref("panels/" + dbId).once("value", snap => {
+    callback(snap.val());
+  });
 }
 
 
@@ -41,14 +44,16 @@ function loadPanelFromFirebase(dbId, callback) {
 //     TRANSFORMERS
 // ============================
 function saveTransformer(trId, data, callback) {
-  db.ref("transformers/" + trId).set(data)
-    .then(() => callback && callback())
-    .catch(err => alert("Error saving transformer: " + err.message));
+  db.ref("transformers/" + trId).set(data, function (error) {
+    if (error) alert("Error saving transformer: " + error);
+    else if (callback) callback();
+  });
 }
 
 function loadTransformer(trId, callback) {
-  db.ref("transformers/" + trId).once("value")
-    .then(s => callback(s.val()));
+  db.ref("transformers/" + trId).once("value", snap => {
+    callback(snap.val());
+  });
 }
 
 
@@ -56,28 +61,29 @@ function loadTransformer(trId, callback) {
 //   TRANSFORMER INSPECTION
 // ============================
 function saveTransformerInspection(trId, data, callback) {
-  const ref = db.ref("transformerInspections/" + trId).push();
-
-  ref.set(data)
-    .then(() => callback && callback(ref.key))
-    .catch(err => alert("Error saving transformer report: " + err.message));
+  const key = db.ref().push().key;
+  db.ref("transformerInspections/" + trId + "/" + key)
+    .set(data, function (error) {
+      if (error) alert("Error saving transformer report");
+      else if (callback) callback(key);
+    });
 }
 
 
 // ============================
-//       LUX REPORTS (FIXED)
+//       LUX REPORTS (FAST + SAFE)
 // ============================
 function saveLuxReport(data, callback) {
 
-  // FIX #2: push() gives key immediately (no delay)
+  // push() gives key immediately (no UI delay)
   const ref = db.ref("luxReports").push();
 
-  // FIX #3: write & respond fast
-  ref.set(data)
-    .then(() => {
-      callback && callback(ref.key);
-    })
-    .catch(err => {
-      alert("Error saving LUX report: " + err.message);
-    });
+  ref.set(data, function (error) {
+    if (error) {
+      alert("Error saving LUX report");
+    } else {
+      // immediate callback = fast UI feedback
+      if (callback) callback(ref.key);
+    }
+  });
 }
