@@ -6,6 +6,7 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
   <!-- Your Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
   <script src="data.js"></script>
@@ -2702,14 +2703,14 @@ function exportLuxCSV() {
 /* ------------ LUX ADMIN CONFIG ------------ */
 
 function saveLuxAdminConfig() {
-  const data = {
-    instrument: "Lux Meter",
-    model: document.getElementById("luxModel").value.trim(),
-    calibrationNo: document.getElementById("luxCert").value.trim(),
-    calibrationDate: document.getElementById("luxCalDate").value,
-nextCalibrationDate: document.getElementById("luxNextCalDate").value
+const data = {
+  instrument: "Lux Meter",
+  model: document.getElementById("luxModel").value.trim(),
+  calibrationNo: document.getElementById("luxCert").value.trim(),
+  calibrationDate: document.getElementById("luxCalDate").value,
+  nextCalibrationDate: document.getElementById("luxNextCalDate").value
+};
 
-  };
 
   firebase.database().ref("luxConfig").set(data, err => {
     if (err) {
