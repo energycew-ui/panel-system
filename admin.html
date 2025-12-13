@@ -699,6 +699,34 @@
         </div>
 
         <div id="luxSummary" class="summary-row"></div>
+<hr>
+
+<h3>LUX Instrument Configuration (Admin)</h3>
+
+<label>Instrument</label>
+<input type="text" value="Lux Meter" disabled>
+
+<label>Lux Meter Model</label>
+<input type="text" id="luxModel">
+
+<label>Calibration Certificate No</label>
+<input type="text" id="luxCert">
+
+<label>Calibration Date</label>
+<input type="date" id="luxCalDate">
+
+<br>
+<button class="primary-btn" onclick="saveLuxAdminConfig()">
+  Save LUX Configuration
+</button>
+
+<h3 style="margin-top:20px;">LUX QR Code</h3>
+<button class="secondary-btn" onclick="generateLuxQR()">Generate LUX QR</button>
+
+<div style="text-align:center;margin-top:15px;">
+  <canvas id="luxQrCanvas" width="220" height="220"></canvas>
+</div>
+
 
         <div class="filterBox">
           <input type="text" id="filterLX_dept" placeholder="Filter by Department">
@@ -2637,6 +2665,54 @@ function exportLuxCSV() {
   const csv = arrayToCSV(rows);
   downloadCSV("lux_reports.csv", csv);
 }
+/* ------------ LUX ADMIN CONFIG ------------ */
+
+function saveLuxAdminConfig() {
+  const data = {
+    instrument: "Lux Meter",
+    model: document.getElementById("luxModel").value.trim(),
+    calibrationNo: document.getElementById("luxCert").value.trim(),
+    calibrationDate: document.getElementById("luxCalDate").value
+  };
+
+  firebase.database().ref("luxConfig").set(data, err => {
+    if (err) {
+      alert("Error saving LUX config");
+    } else {
+      alert("LUX configuration saved");
+    }
+  });
+}
+
+function loadLuxAdminConfig() {
+  firebase.database().ref("luxConfig").once("value").then(snap => {
+    const cfg = snap.val();
+    if (!cfg) return;
+
+    document.getElementById("luxModel").value = cfg.model || "";
+    document.getElementById("luxCert").value = cfg.calibrationNo || "";
+    document.getElementById("luxCalDate").value = cfg.calibrationDate || "";
+  });
+}
+
+function generateLuxQR() {
+  const canvas = document.getElementById("luxQrCanvas");
+  if (!canvas) {
+    alert("LUX QR canvas not found");
+    return;
+  }
+
+  new QRious({
+    element: canvas,
+    value: window.location.origin + "/lux.html",
+    size: 220
+  });
+}
+
+/* auto-load when admin opens */
+document.addEventListener("DOMContentLoaded", () => {
+  loadLuxAdminConfig();
+});
 
 </script>
 
