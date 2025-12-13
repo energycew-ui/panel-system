@@ -61,7 +61,7 @@
       width: 210mm;
       min-height: 297mm;
       padding: 20mm;
-      margin: 20px auto;
+      margin: 20px auto 40px auto;
       border: 1px solid #000;
       background: #fff;
     }
@@ -73,15 +73,17 @@
     }
     td, th {
       border: 1px solid #000;
-      padding: 4px;
+      padding: 4px 6px;
+      vertical-align: top;
     }
     .no-border td { border:none; }
 
-    input, textarea {
+    input, textarea, select {
       width: 100%;
       border: none;
       border-bottom: 1px solid #000;
       background: transparent;
+      font-family: inherit;
     }
 
     .picture-preview {
@@ -89,6 +91,8 @@
       height: 90px;
       border: 1px solid #000;
       object-fit: contain;
+      display:block;
+      margin:auto;
     }
 
     .actions {
@@ -98,9 +102,9 @@
     }
 
     #submitStatus {
-      margin-top:10px;
-      font-weight:bold;
-      display:none;
+      margin-top: 10px;
+      font-weight: bold;
+      display: none;
     }
 
     @media print {
@@ -130,12 +134,13 @@
   <div class="page">
     <form id="luxForm">
 
-      <h2 style="text-align:center;">LUX MONITORING REPORT</h2>
+      <h1 style="text-align:center;text-decoration:underline;">LUX MONITORING REPORT</h1>
 
+      <!-- Measurement Table (UNCHANGED) -->
       <table>
         <tr>
           <th>S.N</th>
-          <th>Measurement Point</th>
+          <th>Measurement Point / Area</th>
           <th>Limit Lux</th>
           <th>Measured Lux</th>
           <th>Remarks</th>
@@ -196,15 +201,18 @@
         <button type="button" onclick="location.reload()">Clear</button>
       </div>
 
-      <div id="submitStatus">⏳ Submitting… <span id="submitProgress">0%</span></div>
+      <!-- PROGRESS (ADDED, NO FORM CHANGE) -->
+      <div id="submitStatus" class="no-print">
+        ⏳ Submitting… <span id="submitProgress">0%</span>
+      </div>
 
     </form>
   </div>
 </div>
 
 <script>
+/* LOGIN */
 const ELECTRICIAN_KEY = "9999";
-
 if (sessionStorage.getItem("electricianLogged") === "true") showForm();
 
 function doLogin() {
@@ -213,27 +221,26 @@ function doLogin() {
     showForm();
   } else loginError.innerText = "Incorrect password";
 }
-
 function showForm() {
   loginCard.style.display="none";
   formArea.style.display="block";
 }
 
-/* Preview */
+/* PREVIEW (UNCHANGED) */
 ["1","2","3","4"].forEach(i=>{
   document.getElementById("file"+i).addEventListener("change",e=>{
     const r=new FileReader();
-    r.onload=ev=>preview(i).src=ev.target.result;
+    r.onload=ev=>document.getElementById("preview"+i).src=ev.target.result;
     r.readAsDataURL(e.target.files[0]);
   });
 });
 
-/* Compression */
+/* IMAGE COMPRESSION (ADDED) */
 function fileToCompressedBase64(id){
-  return new Promise(res=>{
-    const f=document.getElementById(id).files[0];
-    if(!f){res(null);return;}
-    const img=new Image(), r=new FileReader();
+  return new Promise(resolve=>{
+    const file=document.getElementById(id).files[0];
+    if(!file){resolve(null);return;}
+    const r=new FileReader(), img=new Image();
     r.onload=e=>{
       img.onload=()=>{
         const c=document.createElement("canvas");
@@ -241,17 +248,18 @@ function fileToCompressedBase64(id){
         c.width=img.width*s;
         c.height=img.height*s;
         c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-        res(c.toDataURL("image/jpeg",0.6));
+        resolve(c.toDataURL("image/jpeg",0.6));
       };
       img.src=e.target.result;
     };
-    r.readAsDataURL(f);
+    r.readAsDataURL(file);
   });
 }
 
-/* Submit */
+/* SUBMIT (LOGIC SAME + PROGRESS ADDED) */
 luxForm.addEventListener("submit",async e=>{
   e.preventDefault();
+
   submitStatus.style.display="block";
   submitProgress.innerText="10%";
 
@@ -259,7 +267,8 @@ luxForm.addEventListener("submit",async e=>{
   for(let i=1;i<=4;i++){
     const img=await fileToCompressedBase64("file"+i);
     submitProgress.innerText=Math.round((i/4)*70)+"%";
-    if(point(i).value||img){
+
+    if(point(i).value || img){
       measurements.push({
         sn:i,
         point:point(i).value,
@@ -271,18 +280,20 @@ luxForm.addEventListener("submit",async e=>{
     }
   }
 
-  saveLuxReport({timestamp:new Date().toISOString(),measurements},()=>{
-    submitProgress.innerText="100%";
-    submitStatus.innerText="✅ Submitted Successfully";
-    setTimeout(()=>location.reload(),800);
-  });
+  saveLuxReport(
+    { timestamp:new Date().toISOString(), measurements },
+    ()=>{
+      submitProgress.innerText="100%";
+      submitStatus.innerText="✅ Submitted Successfully";
+      setTimeout(()=>location.reload(),800);
+    }
+  );
 });
 
 function point(i){return document.getElementById("point"+i);}
 function limit(i){return document.getElementById("limit"+i);}
 function measured(i){return document.getElementById("measured"+i);}
 function remarks(i){return document.getElementById("remarks"+i);}
-function preview(i){return document.getElementById("preview"+i);}
 </script>
 
 </body>
