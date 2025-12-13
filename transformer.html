@@ -15,6 +15,7 @@
       background: #f4f4f4;
     }
 
+    /* Premium Header */
     .topbar {
       background: #0c0c0c;
       padding: 20px 0 25px 0;
@@ -32,8 +33,10 @@
       background: linear-gradient(90deg,#ffd65a,#ffb300);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 6px rgba(0,0,0,.4);
     }
 
+    /* Card */
     .card {
       background: #fff;
       padding: 20px;
@@ -91,6 +94,7 @@
       border:2px solid #444;
       border-radius:10px;
     }
+
   </style>
 </head>
 
@@ -109,14 +113,6 @@
   <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
 
-<!-- 🔧 ADDED: TRANSFORMER INFO CARD -->
-<div class="card" id="transformerInfo" style="display:none;">
-  <h3>Transformer Details</h3>
-  <p><b>ID:</b> <span id="info_id"></span></p>
-  <p><b>Capacity:</b> <span id="info_kva"></span> kVA</p>
-  <p><b>Location:</b> <span id="info_location"></span></p>
-</div>
-
 <!-- FORM -->
 <div class="card" id="formCard">
 
@@ -128,13 +124,107 @@
   <label>Electrician Name</label>
   <input type="text" id="tr_name">
 
-  <!-- REST OF FORM UNCHANGED -->
-  <!-- … your existing form code continues exactly same … -->
+  <div class="section-title">Oil & Physical Condition</div>
+
+  <label>Oil Level</label>
+  <select id="oil_level">
+    <option>Normal</option>
+    <option>Low</option>
+    <option>Very Low</option>
+  </select>
+
+  <label>Oil Condition</label>
+  <select id="oil_condition">
+    <option>Clear</option>
+    <option>Discolored</option>
+    <option>Contaminated</option>
+  </select>
+
+  <label>Oil Leakage</label>
+  <select id="oil_leakage">
+    <option>No Leakage</option>
+    <option>Minor Leakage</option>
+    <option>Major Leakage</option>
+  </select>
+
+  <div class="section-title">Temperature</div>
+
+  <label>Winding Temperature (°C)</label>
+  <input type="number" id="temp_winding">
+
+  <label>Oil Temperature (°C)</label>
+  <input type="number" id="temp_oil">
+
+  <div class="section-title">Equipment Status</div>
+
+  <label>Cooling Fan Status</label>
+  <select id="fan_status">
+    <option>Working</option>
+    <option>Not Working</option>
+    <option>Intermittent</option>
+  </select>
+
+  <label>Noise / Vibration</label>
+  <select id="noise">
+    <option>Normal</option>
+    <option>High Noise</option>
+    <option>Vibration Observed</option>
+  </select>
+
+  <label>Bushing Condition</label>
+  <select id="bushing">
+    <option>Good</option>
+    <option>Cracked</option>
+    <option>Damaged</option>
+  </select>
+
+  <label>Earthing</label>
+  <select id="earth">
+    <option>OK</option>
+    <option>Weak</option>
+    <option>Disconnected</option>
+  </select>
+
+  <label>Tap Changer Condition</label>
+  <select id="tap_changer">
+    <option>OK</option>
+    <option>Needs Maintenance</option>
+    <option>Faulty</option>
+  </select>
+
+  <label>Load Current (A)</label>
+  <input type="number" id="load_current">
+
+  <div class="section-title">Additional Questions</div>
+  <div id="trQuestionsContainer">
+    <p style="font-size:13px;color:#666;">Loading questions...</p>
+  </div>
+
+  <div class="section-title">Photos</div>
+
+  <label>Photo 1</label>
+  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,1)">
+  <img id="preview1" class="preview">
+
+  <label>Photo 2</label>
+  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,2)">
+  <img id="preview2" class="preview">
+
+  <label>Photo 3</label>
+  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,3)">
+  <img id="preview3" class="preview">
+
+  <label>Remarks</label>
+  <textarea id="tr_comments"></textarea>
 
   <button class="btn btn-blue" onclick="submitTransformer()">Submit Inspection</button>
+
 </div>
 
 <script>
+/* --------------------------
+   LOGIN & AUTO-LOGIN
+---------------------------*/
 const ELECTRICIAN_KEY = "9999";
 
 if (sessionStorage.getItem("electricianLogged") === "true") {
@@ -142,7 +232,8 @@ if (sessionStorage.getItem("electricianLogged") === "true") {
 }
 
 function login() {
-  const key = document.getElementById("loginKey").value.trim();
+  let key = document.getElementById("loginKey").value.trim();
+
   if (key === ELECTRICIAN_KEY) {
     sessionStorage.setItem("electricianLogged", "true");
     showForm();
@@ -158,24 +249,135 @@ function showForm() {
   const now = new Date();
   document.getElementById("tr_datetime").value = now.toISOString().slice(0,16);
 
-  loadTransformerInfo();   // 🔧 ADDED
   loadQuestions();
 }
 
-/* GET TRANSFORMER ID */
+/* --------------------------
+   GET TRANSFORMER ID
+---------------------------*/
 const params = new URLSearchParams(window.location.search);
 const trId = params.get("id") || "TR-001";
 
-/* 🔧 ADDED: LOAD TRANSFORMER META */
-function loadTransformerInfo() {
-  loadTransformer(trId, t => {
-    if (!t) return;
-    document.getElementById("info_id").innerText = trId;
-    document.getElementById("info_kva").innerText = t.rating || "";
-    document.getElementById("info_location").innerText = t.location || "";
-    document.getElementById("transformerInfo").style.display = "block";
+/* --------------------------
+   LOAD DYNAMIC QUESTIONS
+---------------------------*/
+let questionsGlobal = {};
+
+function loadQuestions() {
+  firebase.database().ref("questions").on("value", snap => {
+    questionsGlobal = snap.val() || {};
+    renderQuestions();
   });
 }
+
+function renderQuestions() {
+  const box = document.getElementById("trQuestionsContainer");
+  const list = Object.entries(questionsGlobal)
+    .filter(([id,q]) => q.applyInspection && q.active !== false);
+
+  if (!list.length) {
+    box.innerHTML = "<p style='font-size:13px;color:#666;'>No additional questions.</p>";
+    return;
+  }
+
+  let html = "";
+  list.forEach(([id,q]) => { html += generateField(id,q); });
+  box.innerHTML = html;
+}
+
+function generateField(id, q) {
+  const fieldId = `q_tr_${id}`;
+  let field = "";
+
+  if (q.type === "text") field = `<input type="text" id="${fieldId}">`;
+  else if (q.type === "number") field = `<input type="number" id="${fieldId}" style="max-width:150px;">`;
+  else if (q.type === "yesno")
+    field = `<select id="${fieldId}"><option></option><option>Yes</option><option>No</option></select>`;
+  else if (q.type === "dropdown")
+    field = `<select id="${fieldId}">
+               <option></option>
+               ${q.options.map(o=>`<option>${o}</option>`).join("")}
+             </select>`;
+
+  return `<label>${q.text}</label>${field}`;
+}
+
+function collectDynamic() {
+  const output = {};
+  Object.entries(questionsGlobal).forEach(([id,q]) => {
+    if (!q.applyInspection || q.active === false) return;
+    const inp = document.getElementById(`q_tr_${id}`);
+    if (!inp) return;
+    const val = inp.value.trim();
+    if (val) output[id] = val;
+  });
+  return Object.keys(output).length ? output : null;
+}
+
+/* --------------------------
+   PHOTO PREVIEW
+---------------------------*/
+let photo1=null, photo2=null, photo3=null;
+
+function previewPhoto(e, num){
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = x => {
+    if (num === 1) photo1 = x.target.result;
+    if (num === 2) photo2 = x.target.result;
+    if (num === 3) photo3 = x.target.result;
+
+    const img = document.getElementById("preview"+num);
+    img.src = x.target.result;
+    img.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+}
+
+/* --------------------------
+   SUBMIT INSPECTION
+---------------------------*/
+function submitTransformer() {
+
+  const name = document.getElementById("tr_name").value.trim();
+  if (!name) return alert("Enter electrician name.");
+
+  const data = {
+    timestamp: new Date().toISOString(),
+    datetimeLocal: document.getElementById("tr_datetime").value,
+    electricianName: name,
+
+    oilLevel: document.getElementById("oil_level").value,
+    oilCondition: document.getElementById("oil_condition").value,
+    oilLeakage: document.getElementById("oil_leakage").value,
+
+    tempWinding: document.getElementById("temp_winding").value,
+    tempOil: document.getElementById("temp_oil").value,
+
+    fanStatus: document.getElementById("fan_status").value,
+    noise: document.getElementById("noise").value,
+    bushing: document.getElementById("bushing").value,
+    earth: document.getElementById("earth").value,
+    tapChanger: document.getElementById("tap_changer").value,
+    loadCurrent: document.getElementById("load_current").value,
+
+    extraAnswers: collectDynamic(),
+
+    photo1, photo2, photo3,
+    comments: document.getElementById("tr_comments").value
+  };
+
+  // SAVE TO FIREBASE:
+  firebase.database()
+    .ref("transformerInspections/" + trId)
+    .push(data, () => {
+      alert("Transformer inspection submitted successfully.");
+      window.location.href = "panel.html?id=" + encodeURIComponent(trId);
+    });
+}
+
 </script>
 
 </body>
