@@ -93,6 +93,8 @@
 <table>
   <tr><th>Transformer ID</th><td id="trId"></td></tr>
   <tr><th>Electrician</th><td id="electrician"></td></tr>
+<tr><th>Rating</th><td id="trRating"></td></tr>
+<tr><th>Location</th><td id="trLocation"></td></tr>
   <tr><th>Date & Time</th><td id="dt"></td></tr>
   <tr><th>Remarks</th><td id="remarks"></td></tr>
 </table>
@@ -124,6 +126,22 @@ function qs(n) {
 
 const trId = qs("tr");
 const recordKey = qs("id");
+/* --------------------------
+   LOAD TRANSFORMER MASTER INFO
+---------------------------*/
+firebase.database()
+  .ref("transformers/" + trId)
+  .once("value")
+  .then(snap => {
+    const tr = snap.val();
+    if (!tr) return;
+
+    document.getElementById("trRating").textContent =
+      tr.rating || "-";
+
+    document.getElementById("trLocation").textContent =
+      tr.location || "-";
+  });
 
 function loadReport() {
   firebase.database()
