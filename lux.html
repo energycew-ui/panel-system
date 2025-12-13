@@ -623,18 +623,7 @@ const timer = setInterval(() => {
 
 });
 
-/* =================== AUTO LOAD LUX CONFIG FROM ADMIN =================== */
-loadLuxConfig(cfg => {
-  if (!cfg) return;
-
-  document.getElementById("model").value = cfg.model || "";
-  document.getElementById("calibrationNo").value = cfg.certificate || "";
-  document.getElementById("calibrationDate").value = cfg.calibrationDate || "";
-
-  document.getElementById("model").readOnly = true;
-  document.getElementById("calibrationNo").readOnly = true;
-  document.getElementById("calibrationDate").readOnly = true;
-});
 </script>
 </body>
 </html>
+
