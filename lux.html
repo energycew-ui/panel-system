@@ -453,9 +453,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const now = new Date();
   const isoDate = now.toISOString().slice(0,10);
   const time = now.toTimeString().slice(0,5);
+
   document.getElementById("sampleDate").value = isoDate;
   document.getElementById("timeFrom").value = time;
+
+  // 🔹 AUTO-FILL LUX CONFIG FROM ADMIN
+  firebase.database().ref("luxConfig").once("value").then(snap => {
+    const cfg = snap.val();
+    if (!cfg) return;
+
+    document.getElementById("equipmentUsed").value = "Lux Meter";
+    document.getElementById("model").value = cfg.model || "";
+    document.getElementById("calibrationNo").value = cfg.calibrationNo || "";
+    document.getElementById("calibrationDate").value = cfg.calibrationDate || "";
+
+    // lock admin-controlled fields
+    document.getElementById("model").readOnly = true;
+    document.getElementById("calibrationNo").readOnly = true;
+    document.getElementById("calibrationDate").readOnly = true;
+  });
 });
+
 
 /* =================== IMAGE PREVIEW HELPERS =================== */
 
