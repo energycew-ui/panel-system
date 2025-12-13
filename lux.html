@@ -9,104 +9,154 @@
   <script src="data.js"></script>
 
   <style>
-    body { font-family: "Times New Roman"; background:#f4f4f4; margin:0; }
-    .topbar { background:#0c0c0c; padding:18px; text-align:center; }
-    .title { color:#ffc107; font-size:26px; font-weight:bold; }
-    .card { background:#fff; max-width:800px; margin:20px auto; padding:20px; border-radius:10px; }
-    .btn { background:#c40000; color:#fff; padding:12px; border:none; width:100%; font-size:16px; cursor:pointer; }
+    body { font-family: "Times New Roman", serif; margin:0; background:#f4f4f4; }
+    .topbar { background:#0c0c0c; padding:18px 0 22px; text-align:center; box-shadow:0 3px 8px rgba(0,0,0,0.4); }
+    .topbar img { width:120px; }
+    .title { margin-top:10px; font-size:26px; font-weight:bold;
+      background:linear-gradient(90deg,#ffd65a,#ffb300);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+    .card { background:#fff; padding:20px; max-width:800px; margin:20px auto;
+      border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.15); }
+    .btn { padding:12px; border-radius:8px; font-size:16px; font-weight:bold;
+      border:none; width:100%; cursor:pointer; margin-top:12px; color:#fff; }
+    .btn-red { background:#c40000; }
+
     #formArea { display:none; }
-    .page { width:210mm; padding:20mm; background:#fff; margin:auto; border:1px solid #000; }
-    table { width:100%; border-collapse:collapse; }
-    td, th { border:1px solid #000; padding:5px; }
-    input, textarea { width:100%; border:none; border-bottom:1px solid #000; }
-    .picture-preview { width:80px; height:80px; border:1px solid #000; display:block; margin:auto; }
-    .actions { margin-top:10px; }
-    #progressBox { display:none; margin-top:10px; font-weight:bold; }
+    .page { width:210mm; min-height:297mm; padding:20mm; margin:20px auto;
+      border:1px solid #000; background:#fff; }
+
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    td, th { border:1px solid #000; padding:4px 6px; }
+    .no-border td { border:none; }
+    input, textarea { width:100%; border:none; border-bottom:1px solid #000; background:transparent; }
+
+    .picture-preview { width:90px; height:90px; border:1px solid #000;
+      object-fit:contain; display:block; margin:auto; }
+
+    .actions { margin-top:15px; display:flex; gap:10px; }
+    button[type="submit"], .small-btn { padding:6px 14px; cursor:pointer; }
+
+    #saveProgress { display:none; margin-top:10px; font-weight:bold; }
+
+    @media print {
+      .no-print { display:none; }
+      .page { border:none; margin:0; }
+    }
   </style>
 </head>
 
 <body>
 
 <div class="topbar">
+  <img src="logo.png">
   <div class="title">LUX Monitoring Report – Electrician</div>
 </div>
 
+<!-- LOGIN -->
 <div class="card" id="loginCard">
-  <h3>Electrician Login</h3>
-  <input type="password" id="loginKey" placeholder="Password">
-  <button class="btn" onclick="doLogin()">Login</button>
+  <h2>LUX Monitoring – Login</h2>
+  <input type="password" id="loginKey" placeholder="Enter Electrician Password">
+  <button class="btn btn-red" onclick="doLogin()">Login</button>
+  <div id="loginError" style="color:red;"></div>
 </div>
 
+<!-- FORM -->
 <div id="formArea">
-  <div class="page">
-    <form id="luxForm">
+<div class="page">
+<form id="luxForm">
 
-      <h2 style="text-align:center;">LUX MONITORING REPORT</h2>
+<h1 style="text-align:center;">LUX MONITORING REPORT</h1>
 
-      <table>
-        <tr><td>Sampling Location</td><td><input id="samplingLocation"></td></tr>
-        <tr><td>Collected By</td><td><input id="collectedBy"></td></tr>
-      </table>
+<table class="no-border">
+<tr><td>Sampling Location</td><td><input id="samplingLocation"></td></tr>
+<tr><td>Collected By</td><td><input id="collectedBy"></td></tr>
+</table>
 
-      <br>
+<br>
 
-      <table>
-        <tr>
-          <th>SN</th><th>Point</th><th>Limit</th><th>Measured</th><th>Remarks</th><th>Image</th>
-        </tr>
+<table>
+<tr>
+<th>S.N</th><th>Point</th><th>Limit</th><th>Measured</th><th>Remarks</th><th>Image</th>
+</tr>
 
-        <script>
-          for(let i=1;i<=4;i++){
-            document.write(`
-            <tr>
-              <td>${i}</td>
-              <td><input id="point${i}"></td>
-              <td><input id="limit${i}"></td>
-              <td><input id="measured${i}"></td>
-              <td><input id="remarks${i}"></td>
-              <td>
-                <img id="preview${i}" class="picture-preview">
-                <input type="file" id="file${i}">
-              </td>
-            </tr>`);
-          }
-        </script>
-      </table>
+<script>
+for(let i=1;i<=4;i++){
+document.write(`
+<tr>
+<td>${i}</td>
+<td><input id="point${i}"></td>
+<td><input id="limit${i}"></td>
+<td><input id="measured${i}"></td>
+<td><input id="remarks${i}"></td>
+<td>
+<img id="preview${i}" class="picture-preview">
+<input type="file" id="file${i}" class="no-print" accept="image/*">
+</td>
+</tr>`);
+}
+</script>
+</table>
 
-      <div id="progressBox">Submitting… <span id="progressText">0%</span></div>
+<div id="saveProgress" class="no-print">
+Saving… <span id="savePercent">0%</span>
+</div>
 
-      <div class="actions">
-        <button type="submit" class="btn">Submit LUX Report</button>
-      </div>
+<div class="actions no-print">
+<button type="submit">Submit LUX Report</button>
+<button type="button" class="small-btn" onclick="luxForm.reset();clearPreviews();">Clear</button>
+</div>
 
-    </form>
-  </div>
+</form>
+</div>
 </div>
 
 <script>
-const ELECTRICIAN_KEY = "9999";
+/* LOGIN */
+const ELECTRICIAN_KEY="9999";
+if(sessionStorage.getItem("electricianLogged")==="true") showForm();
 
 function doLogin(){
-  if(document.getElementById("loginKey").value === ELECTRICIAN_KEY){
+  if(loginKey.value===ELECTRICIAN_KEY){
     sessionStorage.setItem("electricianLogged","true");
     showForm();
-  } else alert("Wrong Password");
+  } else loginError.innerText="Incorrect password!";
 }
-
-if(sessionStorage.getItem("electricianLogged")==="true") showForm();
 function showForm(){
   loginCard.style.display="none";
   formArea.style.display="block";
 }
 
-/* IMAGE COMPRESSION */
+/* IMAGE PREVIEW */
+function wirePreview(i){
+  file=document.getElementById("file"+i);
+  img=document.getElementById("preview"+i);
+  file.onchange=()=>{
+    if(!file.files[0]){ img.src=""; return; }
+    const r=new FileReader();
+    r.onload=e=>img.src=e.target.result;
+    r.readAsDataURL(file.files[0]);
+  }
+}
+[1,2,3,4].forEach(wirePreview);
+
+function clearPreviews(){
+  [1,2,3,4].forEach(i=>{
+    preview=document.getElementById("preview"+i);
+    file=document.getElementById("file"+i);
+    preview.src=""; file.value="";
+  });
+}
+
+/* IMAGE COMPRESSION (ADDED FEATURE) */
 function compressImage(file){
   return new Promise(res=>{
-    const img=new Image(), r=new FileReader();
+    const img=new Image();
+    const r=new FileReader();
     r.onload=e=>{
       img.onload=()=>{
         const c=document.createElement("canvas");
-        const s=Math.min(800/img.width,1);
+        const s=Math.min(900/img.width,1);
         c.width=img.width*s; c.height=img.height*s;
         c.getContext("2d").drawImage(img,0,0,c.width,c.height);
         res(c.toDataURL("image/jpeg",0.6));
@@ -118,33 +168,46 @@ function compressImage(file){
 }
 
 /* SUBMIT */
-luxForm.onsubmit = async e => {
+luxForm.onsubmit = async e=>{
   e.preventDefault();
-  const btn = luxForm.querySelector("button");
-  btn.disabled=true;
-  const progress=document.getElementById("progressText");
-  progressBox.style.display="block";
 
-  let data=[], done=0;
+  const btn=luxForm.querySelector("button[type='submit']");
+  const box=document.getElementById("saveProgress");
+  const pct=document.getElementById("savePercent");
+
+  btn.disabled=true;
+  box.style.display="block";
+
+  let measurements=[];
+  let done=0;
+
   for(let i=1;i<=4;i++){
     let img=null;
-    if(file${i}.files.length) img=await compressImage(file${i}.files[0]);
-    data.push({
+    if(file=document.getElementById("file"+i).files[0]){
+      img=await compressImage(file);
+    }
+    measurements.push({
+      sn:i,
       point:point${i}.value,
-      limit:limit${i}.value,
-      measured:measured${i}.value,
+      limitLux:limit${i}.value,
+      measuredLux:measured${i}.value,
       remarks:remarks${i}.value,
       image:img
     });
-    done++; progress.innerText=Math.round(done/4*100)+"%";
+    done++;
+    pct.innerText=Math.round(done/4*100)+"%";
   }
 
   saveLuxReport({
     timestamp:new Date().toISOString(),
     samplingLocation:samplingLocation.value,
     collectedBy:collectedBy.value,
-    measurements:data
-  },()=>{ alert("Submitted"); location.reload(); });
+    measurements
+  },()=>{
+    pct.innerText="100%";
+    alert("LUX Report submitted successfully");
+    location.reload();
+  });
 };
 </script>
 
