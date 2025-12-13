@@ -714,6 +714,23 @@
 
 <label>Calibration Date</label>
 <input type="date" id="luxCalDate">
+<label>Next Calibration Due Date</label>
+<input type="date" id="luxNextCalDate">
+
+<label>Upload Calibration Report (PDF / Image)</label>
+<input type="file" id="luxCalReport" accept=".pdf,image/*">
+
+<button class="primary-btn" onclick="uploadLuxCalibrationReport()">
+  Upload Calibration Report
+</button>
+
+<div id="luxCalReportStatus" style="margin-top:8px;font-weight:bold;"></div>
+
+<hr>
+
+<h4>Previous Calibration Reports</h4>
+<div id="luxCalibrationHistory"></div>
+
 
 <br>
 <button class="primary-btn" onclick="saveLuxAdminConfig()">
@@ -2690,6 +2707,8 @@ function saveLuxAdminConfig() {
     model: document.getElementById("luxModel").value.trim(),
     calibrationNo: document.getElementById("luxCert").value.trim(),
     calibrationDate: document.getElementById("luxCalDate").value
+nextCalibrationDate: document.getElementById("luxNextCalDate").value
+
   };
 
   firebase.database().ref("luxConfig").set(data, err => {
@@ -2783,6 +2802,77 @@ function downloadLuxQR() {
 /* auto-load when admin opens */
 document.addEventListener("DOMContentLoaded", () => {
   loadLuxAdminConfig();
+});
+function uploadLuxCalibrationReport() {
+  const fileInput = document.getElementById("luxCalReport");
+  const status = document.getElementById("luxCalReportStatus");
+
+  const file = fileInput.files[0];
+  if (!file) {
+    alert("Please select a calibration report file");
+    return;
+  }
+
+  const data = {
+    model: document.getElementById("luxModel").value.trim(),
+    certificateNo: document.getElementById("luxCert").value.trim(),
+    calibrationDate: document.getElementById("luxCalDate").value,
+    nextCalibrationDate: document.getElementById("luxNextCalDate").value,
+    uploadedAt: new Date().toISOString()
+  };
+
+  status.innerText = "Uploading calibration report...";
+
+  const ref = firebase.storage().ref(
+    "luxCalibrationReports/" + Date.now() + "_" + file.name
+  );
+
+  ref.put(file).then(snapshot => {
+    snapshot.ref.getDownloadURL().then(url => {
+      data.fileUrl = url;
+
+      const key = firebase.database().ref().push().key;
+      firebase.database().ref("luxCalibrationReports/" + key).set(data, err => {
+        if (err) {
+          alert("Error saving calibration report");
+        } else {
+          status.innerText = "Calibration report uploaded successfully";
+          fileInput.value = "";
+          loadLuxCalibrationHistory();
+        }
+      });
+    });
+  });
+}
+function loadLuxCalibrationHistory() {
+  const container = document.getElementById("luxCalibrationHistory");
+  container.innerHTML = "Loading...";
+
+  firebase.database().ref("luxCalibrationReports").once("value").then(snap => {
+    const data = snap.val();
+    if (!data) {
+      container.innerHTML = "<i>No calibration reports uploaded yet.</i>";
+      return;
+    }
+
+    container.innerHTML = "";
+
+    Object.values(data).reverse().forEach(r => {
+      const div = document.createElement("div");
+      div.style.marginBottom = "8px";
+
+      div.innerHTML = `
+        <b>Date:</b> ${r.calibrationDate || "-"} |
+        <b>Cert:</b> ${r.certificateNo || "-"} |
+        <a href="${r.fileUrl}" target="_blank">View Report</a>
+      `;
+
+      container.appendChild(div);
+    });
+  });
+}
+document.addEventListener("DOMContentLoaded", () => {
+  loadLuxCalibrationHistory();
 });
 
 </script>

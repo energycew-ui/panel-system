@@ -325,6 +325,13 @@
             <input type="date" name="calibrationDate" id="calibrationDate">
           </td>
         </tr>
+<tr>
+  <td class="label">Next Calibration Due Date:</td>
+  <td>
+    <input type="date" name="nextCalibrationDate" id="nextCalibrationDate" readonly>
+  </td>
+</tr>
+
       </table>
 
       <br>
@@ -466,11 +473,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("model").value = cfg.model || "";
     document.getElementById("calibrationNo").value = cfg.calibrationNo || "";
     document.getElementById("calibrationDate").value = cfg.calibrationDate || "";
+document.getElementById("nextCalibrationDate").value = cfg.nextCalibrationDate || "";
+
 
     // lock admin-controlled fields
     document.getElementById("model").readOnly = true;
     document.getElementById("calibrationNo").readOnly = true;
     document.getElementById("calibrationDate").readOnly = true;
+document.getElementById("nextCalibrationDate").readOnly = true;
+
   });
 });
 
