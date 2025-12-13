@@ -724,8 +724,25 @@
 <button class="secondary-btn" onclick="generateLuxQR()">Generate LUX QR</button>
 
 <div style="text-align:center;margin-top:15px;">
+
+  <div class="dangerBanner">
+    ⚠️ LIGHT MONITORING – AUTHORIZED USE ⚠️
+  </div>
+
   <canvas id="luxQrCanvas" width="220" height="220"></canvas>
+
+  <div id="luxQrLabel" style="margin-top:10px;font-size:18px;font-weight:bold;">
+    LUX METER QR CODE
+  </div>
+
 </div>
+
+<button id="downloadLuxQR"
+        style="display:none;margin-top:10px;"
+        class="primary-btn"
+        onclick="downloadLuxQR()">
+  Download LUX QR Sheet
+</button>
 
 
         <div class="filterBox">
@@ -2665,7 +2682,6 @@ function exportLuxCSV() {
   const csv = arrayToCSV(rows);
   downloadCSV("lux_reports.csv", csv);
 }
-
 /* ------------ LUX ADMIN CONFIG ------------ */
 
 function saveLuxAdminConfig() {
@@ -2703,6 +2719,66 @@ function generateLuxQR() {
     return;
   }
 
+  const url = window.location.origin + "/lux.html";
+
+  new QRious({
+    element: canvas,
+    value: url,
+    size: 220
+  });
+
+  document.getElementById("downloadLuxQR").style.display = "inline-block";
+}
+function downloadLuxQR() {
+  const qrCanvas = document.getElementById("luxQrCanvas");
+  if (!qrCanvas) return;
+
+  const W = 700, H = 900;
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = W;
+  finalCanvas.height = H;
+  const ctx = finalCanvas.getContext("2d");
+
+  // white background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  // logo
+  const logo = new Image();
+  logo.src = "logo.png";
+
+  logo.onload = () => {
+    const logoW = 420;
+    const logoH = (logo.height / logo.width) * logoW;
+    ctx.drawImage(logo, (W - logoW) / 2, 40, logoW, logoH);
+
+    // red ribbon
+    ctx.fillStyle = "#c40000";
+    ctx.fillRect(45, 200, W - 80, 70);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("LIGHT MONITORING – AUTHORIZED USE", W / 2, 245);
+
+    // QR
+    ctx.drawImage(qrCanvas, (W - 300) / 2, 300, 300, 300);
+
+    // bottom text
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 28px Arial";
+    ctx.fillText("LUX METER QR CODE", W / 2, 650);
+
+    const link = document.createElement("a");
+    link.download = "LUX_QR_CODE.png";
+    link.href = finalCanvas.toDataURL();
+    link.click();
+  };
+
+  logo.onerror = () => {
+    alert("Logo not found (logo.png).");
+  };
+}
+
   new QRious({
     element: canvas,
     value: window.location.origin + "/lux.html",
@@ -2715,9 +2791,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadLuxAdminConfig();
 });
 
+</script>
 
-  </script>
 </body>
 </html>
-
-
