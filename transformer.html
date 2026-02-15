@@ -364,30 +364,17 @@ function submitTransformer() {
     loadCurrent: document.getElementById("load_current").value,
 
     extraAnswers: collectDynamic(),
-
     photo1, photo2, photo3,
     comments: document.getElementById("tr_comments").value
   };
 
-  // ✅ CALL YOUR CENTRAL FUNCTION
   saveTransformerInspection(trId, data, function() {
-
       alert("Transformer inspection submitted successfully.");
-
       window.location.href =
         "panel.html?id=" + encodeURIComponent(trId);
-
   });
 }
 
-  // SAVE TO FIREBASE:
-  firebase.database()
-    .ref("transformerInspections/" + trId)
-    .push(data, () => {
-      alert("Transformer inspection submitted successfully.");
-      window.location.href = "panel.html?id=" + encodeURIComponent(trId);
-    });
-}
 
 </script>
 
