@@ -59,13 +59,7 @@ function saveInspection(dbId, data, callback) {
 
     if (err) {
       alert("Error saving inspection");
-      db.ref("panels/" + dbId).update({
-  lastInspection: now.toISOString(),
-  nextInspectionDue: next.toISOString()
-});
-
-alert("Panel dates updated!");
-return;
+      return;
     }
 
     // -------- UPDATE PANEL WITH INSPECTION DATES --------
@@ -77,6 +71,8 @@ return;
     db.ref("panels/" + dbId).update({
       lastInspection: now.toISOString(),
       nextInspectionDue: next.toISOString()
+    }).then(() => {
+        console.log("Panel dates updated successfully");
     });
 
     if (callback) callback(key);
@@ -94,7 +90,6 @@ function saveFault(dbId, data, callback) {
     else if (callback) callback(key);
   });
 }
-
 
 // ============================
 //     TRANSFORMER ENTRY
@@ -182,5 +177,6 @@ function deleteLuxReport(key, callback) {
     if (callback) callback();
   });
 }
+
 
 
