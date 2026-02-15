@@ -814,7 +814,12 @@ function checkLogin() {
     afterLoginInit();
   } else {
     error.textContent = "Incorrect password.";
+  }setInterval(() => {
+  if (masterPanelsGlobal) {
+    loadMasterReport();
   }
+}, 60000); // refresh every 60 seconds
+
 }
 
 window.addEventListener("load", () => {
@@ -1959,6 +1964,7 @@ function loadMasterReport() {
     let totalCircuits = 0;
     ids.forEach(id => {
       const p = all[id];
+
       if (p.circuits && Array.isArray(p.circuits)) {
         totalCircuits += p.circuits.length;
       }
@@ -1984,13 +1990,41 @@ function loadMasterReport() {
           <th>Cable</th>
           <th>Earth</th>
           <th>Location</th>
-          <th>Circuits</th>
-          <th>Action</th>
+        <th>Circuits</th>
+<th>Inspection Status</th>
+<th>Next Due</th>
+<th>Reminder</th>
+<th>Action</th>
+
         </tr>
     `;
 
     ids.forEach(id => {
       const p = all[id];
+let statusText = "No Record";
+let statusClass = "badge-info";
+let nextDueText = "-";
+
+if (p.nextInspectionDue) {
+  const nextDate = new Date(p.nextInspectionDue);
+  const today = new Date();
+  const diffDays = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+
+ nextDueText = nextDate.toLocaleDateString("en-GB");
+
+
+  if (diffDays < 0) {
+    statusText = "OVERDUE";
+    statusClass = "badge-bad";
+  } else if (diffDays <= 5) {
+    statusText = "Due Soon";
+    statusClass = "badge-warn";
+  } else {
+    statusText = "OK";
+    statusClass = "badge-ok";
+  }
+}
+
       const circuitCount = (p.circuits && Array.isArray(p.circuits)) ? p.circuits.length : 0;
       const rowId = `master-details-${id}`;
 
@@ -2003,12 +2037,21 @@ function loadMasterReport() {
           <td>${p.earthStatus || ""}</td>
           <td>${p.location || ""}</td>
           <td>${circuitCount}</td>
-          <td>
+<td><span class="badge ${statusClass}">${statusText}</span></td>
+<td>${nextDueText}</td>
+<td>
+  <button class="secondary-btn"
+    onclick="sendInspectionReminder('${p.dbNumber || id}', '${nextDueText}', '${statusText}')">
+    Send WhatsApp
+  </button>
+</td>
+<td>
+
             <button class="secondary-btn" onclick="event.stopPropagation(); toggleMasterDetails('${id}')">View</button>
           </td>
         </tr>
         <tr id="${rowId}" class="master-details-row" style="display:none;">
-          <td colspan="8">
+          <td colspan="11">
             <div class="master-details-wrapper">
               <div class="master-details-left">
                 <h4>Circuits</h4>
@@ -2822,6 +2865,24 @@ function exportLuxCSV() {
 
   const csv = arrayToCSV(rows);
   downloadCSV("lux_reports.csv", csv);
+}
+function sendInspectionReminder(dbId, nextDue, status) {
+
+  const message = 
+`⚡ Electrical DB Inspection Alert
+
+DB: ${dbId}
+Status: ${status}
+Next Due: ${nextDue}
+
+Please schedule inspection immediately.
+
+Chenab Engineering Works`;
+
+  const phone = ""; // leave empty for group use
+  const url = "https://wa.me/?text=" + encodeURIComponent(message);
+
+  window.open(url, "_blank");
 }
 
 </script>
