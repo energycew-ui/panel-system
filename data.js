@@ -59,7 +59,13 @@ function saveInspection(dbId, data, callback) {
 
     if (err) {
       alert("Error saving inspection");
-      return;
+      db.ref("panels/" + dbId).update({
+  lastInspection: now.toISOString(),
+  nextInspectionDue: next.toISOString()
+});
+
+alert("Panel dates updated!");
+return;
     }
 
     // -------- UPDATE PANEL WITH INSPECTION DATES --------
@@ -176,4 +182,5 @@ function deleteLuxReport(key, callback) {
     if (callback) callback();
   });
 }
+
 
