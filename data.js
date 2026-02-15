@@ -126,32 +126,33 @@ function saveTransformerInspection(trId, data, callback) {
 
   const key = db.ref().push().key;
 
-  db.ref("transformerInspections/" + trId + "/" + key).set(data, err => {
+  // Save inspection first
+  db.ref("transformerInspections/" + trId + "/" + key).set(data)
+  .then(() => {
 
-    if (err) {
-      alert("Error saving transformer report");
-      return;
-    }
+      const now = new Date();
+      const next = new Date();
+      next.setDate(now.getDate() + 60);
 
-    // ===== UPDATE TRANSFORMER INSPECTION DATES =====
+      // 🔥 Force update transformer root
+      return db.ref("transformers/" + trId).update({
+          lastInspection: now.toISOString(),
+          nextInspectionDue: next.toISOString()
+      });
 
-    const now = new Date();
-    const next = new Date();
-    next.setDate(now.getDate() + 60);   // 60 DAY CYCLE
+  })
+  .then(() => {
 
-    db.ref("transformers/" + trId).update({
-      lastInspection: now.toISOString(),
-      nextInspectionDue: next.toISOString()
-    }).then(() => {
-      console.log("Transformer dates updated successfully");
-    });
+      console.log("Transformer inspection + dates updated successfully");
 
-    if (callback) callback(key);
+      if (callback) callback(key);
 
+  })
+  .catch(err => {
+      console.error("Error:", err);
+      alert("Error saving transformer inspection");
   });
-
 }
-
 
 function loadTransformerInspection(trId, callback) {
   db.ref("transformerInspections/" + trId).once("value").then(snap => {
