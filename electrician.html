@@ -9,110 +9,34 @@
   <script src="data.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      margin: 0;
-    }
-
-    /* Premium Header */
-    .topbar {
-      background: #0c0c0c;
-      padding: 18px 0 22px 0;
-      text-align: center;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
-    }
-    .topbar img {
-      width: 120px;
-      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
-    }
-    .title {
-      margin-top: 10px;
-      font-size: 26px;
-      font-weight: bold;
-      background: linear-gradient(90deg,#ffd65a,#ffb300);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0px 0px 8px rgba(0,0,0,0.4);
-    }
-
-    .card {
-      background: #fff;
-      padding: 20px;
-      max-width: 800px;
-      margin: 20px auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    }
-
-    h2,h3 {
-      margin: 0;
-      margin-bottom: 12px;
-    }
-
-    label {
-      display:block;
-      margin-top:10px;
-      font-weight:bold;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 4px;
-      border:1px solid #ccc;
-      border-radius:6px;
-      box-sizing:border-box;
-      font-size:15px;
-    }
-
-    textarea {
-      height: 80px;
-    }
-
-    .btn {
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 12px;
-      cursor: pointer;
-      width: 100%;
-      border: none;
-      color: #fff;
-      font-size: 17px;
-      font-weight: bold;
-    }
-
-    .btn-red { background:#c40000; }
-    .btn-blue { background:#007bff; }
-
-    #formArea { display:none; }
-
-    .section-title {
-      margin-top:18px;
-      font-size:16px;
-      font-weight:bold;
-      border-left:4px solid #ffb300;
-      padding-left:8px;
-    }
-
-    #preview1,#preview2,#preview3 {
-      width: 100%;
-      display:none;
-      margin-top:10px;
-      border-radius:10px;
-      border:2px solid #444;
-    }
+    body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; }
+    .topbar { background:#0c0c0c; padding:18px 0 22px; text-align:center; box-shadow:0 3px 8px rgba(0,0,0,0.4); }
+    .topbar img { width:120px; }
+    .title { margin-top:10px; font-size:26px; font-weight:bold;
+      background:linear-gradient(90deg,#ffd65a,#ffb300);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .card { background:#fff; padding:20px; max-width:800px; margin:20px auto;
+      border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.15); }
+    label { display:block; margin-top:10px; font-weight:bold; }
+    input,select,textarea { width:100%; padding:10px; margin-top:4px;
+      border:1px solid #ccc; border-radius:6px; box-sizing:border-box; }
+    textarea { height:80px; }
+    .btn { padding:12px; border-radius:8px; margin-top:12px;
+      cursor:pointer; width:100%; border:none; color:#fff; font-size:17px; font-weight:bold; }
+    .btn-red{background:#c40000;} .btn-blue{background:#007bff;}
+    #formArea{display:none;}
+    .section-title{margin-top:18px; font-weight:bold; border-left:4px solid #ffb300; padding-left:8px;}
+    img{width:100%; display:none; margin-top:10px; border-radius:10px; border:2px solid #444;}
   </style>
 </head>
+
 <body>
 
-<!-- HEADER -->
 <div class="topbar">
   <img src="logo.png">
   <div class="title">DB Inspection – Electrician</div>
 </div>
 
-<!-- LOGIN -->
 <div class="card" id="loginCard">
   <h2>Electrician Login</h2>
   <input type="password" id="loginKey" placeholder="Enter Electrician Password">
@@ -120,7 +44,6 @@
   <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
 
-<!-- FORM -->
 <div class="card" id="formArea">
 
   <h2>Inspection Form</h2>
@@ -131,72 +54,53 @@
   <label>Electrician Name</label>
   <input type="text" id="insp_name">
 
-  <!-- Detailed Inspection Fields -->
   <div class="section-title">Panel Condition</div>
 
   <label>Main Breaker Condition</label>
   <select id="insp_breaker">
-    <option>OK</option>
-    <option>Loose</option>
-    <option>Heating</option>
-    <option>Damaged</option>
+    <option>OK</option><option>Loose</option>
+    <option>Heating</option><option>Damaged</option>
     <option>Needs Repair</option>
   </select>
 
   <label>Cleanliness</label>
   <select id="insp_clean">
-    <option>Clean</option>
-    <option>Dusty</option>
-    <option>Needs Cleaning</option>
-    <option>Not Accessible</option>
+    <option>Clean</option><option>Dusty</option>
+    <option>Needs Cleaning</option><option>Not Accessible</option>
   </select>
 
   <label>Door & Locking</label>
   <select id="insp_lock">
-    <option>Locked</option>
-    <option>Unlocked</option>
-    <option>Broken</option>
-    <option>Not Lockable</option>
+    <option>Locked</option><option>Unlocked</option>
+    <option>Broken</option><option>Not Lockable</option>
   </select>
 
   <label>Cable & Wiring Condition</label>
   <select id="insp_wiring">
-    <option>Good</option>
-    <option>Loose Wires</option>
-    <option>Damaged</option>
-    <option>Burn Marks</option>
+    <option>Good</option><option>Loose Wires</option>
+    <option>Damaged</option><option>Burn Marks</option>
   </select>
 
   <label>Earthing Status</label>
   <select id="insp_earth">
-    <option>OK</option>
-    <option>Weak</option>
-    <option>Broken</option>
-    <option>Not Connected</option>
+    <option>OK</option><option>Weak</option>
+    <option>Broken</option><option>Not Connected</option>
   </select>
 
   <label>Signs of Overheating</label>
   <select id="insp_heat">
-    <option>No</option>
-    <option>Yes (Action Required)</option>
+    <option>No</option><option>Yes (Action Required)</option>
   </select>
 
   <label>Unusual Noise / Vibration</label>
   <select id="insp_noise">
-    <option>No</option>
-    <option>Yes</option>
+    <option>No</option><option>Yes</option>
   </select>
 
   <label>Burning Smell</label>
   <select id="insp_smell">
-    <option>No</option>
-    <option>Yes</option>
+    <option>No</option><option>Yes</option>
   </select>
-
-  <div class="section-title">Dynamic Questions (Admin Controlled)</div>
-  <div id="inspectionQuestionsContainer">
-    <p style="font-size:13px;color:#666;">Loading additional questions...</p>
-  </div>
 
   <div class="section-title">Photos</div>
 
@@ -220,182 +124,88 @@
 </div>
 
 <script>
-/* ------------------------------
-   AUTO-LOGIN CHECK
------------------------------- */
-const ELECTRICIAN_KEY = "9999";
 
-if (sessionStorage.getItem("electricianLogged") === "true") {
-  showForm();
-}
+const ELECTRICIAN_KEY="9999";
+const url=new URLSearchParams(window.location.search);
+const dbId=url.get("id");
 
-/* ------------------------------
-   LOGIN FUNCTION
------------------------------- */
-function doLogin() {
-  const key = document.getElementById("loginKey").value.trim();
-  const err = document.getElementById("loginError");
+if(sessionStorage.getItem("electricianLogged")==="true"){showForm();}
 
-  if (key === ELECTRICIAN_KEY) {
-    sessionStorage.setItem("electricianLogged", "true");
+function doLogin(){
+  const key=document.getElementById("loginKey").value.trim();
+  if(key===ELECTRICIAN_KEY){
+    sessionStorage.setItem("electricianLogged","true");
     showForm();
-  } else {
-    err.innerText = "Incorrect password!";
+  }else{
+    document.getElementById("loginError").innerText="Incorrect password!";
   }
 }
 
-function showForm() {
-  document.getElementById("loginCard").style.display = "none";
-  document.getElementById("formArea").style.display = "block";
+function showForm(){
+  document.getElementById("loginCard").style.display="none";
+  document.getElementById("formArea").style.display="block";
+  const now=new Date();
+  document.getElementById("insp_datetime").value=now.toISOString().slice(0,16);
 }
 
-/* ------------------------------
-   GET DB ID FROM URL
------------------------------- */
-const url = new URLSearchParams(window.location.search);
-const dbId = url.get("id");
+let photo1=null,photo2=null,photo3=null;
 
-/* ------------------------------
-   DEFAULT DATETIME
------------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
-  const now = new Date();
-  document.getElementById("insp_datetime").value = now.toISOString().slice(0,16);
-  loadQuestions();
-});
-
-/* ------------------------------
-   LOAD DYNAMIC QUESTIONS
------------------------------- */
-let questionsGlobal = {};
-
-function loadQuestions() {
-  firebase.database().ref("questions").on("value", snap => {
-    questionsGlobal = snap.val() || {};
-    renderInspectionQuestions();
-  });
-}
-
-function renderInspectionQuestions() {
-  const container = document.getElementById("inspectionQuestionsContainer");
-
-  const list = Object.entries(questionsGlobal)
-    .filter(([id,q]) => q.applyInspection && q.active !== false);
-
-  if (!list.length) {
-    container.innerHTML = "<p style='font-size:13px;color:#666;'>No additional inspection questions.</p>";
-    return;
-  }
-
-  let html = "";
-
-  list.forEach(([id, q]) => {
-    html += renderField(id, q);
-  });
-
-  container.innerHTML = html;
-}
-
-function renderField(id, q) {
-  const fieldId = `q_insp_${id}`;
-  let field = "";
-
-  if (q.type === "text")
-    field = `<input type="text" id="${fieldId}">`;
-
-  else if (q.type === "number")
-    field = `<input type="number" id="${fieldId}" style="max-width:150px;">`;
-
-  else if (q.type === "yesno")
-    field = `
-      <select id="${fieldId}">
-        <option></option>
-        <option>Yes</option>
-        <option>No</option>
-      </select>`;
-
-  else if (q.type === "dropdown") {
-    field = `<select id="${fieldId}">
-               <option></option>
-               ${q.options.map(o => `<option>${o}</option>`).join("")}
-             </select>`;
-  }
-
-  return `
-    <label>${q.text}</label>
-    ${field}
-  `;
-}
-
-function collectDynamicAnswers() {
-  const output = {};
-
-  Object.entries(questionsGlobal).forEach(([id,q]) => {
-    if (!q.applyInspection || q.active === false) return;
-
-    const input = document.getElementById(`q_insp_${id}`);
-    if (!input) return;
-
-    const val = input.value.trim();
-    if (val) output[id] = val;
-  });
-
-  return Object.keys(output).length ? output : null;
-}
-
-/* ------------------------------
-   PHOTO PREVIEW
------------------------------- */
-let photo1=null, photo2=null, photo3=null;
-
-function showPhoto(e, num) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = x => {
-    if (num === 1) { photo1 = x.target.result; preview1.src = photo1; preview1.style.display="block"; }
-    if (num === 2) { photo2 = x.target.result; preview2.src = photo2; preview2.style.display="block"; }
-    if (num === 3) { photo3 = x.target.result; preview3.src = photo3; preview3.style.display="block"; }
+function showPhoto(e,num){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=x=>{
+    if(num===1){photo1=x.target.result;preview1.src=photo1;preview1.style.display="block";}
+    if(num===2){photo2=x.target.result;preview2.src=photo2;preview2.style.display="block";}
+    if(num===3){photo3=x.target.result;preview3.src=photo3;preview3.style.display="block";}
   };
-
   reader.readAsDataURL(file);
 }
 
-/* ------------------------------
-   SUBMIT INSPECTION
------------------------------- */
-function submitInspection() {
-  const name = document.getElementById("insp_name").value.trim();
-  if (!name) {
-    alert("Enter electrician name.");
-    return;
-  }
+function submitInspection(){
 
-  const data = {
-    timestamp: new Date().toISOString(),
-    datetimeLocal: document.getElementById("insp_datetime").value,
-    electricianName: name,
+  const name=document.getElementById("insp_name").value.trim();
+  if(!name){alert("Enter electrician name.");return;}
 
-    breakerStatus: document.getElementById("insp_breaker").value,
-    cleanStatus: document.getElementById("insp_clean").value,
-    lockedStatus: document.getElementById("insp_lock").value,
-    wiringStatus: document.getElementById("insp_wiring").value,
-    earthStatus: document.getElementById("insp_earth").value,
-    heatIssue: document.getElementById("insp_heat").value,
-    noiseIssue: document.getElementById("insp_noise").value,
-    smellIssue: document.getElementById("insp_smell").value,
-
-    extraAnswers: collectDynamicAnswers(),
-
-    photo1, photo2, photo3,
-    comments: document.getElementById("insp_comments").value
+  const data={
+    timestamp:new Date().toISOString(),
+    datetimeLocal:document.getElementById("insp_datetime").value,
+    electricianName:name,
+    breakerStatus:insp_breaker.value,
+    cleanStatus:insp_clean.value,
+    lockedStatus:insp_lock.value,
+    wiringStatus:insp_wiring.value,
+    earthStatus:insp_earth.value,
+    heatIssue:insp_heat.value,
+    noiseIssue:insp_noise.value,
+    smellIssue:insp_smell.value,
+    photo1,photo2,photo3,
+    comments:insp_comments.value
   };
 
-  saveInspection(dbId, data, () => {
-    alert("Inspection submitted successfully.");
-    window.location.href = "panel.html?id=" + encodeURIComponent(dbId);
+  saveInspection(dbId,data,()=>{
+
+    // -------- UPDATE NEXT INSPECTION DATE --------
+
+    const today=new Date();
+    const nextDue=new Date();
+    nextDue.setDate(today.getDate()+15);
+
+    firebase.database()
+      .ref("panels/"+dbId)
+      .update({
+        lastInspection:today.toISOString(),
+        nextInspectionDue:nextDue.toISOString()
+      })
+      .then(()=>{
+
+        alert("Inspection submitted successfully.");
+        window.location.href="panel.html?id="+encodeURIComponent(dbId);
+
+      });
+
   });
+
 }
 
 </script>
