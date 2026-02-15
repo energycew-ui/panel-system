@@ -160,37 +160,30 @@ function loadTransformerInspection(trId, callback) {
   });
 }
 
+// ============================
+//       LUX REPORTS (FLAT)
+// ============================
 
-// ============================
-//       LUX REPORTS
-// ============================
-function saveLuxReport(luxId, data, callback) {
+function saveLuxReport(data, callback) {
 
   const key = db.ref().push().key;
 
-  db.ref("luxReports/" + luxId + "/" + key).set(data)
-  .then(() => {
+  const now = new Date();
+  const next = new Date();
+  next.setDate(now.getDate() + 30);   // 30 DAY LUX CYCLE
 
-      const now = new Date();
-      const next = new Date();
-      next.setDate(now.getDate() + 30);   // 30 DAY LUX CYCLE
-
-      return db.ref("luxAreas/" + luxId).update({
-          lastInspection: now.toISOString(),
-          nextInspectionDue: next.toISOString()
-      });
-
+  db.ref("luxReports/" + key).set({
+      ...data,
+      timestamp: now.toISOString(),
+      nextInspectionDue: next.toISOString()
   })
   .then(() => {
-
-      console.log("LUX inspection + dates updated");
-
+      console.log("LUX report saved successfully");
       if (callback) callback(key);
-
   })
   .catch(err => {
-      console.error("Error:", err);
-      alert("Error saving LUX inspection");
+      console.error("Error saving LUX report:", err);
+      alert("Error saving LUX report");
   });
 }
 
@@ -214,6 +207,7 @@ function deleteLuxReport(key, callback) {
   db.ref("luxReports/" + key).remove().then(() => {
     if (callback) callback();
   });
+
 }
 
 
