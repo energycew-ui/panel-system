@@ -117,19 +117,6 @@
 <div class="card" id="formCard">
 
   <h2>Transformer Inspection</h2>
-<!-- TRANSFORMER BASIC INFO (AUTO FROM ADMIN) -->
-<div id="trInfoBox" style="
-  margin-bottom:15px;
-  padding:12px;
-  background:#f9f9f9;
-  border:1px solid #ccc;
-  border-radius:8px;
-  font-size:14px;
-">
-  <b>Transformer ID:</b> <span id="info_tr_id">Loading...</span><br>
-  <b>Rating:</b> <span id="info_tr_rating">Loading...</span><br>
-  <b>Location:</b> <span id="info_tr_location">Loading...</span>
-</div>
 
   <label>Date & Time</label>
   <input type="datetime-local" id="tr_datetime">
@@ -270,25 +257,6 @@ function showForm() {
 ---------------------------*/
 const params = new URLSearchParams(window.location.search);
 const trId = params.get("id") || "TR-001";
-/* --------------------------
-   LOAD TRANSFORMER BASIC INFO
----------------------------*/
-firebase.database()
-  .ref("transformers/" + trId)
-  .once("value")
-  .then(snap => {
-    const tr = snap.val();
-    if (!tr) return;
-
-    document.getElementById("info_tr_id").innerText =
-      tr.transformerId || trId;
-
-    document.getElementById("info_tr_rating").innerText =
-      tr.rating || "-";
-
-    document.getElementById("info_tr_location").innerText =
-      tr.location || "-";
-  });
 
 /* --------------------------
    LOAD DYNAMIC QUESTIONS
@@ -400,6 +368,17 @@ function submitTransformer() {
     photo1, photo2, photo3,
     comments: document.getElementById("tr_comments").value
   };
+
+  // ✅ CALL YOUR CENTRAL FUNCTION
+  saveTransformerInspection(trId, data, function() {
+
+      alert("Transformer inspection submitted successfully.");
+
+      window.location.href =
+        "panel.html?id=" + encodeURIComponent(trId);
+
+  });
+}
 
   // SAVE TO FIREBASE:
   firebase.database()
