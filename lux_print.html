@@ -137,16 +137,14 @@ th { background:#fdf6da; }
 <script>
 
 const params = new URLSearchParams(window.location.search);
-const areaId = params.get("area");
-const reportKey = params.get("report");
+const reportKey = params.get("id");
 
-if (!areaId || !reportKey) {
+if (!reportKey) {
   document.getElementById("reportPage").innerHTML = "<p>Invalid Report Link</p>";
 }
 
-/* LOAD REPORT */
 firebase.database()
-.ref("luxReports/" + areaId + "/" + reportKey)
+.ref("luxReports/" + reportKey)
 .once("value")
 .then(snap => {
 
@@ -156,6 +154,7 @@ firebase.database()
     return;
   }
 
+  // BASIC INFO
   document.getElementById("p_location").textContent = r.samplingLocation || "";
   document.getElementById("p_date").textContent = r.sampleDate || "";
   document.getElementById("p_time").textContent =
@@ -163,6 +162,7 @@ firebase.database()
   document.getElementById("p_collectedBy").textContent = r.collectedBy || "";
   document.getElementById("p_designation").textContent = r.designation || "";
 
+  // MEASUREMENTS
   const tbody = document.getElementById("measureBody");
 
   if (r.measurements && Array.isArray(r.measurements)) {
@@ -180,37 +180,33 @@ firebase.database()
     });
   }
 
-});
-
-/* LOAD STATUS FROM luxAreas */
-firebase.database()
-.ref("luxAreas/" + areaId)
-.once("value")
-.then(snap => {
-
-  const area = snap.val();
-  if (!area) return;
+  /* -------- 30 DAY STATUS LOGIC -------- */
 
   const statusBox = document.getElementById("statusBox");
   const nextDueEl = document.getElementById("nextDue");
 
-  if (!area.lastInspection || !area.nextInspectionDue) {
+  if (!r.timestamp) {
     statusBox.innerHTML = `<span class="status-box red">FIRST CHECK REQUIRED</span>`;
     nextDueEl.textContent = "-";
     return;
   }
 
-  const now = new Date();
-  const due = new Date(area.nextInspectionDue);
-  const diff = Math.ceil((due - now)/(1000*60*60*24));
+  const lastDate = new Date(r.timestamp);
+  const nextDate = new Date(lastDate);
+  nextDate.setDate(lastDate.getDate() + 30);
 
-  nextDueEl.textContent = due.toLocaleDateString();
+  const now = new Date();
+  const diff = Math.ceil((nextDate - now) / (1000 * 60 * 60 * 24));
+
+  nextDueEl.textContent = nextDate.toLocaleDateString("en-GB");
 
   if (diff < 0) {
     statusBox.innerHTML = `<span class="status-box red">OVERDUE</span>`;
-  } else if (diff <= 5) {
+  } 
+  else if (diff <= 5) {
     statusBox.innerHTML = `<span class="status-box orange">DUE SOON</span>`;
-  } else {
+  } 
+  else {
     statusBox.innerHTML = `<span class="status-box green">OK</span>`;
   }
 
