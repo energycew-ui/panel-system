@@ -1324,35 +1324,90 @@ function saveTransformerEntry() {
 }
 
 function showTransformers() {
+
   const div = document.getElementById("transformerList");
   if (!div) return;
+
   firebase.database().ref("transformers").once("value").then(snap => {
+
     const all = snap.val();
+
     if (!all) {
       div.innerHTML = "<p>No transformers in database.</p>";
       return;
     }
-    let html = "<table><tr><th>ID</th><th>Rating</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
+
+    let html = `
+      <table>
+        <tr>
+          <th>ID</th>
+          <th>Rating</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th>Next Due</th>
+          <th>Reminder</th>
+          <th>Action</th>
+        </tr>
+    `;
+
     Object.keys(all).forEach(id => {
+
       const t = all[id];
+
+      let statusText = "FIRST INSPECTION REQUIRED";
+      let statusClass = "badge-bad";
+      let nextDueText = "-";
+
+      if (t.lastInspection && t.nextInspectionDue) {
+
+        const nextDate = new Date(t.nextInspectionDue);
+        const today = new Date();
+        const diffDays = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+
+        nextDueText = nextDate.toLocaleDateString("en-GB");
+
+        if (diffDays < 0) {
+          statusText = "OVERDUE";
+          statusClass = "badge-bad";
+        } 
+        else if (diffDays <= 7) {
+          statusText = "DUE SOON";
+          statusClass = "badge-warn";
+        } 
+        else {
+          statusText = "OK";
+          statusClass = "badge-ok";
+        }
+
+      }
+
       html += `
         <tr>
           <td>${t.transformerId || id}</td>
           <td>${t.rating || ""}</td>
           <td>${t.location || ""}</td>
-          <td>${t.purpose || ""}</td>
+          <td><span class="badge ${statusClass}">${statusText}</span></td>
+          <td>${nextDueText}</td>
+          <td>
+            <button class="secondary-btn"
+              onclick="sendTransformerReminder('${t.transformerId || id}', '${nextDueText}', '${statusText}')">
+              Send WhatsApp
+            </button>
+          </td>
           <td>
             <button class="secondary-btn" onclick="editTransformer('${id}')">Edit</button>
             <button class="danger-btn" onclick="deleteTransformer('${id}')">Delete</button>
           </td>
         </tr>
       `;
+
     });
+
     html += "</table>";
     div.innerHTML = html;
+
   });
 }
-
 function editTransformer(id) {
   firebase.database().ref("transformers/" + id).once("value").then(snap => {
     const t = snap.val();
@@ -2001,29 +2056,37 @@ function loadMasterReport() {
 
     ids.forEach(id => {
       const p = all[id];
-let statusText = "No Record";
-let statusClass = "badge-warn";
+let statusText = "FIRST INSPECTION REQUIRED";
+let statusClass = "badge-bad";
 let nextDueText = "-";
 
-if (p.nextInspectionDue) {
-  const nextDate = new Date(p.nextInspectionDue);
-  const today = new Date();
-  const diffDays = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+if (p.lastInspection) {
 
- nextDueText = nextDate.toLocaleDateString("en-GB");
+  if (p.nextInspectionDue) {
 
+    const nextDate = new Date(p.nextInspectionDue);
+    const today = new Date();
+    const diffDays = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) {
-    statusText = "OVERDUE";
-    statusClass = "badge-bad";
-  } else if (diffDays <= 5) {
-    statusText = "Due Soon";
-    statusClass = "badge-warn";
-  } else {
-    statusText = "OK";
-    statusClass = "badge-ok";
+    nextDueText = nextDate.toLocaleDateString("en-GB");
+
+    if (diffDays < 0) {
+      statusText = "OVERDUE";
+      statusClass = "badge-bad";
+    } 
+    else if (diffDays <= 5) {
+      statusText = "DUE SOON";
+      statusClass = "badge-warn";
+    } 
+    else {
+      statusText = "OK";
+      statusClass = "badge-ok";
+    }
+
   }
+
 }
+
 
       const circuitCount = (p.circuits && Array.isArray(p.circuits)) ? p.circuits.length : 0;
       const rowId = `master-details-${id}`;
@@ -2040,14 +2103,11 @@ if (p.nextInspectionDue) {
 <td><span class="badge ${statusClass}">${statusText}</span></td>
 <td>${nextDueText}</td>
 <td>
-  ${
-    statusText === "No Record"
-    ? `<span style="color:#888;font-size:13px;">No inspection yet</span>`
-    : `<button class="secondary-btn"
-         onclick="sendInspectionReminder('${p.dbNumber || id}', '${nextDueText}', '${statusText}')">
-         Send WhatsApp
-       </button>`
-  }
+  <button class="secondary-btn"
+  onclick="sendInspectionReminder('${p.dbNumber || id}', '${nextDueText}', '${statusText}')">
+  Send WhatsApp
+</button>
+
 </td>
 <td>
 
@@ -2872,20 +2932,124 @@ function exportLuxCSV() {
 }
 function sendInspectionReminder(dbId, nextDue, status) {
 
-  const message = 
-`⚡ Electrical DB Inspection Alert
+  let message = "";
+
+  if (status === "FIRST INSPECTION REQUIRED") {
+
+    message =
+`⚠️ FIRST INSPECTION REQUIRED
 
 DB: ${dbId}
-Status: ${status}
-Next Due: ${nextDue}
 
-Please schedule inspection immediately.
+This panel has never been inspected.
+Please conduct first inspection immediately.
 
 Chenab Engineering Works`;
 
-  const phone = ""; // leave empty for group use
-  const url = "https://wa.me/?text=" + encodeURIComponent(message);
+  }
+  else if (status === "OVERDUE") {
 
+    message =
+`🚨 INSPECTION OVERDUE
+
+DB: ${dbId}
+Due Date: ${nextDue}
+
+Inspection is overdue.
+Immediate action required.
+
+Chenab Engineering Works`;
+
+  }
+  else if (status === "DUE SOON") {
+
+    message =
+`⚡ Inspection Due Soon
+
+DB: ${dbId}
+Next Due: ${nextDue}
+
+Please schedule inspection.
+
+Chenab Engineering Works`;
+
+  }
+  else {
+
+    message =
+`ℹ️ Inspection Reminder
+
+DB: ${dbId}
+Next Due: ${nextDue}
+
+Regular inspection reminder.
+
+Chenab Engineering Works`;
+
+  }
+
+  const url = "https://wa.me/?text=" + encodeURIComponent(message);
+  window.open(url, "_blank");
+}
+function sendTransformerReminder(trId, nextDue, status) {
+
+  let message = "";
+
+  if (status === "FIRST INSPECTION REQUIRED") {
+
+    message =
+`⚠️ FIRST TRANSFORMER INSPECTION REQUIRED
+
+Transformer: ${trId}
+
+This transformer has never been inspected.
+Please conduct inspection immediately.
+
+Chenab Engineering Works`;
+
+  }
+  else if (status === "OVERDUE") {
+
+    message =
+`🚨 TRANSFORMER INSPECTION OVERDUE
+
+Transformer: ${trId}
+Due Date: ${nextDue}
+
+Inspection is overdue.
+Immediate action required.
+
+Chenab Engineering Works`;
+
+  }
+  else if (status === "DUE SOON") {
+
+    message =
+`⚡ Transformer Inspection Due Soon
+
+Transformer: ${trId}
+Next Due: ${nextDue}
+
+Please schedule inspection.
+
+Chenab Engineering Works`;
+
+  }
+  else {
+
+    message =
+`ℹ️ Transformer Inspection Reminder
+
+Transformer: ${trId}
+Next Due: ${nextDue}
+
+Regular inspection reminder.
+
+Chenab Engineering Works`;
+
+  }
+
+  const url = "https://wa.me/?text=" + encodeURIComponent(message);
   window.open(url, "_blank");
 }
 

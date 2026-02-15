@@ -123,12 +123,35 @@ function loadAllTransformers(callback) {
 // ======================================
 
 function saveTransformerInspection(trId, data, callback) {
+
   const key = db.ref().push().key;
+
   db.ref("transformerInspections/" + trId + "/" + key).set(data, err => {
-    if (err) alert("Error saving transformer report");
-    else if (callback) callback(key);
+
+    if (err) {
+      alert("Error saving transformer report");
+      return;
+    }
+
+    // ===== UPDATE TRANSFORMER INSPECTION DATES =====
+
+    const now = new Date();
+    const next = new Date();
+    next.setDate(now.getDate() + 60);   // 60 DAY CYCLE
+
+    db.ref("transformers/" + trId).update({
+      lastInspection: now.toISOString(),
+      nextInspectionDue: next.toISOString()
+    }).then(() => {
+      console.log("Transformer dates updated successfully");
+    });
+
+    if (callback) callback(key);
+
   });
+
 }
+
 
 function loadTransformerInspection(trId, callback) {
   db.ref("transformerInspections/" + trId).once("value").then(snap => {
@@ -177,6 +200,5 @@ function deleteLuxReport(key, callback) {
     if (callback) callback();
   });
 }
-
 
 
