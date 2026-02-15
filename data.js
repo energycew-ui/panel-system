@@ -164,21 +164,35 @@ function loadTransformerInspection(trId, callback) {
 // ============================
 //       LUX REPORTS
 // ============================
+function saveLuxReport(luxId, data, callback) {
 
-function saveLuxReport(data, callback) {
   const key = db.ref().push().key;
-  db.ref("luxReports/" + key).set(data, err => {
-    if (err) alert("Error saving LUX report");
-    else if (callback) callback(key);
+
+  db.ref("luxReports/" + luxId + "/" + key).set(data)
+  .then(() => {
+
+      const now = new Date();
+      const next = new Date();
+      next.setDate(now.getDate() + 30);   // 30 DAY LUX CYCLE
+
+      return db.ref("luxAreas/" + luxId).update({
+          lastInspection: now.toISOString(),
+          nextInspectionDue: next.toISOString()
+      });
+
+  })
+  .then(() => {
+
+      console.log("LUX inspection + dates updated");
+
+      if (callback) callback(key);
+
+  })
+  .catch(err => {
+      console.error("Error:", err);
+      alert("Error saving LUX inspection");
   });
 }
-
-function loadAllLuxReports(callback) {
-  db.ref("luxReports").once("value").then(snap => {
-    callback(snap.val());
-  });
-}
-
 
 // ============================
 //       DELETE FUNCTIONS

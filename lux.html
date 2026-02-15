@@ -304,7 +304,7 @@
         <tr>
           <td class="label">Equipment Used:</td>
           <td>
-          <input type="text" name="equipmentUsed" id="equipmentUsed" value="Lux Meter" readonly>
+            <input type="text" name="equipmentUsed" id="equipmentUsed">
           </td>
         </tr>
         <tr>
@@ -325,13 +325,6 @@
             <input type="date" name="calibrationDate" id="calibrationDate">
           </td>
         </tr>
-<tr>
-  <td class="label">Next Calibration Due Date:</td>
-  <td>
-    <input type="date" name="nextCalibrationDate" id="nextCalibrationDate" readonly>
-  </td>
-</tr>
-
       </table>
 
       <br>
@@ -460,31 +453,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const now = new Date();
   const isoDate = now.toISOString().slice(0,10);
   const time = now.toTimeString().slice(0,5);
-
   document.getElementById("sampleDate").value = isoDate;
   document.getElementById("timeFrom").value = time;
-
-  // 🔹 AUTO-FILL LUX CONFIG FROM ADMIN
-  firebase.database().ref("luxConfig").once("value").then(snap => {
-    const cfg = snap.val();
-    if (!cfg) return;
-
-    document.getElementById("equipmentUsed").value = "Lux Meter";
-    document.getElementById("model").value = cfg.model || "";
-    document.getElementById("calibrationNo").value = cfg.calibrationNo || "";
-    document.getElementById("calibrationDate").value = cfg.calibrationDate || "";
-document.getElementById("nextCalibrationDate").value = cfg.nextCalibrationDate || "";
-
-
-    // lock admin-controlled fields
-    document.getElementById("model").readOnly = true;
-    document.getElementById("calibrationNo").readOnly = true;
-    document.getElementById("calibrationDate").readOnly = true;
-document.getElementById("nextCalibrationDate").readOnly = true;
-
-  });
 });
-
 
 /* =================== IMAGE PREVIEW HELPERS =================== */
 
@@ -519,47 +490,20 @@ function fileToBase64(inputId) {
     const inp = document.getElementById(inputId);
     const file = inp.files[0];
     if (!file) { resolve(null); return; }
-
     const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.src = e.target.result;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const maxW = 800;
-        const scale = Math.min(1, maxW / img.width);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.7));
-      };
-    };
+    reader.onload = e => resolve(e.target.result);
     reader.readAsDataURL(file);
   });
 }
 
-
 /* =================== SUBMIT TO FIREBASE (new structure) =================== */
+/* =================== SUBMIT TO FIREBASE =================== */
+
+const params = new URLSearchParams(window.location.search);
+const luxId = params.get("id") || samplingLocation || "AREA-01";
 
 document.getElementById("luxForm").addEventListener("submit", async function(e){
   e.preventDefault();
-let prog = document.getElementById("luxProgress");
-if (!prog) {
-  prog = document.createElement("div");
-  prog.id = "luxProgress";
-  prog.style.marginTop = "8px";
-  prog.style.fontWeight = "bold";
-  this.querySelector(".actions").appendChild(prog);
-}
-prog.innerText = "Submitting... 0%";
-
-let percent = 0;
-const timer = setInterval(() => {
-  percent += 10;
-  prog.innerText = "Submitting... " + percent + "%";
-  if (percent >= 90) clearInterval(timer);
-}, 200);
-
 
   const samplingLocation = document.getElementById("samplingLocation").value.trim();
   const collectedBy = document.getElementById("collectedBy").value.trim();
@@ -596,19 +540,7 @@ const timer = setInterval(() => {
   }
 
   const data = {
-    // Meta
     timestamp: new Date().toISOString(),
-
-    // Header
-    formCode: "CEWF-ADM-FRM-002",
-    effectiveDate: "20-11-2025",
-    issueNo: "01",
-    revisionNo: "00",
-
-    // Type of monitoring
-    typeSpot: document.getElementById("typeSpot").checked ? "Spot Sample" : "",
-    typeArea: document.getElementById("typeArea").checked ? "Area Survey" : "",
-
     samplingLocation,
     sampleDate: document.getElementById("sampleDate").value,
     timeFrom : document.getElementById("timeFrom").value,
@@ -619,22 +551,17 @@ const timer = setInterval(() => {
     model: document.getElementById("model").value.trim(),
     calibrationNo: document.getElementById("calibrationNo").value.trim(),
     calibrationDate: document.getElementById("calibrationDate").value,
-
     measurements
   };
 
-  // Save in Firebase under "luxReports" (same path as your previous system) :contentReference[oaicite:2]{index=2}
- saveLuxReport(data, key => {
-  document.getElementById("luxProgress").innerText = "Submitted 100%";
-  setTimeout(() => {
-    alert("LUX Report submitted successfully.");
-    window.location.reload();
-  }, 300);
-});
+  saveLuxReport(samplingLocation, data, function() {
+      alert("LUX Report submitted successfully.");
+      window.location.reload();
+  });
 
 });
 
 </script>
+
 </body>
 </html>
-

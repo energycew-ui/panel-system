@@ -814,11 +814,7 @@ function checkLogin() {
     afterLoginInit();
   } else {
     error.textContent = "Incorrect password.";
-  }setInterval(() => {
-  if (masterPanelsGlobal) {
-    loadMasterReport();
   }
-}, 60000); // refresh every 60 seconds
 
 }
 
@@ -843,6 +839,11 @@ function afterLoginInit() {
   loadTransformerReports();
   loadLuxReports();
   loadSafetyRecords();
+setInterval(() => {
+  if (masterPanelsGlobal) {
+    loadMasterReport();
+  }
+}, 60000); // refresh every 60 seconds
 
   // 🔧 Auto-load DB for editing when coming from panel.html
   const params = new URLSearchParams(window.location.search);
@@ -1170,132 +1171,6 @@ function updateSafetySummary(list) {
       <div class="summary-value" style="color:#0b7a2a;">${closed}</div>
     </div>
   `;
-}
-
-function renderSafetyTable(list) {
-
-  const container = document.getElementById("safetyTable");
-  if (!container) return;
-
-  if (!list.length) {
-    container.innerHTML = "<p>No safety records found.</p>";
-    return;
-  }
-
-  let html = `
-    <table>
-      <tr>
-        <th>Date Opened</th>
-        <th>DB</th>
-        <th>Electrician</th>
-        <th>Score</th>
-        <th>Status</th>
-        <th>Duration (hrs)</th>
-        <th>Alert</th>
-        <th>Photo</th>
-        <th>PDF</th>
-        <th>Fault</th>
-<th>Delete</th>
-
-      </tr>
-  `;
-
-  list.forEach(r => {
-
-    const openDate = r.timestamp ? new Date(r.timestamp) : null;
-    const now = new Date();
-
-    let durationMinutes = 0;
-
-    if (openDate) {
-      if (r.closedAt) {
-        durationMinutes = (new Date(r.closedAt) - openDate) / 60000;
-      } else {
-        durationMinutes = (now - openDate) / 60000;
-      }
-    }
-
-    const durationHours = (durationMinutes / 60).toFixed(2);
-
-    let alertBadge = "";
-    if (r.status !== "CLOSED" && durationMinutes > 120) {
-      alertBadge = `<span class="badge badge-bad">⚠ OPEN > 2H</span>`;
-    }
-
-    const statusBadge = r.status === "CLOSED"
-      ? `<span class="badge badge-ok">CLOSED</span>`
-      : `<span class="badge badge-bad">OPEN</span>`;
-
-    html += `
-      <tr>
-        <td>${openDate ? openDate.toLocaleString() : ""}</td>
-        <td><span class="badge badge-info">${r.dbId}</span></td>
-        <td>${r.electricianName || ""}</td>
-        <td>
-  ${(r.checklistScore || 0) < 3
-    ? `<span class="badge badge-bad">${r.checklistScore || 0} / 5</span>`
-    : `<span class="badge badge-ok">${r.checklistScore || 0} / 5</span>`
-  }
-</td>
-
-        <td>${statusBadge}</td>
-        <td>${durationHours}</td>
-        <td>${alertBadge}</td>
-        <td>
-          ${r.safetyPhoto 
-            ? `<button class="photo-btn" onclick="openPhoto('${r.safetyPhoto}')">View</button>`
-            : "—"}
-        </td>
-        <td>
-          <button class="secondary-btn"
-            onclick="window.open('safety_print.html?db=${r.dbId}&id=${r.recordKey}','_blank')">
-            PDF
-          </button>
-        </td>
-        <td>
-          ${r.faultRef
-            ? `<button class="secondary-btn" onclick="openFaultPrint('${r.dbId}','${r.faultRef}')">View Fault</button>`
-            : "—"}
-        </td>
-      <td>
-  <button class="danger-btn"
-    onclick="deleteSafetyRecord('${r.dbId}','${r.recordKey}')">
-    Delete
-  </button>
-</td>
-</tr>
-    `;
-  });
-
-  html += "</table>";
-  container.innerHTML = html;
-}
-
-function showPanels() {
-  loadAllPanels(all => {
-    const div = document.getElementById("panelList");
-    if (!all) {
-      div.innerHTML = "<p>No panels in database.</p>";
-      return;
-    }
-    let html = "<table><tr><th>DB</th><th>Location</th><th>Purpose</th><th>Action</th></tr>";
-    Object.keys(all).forEach(id => {
-      const p = all[id];
-      html += `
-        <tr>
-          <td>${p.dbNumber || id}</td>
-          <td>${p.location || ""}</td>
-          <td>${p.purpose || ""}</td>
-          <td>
-            <button class="secondary-btn" onclick="editPanel('${id}')">Edit</button>
-            <button class="danger-btn" onclick="deletePanel('${id}')">Delete</button>
-          </td>
-        </tr>
-      `;
-    });
-    html += "</table>";
-    div.innerHTML = html;
-  });
 }
 
 /* ------------ TRANSFORMER ENTRY ------------ */
@@ -2784,15 +2659,16 @@ function renderLuxTable(list) {
       <tr>
         <th>Date</th>
         <th>Location / Dept</th>
-        <th>Type of Monitoring</th>
         <th>Collected By</th>
-        <th>Meter / Calibration</th>
+        <th>Status</th>
+        <th>Next Due</th>
         <th>Measurements</th>
         <th>Action</th>
       </tr>
   `;
 
   list.forEach(r => {
+
     const dateStr = r.sampleDate || r.date || "";
     const timePart = r.timeFrom
       ? `From ${r.timeFrom}${r.timeTo ? " – " + r.timeTo : ""}`
@@ -2800,19 +2676,41 @@ function renderLuxTable(list) {
 
     const loc = r.samplingLocation || r.department || "";
 
-    const typeText = [r.typeSpot, r.typeArea, r.monitorType]
-      .filter(Boolean)
-      .join(" / ");
+    /* ---------------- 30 DAY STATUS LOGIC ---------------- */
 
-    const meterText = [
-      r.model || r.meterModel || "",
-      (r.calibrationNo ? "Cert: " + r.calibrationNo : ""),
-      (r.calibrationDate ? "(" + r.calibrationDate + ")" : "")
-    ]
-      .filter(Boolean)
-      .join("<br>");
+    let statusText = "FIRST CHECK REQUIRED";
+    let statusClass = "badge-bad";
+    let nextDueText = "-";
+
+    if (r.timestamp) {
+
+      const lastDate = new Date(r.timestamp);
+      const nextDate = new Date(lastDate);
+      nextDate.setDate(lastDate.getDate() + 30);
+
+      const today = new Date();
+      const diffDays = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+
+      nextDueText = nextDate.toLocaleDateString("en-GB");
+
+      if (diffDays < 0) {
+        statusText = "OVERDUE";
+        statusClass = "badge-bad";
+      } 
+      else if (diffDays <= 5) {
+        statusText = "DUE SOON";
+        statusClass = "badge-warn";
+      } 
+      else {
+        statusText = "OK";
+        statusClass = "badge-ok";
+      }
+    }
+
+    /* ---------------- MEASUREMENTS ---------------- */
 
     let measText = "";
+
     if (Array.isArray(r.measurements) && r.measurements.length) {
       measText = r.measurements
         .map((m, i) =>
@@ -2827,15 +2725,20 @@ function renderLuxTable(list) {
       <tr>
         <td>${dateStr}<br><small>${timePart}</small></td>
         <td>${loc}</td>
-        <td>${typeText}</td>
         <td>${r.collectedBy || r.electricianName || ""}</td>
-        <td>${meterText}</td>
+        <td><span class="badge ${statusClass}">${statusText}</span></td>
+        <td>${nextDueText}</td>
         <td>${measText}</td>
         <td>
           <button class="secondary-btn" onclick="openLuxPrint('${r.key}')">
-            View / Print
+            View
           </button>
-          <button class="danger-btn" onclick="deleteLuxReport('${r.key}')">
+          <button class="secondary-btn"
+            onclick="sendLuxReminder('${loc}', '${nextDueText}', '${statusText}')">
+            WhatsApp
+          </button>
+          <button class="danger-btn"
+            onclick="deleteLuxReport('${r.key}')">
             Delete
           </button>
         </td>
@@ -3051,6 +2954,124 @@ Chenab Engineering Works`;
 
   const url = "https://wa.me/?text=" + encodeURIComponent(message);
   window.open(url, "_blank");
+}
+function sendLuxReminder(location, nextDue, status) {
+
+  let message = "";
+
+  if (status === "OVERDUE") {
+
+    message =
+`🚨 LUX MONITORING OVERDUE
+
+Location: ${location}
+Due Date: ${nextDue}
+
+Lighting inspection is overdue.
+Immediate action required.
+
+Chenab Engineering Works`;
+
+  }
+  else if (status === "DUE SOON") {
+
+    message =
+`⚡ LUX Monitoring Due Soon
+
+Location: ${location}
+Next Due: ${nextDue}
+
+Please schedule inspection.
+
+Chenab Engineering Works`;
+
+  }
+  else {
+
+    message =
+`ℹ️ LUX Monitoring Reminder
+
+Location: ${location}
+Next Due: ${nextDue}
+
+Regular lighting inspection reminder.
+
+Chenab Engineering Works`;
+
+  }
+
+  const url = "https://wa.me/?text=" + encodeURIComponent(message);
+  window.open(url, "_blank");
+}
+function renderSafetyTable(list) {
+
+  const container = document.getElementById("safetyTable");
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = "<p>No safety records found.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <tr>
+        <th>Date Opened</th>
+        <th>DB</th>
+        <th>Electrician</th>
+        <th>Status</th>
+        <th>Duration (hrs)</th>
+        <th>Alert</th>
+        <th>Action</th>
+      </tr>
+  `;
+
+  list.forEach(r => {
+
+    const openDate = r.timestamp ? new Date(r.timestamp) : null;
+    const now = new Date();
+
+    let durationMinutes = 0;
+
+    if (openDate) {
+      if (r.closedAt) {
+        durationMinutes = (new Date(r.closedAt) - openDate) / 60000;
+      } else {
+        durationMinutes = (now - openDate) / 60000;
+      }
+    }
+
+    const durationHours = (durationMinutes / 60).toFixed(2);
+
+    let alertBadge = "";
+    if (r.status !== "CLOSED" && durationMinutes > 120) {
+      alertBadge = `<span class="badge badge-bad">⚠ OPEN > 2H</span>`;
+    }
+
+    const statusBadge = r.status === "CLOSED"
+      ? `<span class="badge badge-ok">CLOSED</span>`
+      : `<span class="badge badge-bad">OPEN</span>`;
+
+    html += `
+      <tr>
+        <td>${openDate ? openDate.toLocaleString() : ""}</td>
+        <td><span class="badge badge-info">${r.dbId}</span></td>
+        <td>${r.electricianName || ""}</td>
+        <td>${statusBadge}</td>
+        <td>${durationHours}</td>
+        <td>${alertBadge}</td>
+        <td>
+          <button class="danger-btn"
+            onclick="deleteSafetyRecord('${r.dbId}','${r.recordKey}')">
+            Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += "</table>";
+  container.innerHTML = html;
 }
 
 </script>
