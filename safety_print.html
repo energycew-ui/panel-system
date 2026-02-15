@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Safety Declaration Print</title>
+  <title>Safety Declaration Report</title>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -9,32 +9,71 @@
 
   <style>
     body {
-      font-family: Arial;
-      padding: 30px;
-      background: #fff;
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f4f4f4;
     }
 
     h1 {
       text-align: center;
-      margin-bottom: 30px;
+      color: #f0b429;
+      margin-bottom: 5px;
     }
 
-    .section {
-      margin-bottom: 15px;
+    h3 {
+      text-align: center;
+      margin-top: 0;
+      font-weight: normal;
+      color: #555;
     }
 
-    .label {
+    .section-title {
+      background: #111;
+      color: #f0b429;
+      padding: 12px;
+      font-size: 18px;
+      margin-top: 30px;
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: white;
+    }
+
+    td {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    td.label {
+      background: #333;
+      color: white;
       font-weight: bold;
+      width: 35%;
     }
 
     img {
       max-width: 400px;
-      border: 2px solid #333;
-      margin-top: 10px;
+      margin-top: 15px;
+      border: 3px solid #333;
+      border-radius: 6px;
+    }
+
+    .score-low {
+      color: red;
+      font-weight: bold;
+    }
+
+    .score-ok {
+      color: green;
+      font-weight: bold;
     }
 
     button {
-      margin-top: 20px;
+      margin-top: 25px;
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
@@ -42,6 +81,7 @@
 
     @media print {
       button { display: none; }
+      body { background: white; }
     }
   </style>
 </head>
@@ -49,8 +89,9 @@
 <body>
 
 <h1>Safety Declaration Report</h1>
+<h3>Chenab Engineering Works</h3>
 
-<div id="content">Loading...</div>
+<div id="reportContent">Loading...</div>
 
 <button onclick="window.print()">Print / Save as PDF</button>
 
@@ -61,7 +102,7 @@ const dbId = params.get("db");
 const recordKey = params.get("id");
 
 if (!dbId || !recordKey) {
-  document.getElementById("content").innerHTML = "Invalid record.";
+  document.getElementById("reportContent").innerHTML = "Invalid record.";
 } else {
 
   firebase.database()
@@ -72,7 +113,7 @@ if (!dbId || !recordKey) {
       const data = snap.val();
 
       if (!data) {
-        document.getElementById("content").innerHTML = "Record not found.";
+        document.getElementById("reportContent").innerHTML = "Record not found.";
         return;
       }
 
@@ -80,37 +121,70 @@ if (!dbId || !recordKey) {
         ? new Date(data.timestamp).toLocaleString()
         : "";
 
-      const scoreColor = (data.checklistScore || 0) < 3 ? "red" : "green";
+      const scoreClass = (data.checklistScore || 0) < 3
+        ? "score-low"
+        : "score-ok";
 
-      document.getElementById("content").innerHTML = `
-        <div class="section"><span class="label">DB:</span> ${dbId}</div>
-        <div class="section"><span class="label">Electrician:</span> ${data.electricianName || ""}</div>
-        <div class="section"><span class="label">Date Opened:</span> ${openDate}</div>
-        <div class="section"><span class="label">Permit No:</span> ${data.permitNo || ""}</div>
+      document.getElementById("reportContent").innerHTML = `
 
-        <hr>
+        <div class="section-title">Basic Information</div>
 
-        <div class="section"><span class="label">PPE Worn:</span> ${data.ppe}</div>
-        <div class="section"><span class="label">Main Isolation:</span> ${data.isolation}</div>
-        <div class="section"><span class="label">Voltage Tested:</span> ${data.voltageTest}</div>
-        <div class="section"><span class="label">2 Persons Present:</span> ${data.lockout}</div>
-        <div class="section"><span class="label">Supervisor Informed:</span> ${data.supervisor}</div>
+        <table>
+          <tr>
+            <td class="label">DB Number</td>
+            <td>${dbId}</td>
+          </tr>
+          <tr>
+            <td class="label">Electrician</td>
+            <td>${data.electricianName || ""}</td>
+          </tr>
+          <tr>
+            <td class="label">Date Opened</td>
+            <td>${openDate}</td>
+          </tr>
+          <tr>
+            <td class="label">Permit No</td>
+            <td>${data.permitNo || ""}</td>
+          </tr>
+        </table>
 
-        <hr>
+        <div class="section-title">Safety Checklist</div>
 
-        <div class="section">
-          <span class="label">Checklist Score:</span>
-          <span style="color:${scoreColor}; font-weight:bold;">
-            ${data.checklistScore || 0} / 5
-          </span>
-        </div>
+        <table>
+          <tr>
+            <td class="label">PPE Worn</td>
+            <td>${data.ppe || ""}</td>
+          </tr>
+          <tr>
+            <td class="label">Main Isolation</td>
+            <td>${data.isolation || ""}</td>
+          </tr>
+          <tr>
+            <td class="label">Voltage Tested</td>
+            <td>${data.voltageTest || ""}</td>
+          </tr>
+          <tr>
+            <td class="label">2 Persons Present</td>
+            <td>${data.lockout || ""}</td>
+          </tr>
+          <tr>
+            <td class="label">Supervisor Informed</td>
+            <td>${data.supervisor || ""}</td>
+          </tr>
+          <tr>
+            <td class="label">Checklist Score</td>
+            <td class="${scoreClass}">
+              ${data.checklistScore || 0} / 5
+            </td>
+          </tr>
+        </table>
 
-        <hr>
+        <div class="section-title">Safety Photo</div>
 
-        <div class="section">
-          <span class="label">Safety Photo:</span><br>
-          ${data.safetyPhoto ? `<img src="${data.safetyPhoto}">` : "No photo"}
-        </div>
+        ${data.safetyPhoto
+          ? `<img src="${data.safetyPhoto}">`
+          : `<p>No Photo Uploaded</p>`
+        }
       `;
     });
 }
