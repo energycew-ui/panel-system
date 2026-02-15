@@ -97,7 +97,7 @@ function saveFault(dbId, data, callback) {
 
 // Save transformer metadata
 function saveTransformer(trId, data, callback) {
-  db.ref("transformers/" + trId).set(data, err => {
+  db.ref("transformers/" + trId).update(data, err => {
     if (err) alert("Error saving transformer: " + err);
     else if (callback) callback();
   });
