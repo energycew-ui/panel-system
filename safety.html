@@ -30,6 +30,7 @@
       max-width: 600px;
       margin: 20px auto;
       border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
 
     label {
@@ -53,6 +54,16 @@
       border: none;
       font-size: 16px;
       cursor: pointer;
+      border-radius: 6px;
+    }
+
+    img.preview {
+      width: 100%;
+      max-width: 300px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 2px solid #444;
+      display: none;
     }
   </style>
 </head>
@@ -84,12 +95,33 @@
     <option>No</option>
   </select>
 
-  <label>Lockout Applied?</label>
+  <label>Voltage Tested?</label>
+  <select id="voltageTest">
+    <option value="">Select</option>
+    <option>Yes</option>
+    <option>No</option>
+  </select>
+
+  <label>2 Persons Present (Senior Leading)?</label>
   <select id="lockout">
     <option value="">Select</option>
     <option>Yes</option>
     <option>No</option>
   </select>
+
+  <label>Supervisor Informed?</label>
+  <select id="supervisor">
+    <option value="">Select</option>
+    <option>Yes</option>
+    <option>No</option>
+  </select>
+
+  <label>Work Permit Number</label>
+  <input type="text" id="permitNo">
+
+  <label>Safety Photo (Before Work) *</label>
+  <input type="file" accept="image/*" onchange="previewSafetyPhoto(event)">
+  <img id="safetyPreview" class="preview">
 
   <button onclick="submitSafety()">Submit Safety Declaration</button>
 
@@ -100,23 +132,62 @@
 const params = new URLSearchParams(window.location.search);
 const dbId = params.get("id");
 
+let safetyPhoto = null;
+
+/* PHOTO PREVIEW */
+function previewSafetyPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    safetyPhoto = e.target.result;
+    const img = document.getElementById("safetyPreview");
+    img.src = safetyPhoto;
+    img.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+}
+
+/* SUBMIT SAFETY */
 function submitSafety() {
 
   const name = document.getElementById("name").value.trim();
   const ppe = document.getElementById("ppe").value;
   const isolation = document.getElementById("isolation").value;
+  const voltageTest = document.getElementById("voltageTest").value;
   const lockout = document.getElementById("lockout").value;
+  const supervisor = document.getElementById("supervisor").value;
+  const permitNo = document.getElementById("permitNo").value.trim();
 
-  if (!name || !ppe || !isolation || !lockout) {
-    alert("Please complete all safety fields.");
+  if (!name || !ppe || !isolation || !voltageTest || !lockout || !supervisor) {
+    alert("Please complete all safety checklist fields.");
     return;
   }
+
+  if (!safetyPhoto) {
+    alert("Safety photo is mandatory before starting work.");
+    return;
+  }
+
+  /* CALCULATE CHECKLIST SCORE */
+  let score = 0;
+  if (ppe === "Yes") score++;
+  if (isolation === "Yes") score++;
+  if (voltageTest === "Yes") score++;
+  if (lockout === "Yes") score++;
+  if (supervisor === "Yes") score++;
 
   const data = {
     electricianName: name,
     ppe,
     isolation,
+    voltageTest,
     lockout,
+    supervisor,
+    permitNo,
+    safetyPhoto: safetyPhoto,
+    checklistScore: score,
     timestamp: new Date().toISOString(),
     status: "OPEN"
   };
@@ -124,10 +195,14 @@ function submitSafety() {
   const ref = firebase.database().ref("safetyDeclarations/" + dbId).push();
 
   ref.set(data, function() {
-    alert("Safety Declaration Submitted!");
 
-    // Redirect to fault page
-    window.location.href = "fault.html?id=" + dbId;
+    const safetyKey = ref.key;
+
+    alert("Safety Declaration Submitted! (Score: " + score + " / 5)");
+
+    window.location.href =
+      "fault.html?id=" + dbId +
+      "&safetyKey=" + safetyKey;
   });
 
 }

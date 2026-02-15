@@ -6,7 +6,6 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
   <!-- Your Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
   <script src="data.js"></script>
@@ -297,7 +296,7 @@
       border-radius: 10px;
       padding: 8px 12px;
       min-width: 150px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1));
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       font-size: 13px;
     }
     .summary-title {
@@ -473,6 +472,10 @@
     <button class="tab-btn" data-target="tab-lux-reports">LUX Reports</button>
     <button class="tab-btn" data-target="tab-master">Master DB Report</button>
     <button class="tab-btn" data-target="tab-questions">Form Questions</button>
+    <button class="tab-btn" data-target="tab-safety">Safety Records</button>
+
+    
+
   </div>
 
   <div class="tab-wrapper">
@@ -700,68 +703,6 @@
         </div>
 
         <div id="luxSummary" class="summary-row"></div>
-<hr>
-
-<h3>LUX Instrument Configuration (Admin)</h3>
-
-<label>Instrument</label>
-<input type="text" value="Lux Meter" disabled>
-
-<label>Lux Meter Model</label>
-<input type="text" id="luxModel">
-
-<label>Calibration Certificate No</label>
-<input type="text" id="luxCert">
-
-<label>Calibration Date</label>
-<input type="date" id="luxCalDate">
-<label>Next Calibration Due Date</label>
-<input type="date" id="luxNextCalDate">
-
-<label>Upload Calibration Report (PDF / Image)</label>
-<input type="file" id="luxCalReport" accept=".pdf,image/*">
-
-<button class="primary-btn" onclick="uploadLuxCalibrationReport()">
-  Upload Calibration Report
-</button>
-
-<div id="luxCalReportStatus" style="margin-top:8px;font-weight:bold;"></div>
-
-<hr>
-
-<h4>Previous Calibration Reports</h4>
-<div id="luxCalibrationHistory"></div>
-
-
-<br>
-<button class="primary-btn" onclick="saveLuxAdminConfig()">
-  Save LUX Configuration
-</button>
-
-<h3 style="margin-top:20px;">LUX QR Code</h3>
-<button class="secondary-btn" onclick="generateLuxQR()">Generate LUX QR</button>
-
-<div style="text-align:center;margin-top:15px;">
-
-  <div class="dangerBanner">
-    ⚠️ LIGHT MONITORING – AUTHORIZED USE ⚠️
-  </div>
-
-  <canvas id="luxQrCanvas" width="220" height="220"></canvas>
-
-  <div id="luxQrLabel" style="margin-top:10px;font-size:18px;font-weight:bold;">
-    LUX METER QR CODE
-  </div>
-
-</div>
-
-<button id="downloadLuxQR"
-        style="display:none;margin-top:10px;"
-        class="primary-btn"
-        onclick="downloadLuxQR()">
-  Download LUX QR Sheet
-</button>
-
 
         <div class="filterBox">
           <input type="text" id="filterLX_dept" placeholder="Filter by Department">
@@ -836,9 +777,22 @@
       </div>
     </div>
 
+ 
+<!-- TAB 9: SAFETY RECORDS -->
+<div class="tab-content" id="tab-safety">
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <h2 style="margin:0;">Safety Declarations</h2>
+      <button class="secondary-btn" onclick="loadSafetyRecords()">Refresh</button>
+    </div>
+
+    <div id="safetySummary" class="summary-row"></div>
+
+    <div id="safetyTable" style="margin-top:15px;"></div>
   </div>
 </div>
-
+ </div>
+</div>
 <script>
 /* ------------ LOGIN ------------ */
 const ADMIN_PASSWORD = "1234";
@@ -883,6 +837,7 @@ function afterLoginInit() {
   showTransformers();
   loadTransformerReports();
   loadLuxReports();
+  loadSafetyRecords();
 
   // 🔧 Auto-load DB for editing when coming from panel.html
   const params = new URLSearchParams(window.location.search);
@@ -1153,6 +1108,162 @@ function deletePanel(id) {
     showPanels();
     loadMasterReport();
   });
+}
+/* ------------ SAFETY RECORDS ------------ */
+
+let safetyGlobal = [];
+
+function loadSafetyRecords() {
+
+  firebase.database().ref("safetyDeclarations").once("value", snap => {
+
+    const data = snap.val() || {};
+    const list = [];
+
+    Object.keys(data).forEach(dbId => {
+      Object.keys(data[dbId]).forEach(key => {
+        list.push({
+          dbId,
+          recordKey: key,
+          ...data[dbId][key]
+        });
+      });
+    });
+
+    safetyGlobal = list;
+
+    renderSafetyTable(list);
+    updateSafetySummary(list);
+  });
+}
+
+function updateSafetySummary(list) {
+
+  const container = document.getElementById("safetySummary");
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = "<p>No safety records.</p>";
+    return;
+  }
+
+  const total = list.length;
+  const open = list.filter(r => r.status !== "CLOSED").length;
+  const closed = list.filter(r => r.status === "CLOSED").length;
+
+  container.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-title">Total Safety Jobs</div>
+      <div class="summary-value">${total}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">OPEN</div>
+      <div class="summary-value" style="color:#c40000;">${open}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">CLOSED</div>
+      <div class="summary-value" style="color:#0b7a2a;">${closed}</div>
+    </div>
+  `;
+}
+
+function renderSafetyTable(list) {
+
+  const container = document.getElementById("safetyTable");
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = "<p>No safety records found.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <tr>
+        <th>Date Opened</th>
+        <th>DB</th>
+        <th>Electrician</th>
+        <th>Score</th>
+        <th>Status</th>
+        <th>Duration (hrs)</th>
+        <th>Alert</th>
+        <th>Photo</th>
+        <th>PDF</th>
+        <th>Fault</th>
+<th>Delete</th>
+
+      </tr>
+  `;
+
+  list.forEach(r => {
+
+    const openDate = r.timestamp ? new Date(r.timestamp) : null;
+    const now = new Date();
+
+    let durationMinutes = 0;
+
+    if (openDate) {
+      if (r.closedAt) {
+        durationMinutes = (new Date(r.closedAt) - openDate) / 60000;
+      } else {
+        durationMinutes = (now - openDate) / 60000;
+      }
+    }
+
+    const durationHours = (durationMinutes / 60).toFixed(2);
+
+    let alertBadge = "";
+    if (r.status !== "CLOSED" && durationMinutes > 120) {
+      alertBadge = `<span class="badge badge-bad">⚠ OPEN > 2H</span>`;
+    }
+
+    const statusBadge = r.status === "CLOSED"
+      ? `<span class="badge badge-ok">CLOSED</span>`
+      : `<span class="badge badge-bad">OPEN</span>`;
+
+    html += `
+      <tr>
+        <td>${openDate ? openDate.toLocaleString() : ""}</td>
+        <td><span class="badge badge-info">${r.dbId}</span></td>
+        <td>${r.electricianName || ""}</td>
+        <td>
+  ${(r.checklistScore || 0) < 3
+    ? `<span class="badge badge-bad">${r.checklistScore || 0} / 5</span>`
+    : `<span class="badge badge-ok">${r.checklistScore || 0} / 5</span>`
+  }
+</td>
+
+        <td>${statusBadge}</td>
+        <td>${durationHours}</td>
+        <td>${alertBadge}</td>
+        <td>
+          ${r.safetyPhoto 
+            ? `<button class="photo-btn" onclick="openPhoto('${r.safetyPhoto}')">View</button>`
+            : "—"}
+        </td>
+        <td>
+          <button class="secondary-btn"
+            onclick="window.open('safety_print.html?db=${r.dbId}&id=${r.recordKey}','_blank')">
+            PDF
+          </button>
+        </td>
+        <td>
+          ${r.faultRef
+            ? `<button class="secondary-btn" onclick="openFaultPrint('${r.dbId}','${r.faultRef}')">View Fault</button>`
+            : "—"}
+        </td>
+      <td>
+  <button class="danger-btn"
+    onclick="deleteSafetyRecord('${r.dbId}','${r.recordKey}')">
+    Delete
+  </button>
+</td>
+</tr>
+    `;
+  });
+
+  html += "</table>";
+  container.innerHTML = html;
 }
 
 function showPanels() {
@@ -1576,6 +1687,18 @@ function openTransformerReportPrint(trId, recordKey) {
     "&id=" + encodeURIComponent(recordKey),
     "_blank"
   );
+}
+function deleteSafetyRecord(dbId, key) {
+
+  if (!confirm("Delete this safety declaration?")) return;
+
+  firebase.database()
+    .ref("safetyDeclarations/" + dbId + "/" + key)
+    .remove()
+    .then(() => {
+      alert("Safety record deleted.");
+      loadSafetyRecords();
+    });
 }
 
 /* RENDER INSPECTIONS TABLE (with delete + print) */
@@ -2700,186 +2823,8 @@ function exportLuxCSV() {
   const csv = arrayToCSV(rows);
   downloadCSV("lux_reports.csv", csv);
 }
-/* ------------ LUX ADMIN CONFIG ------------ */
-
-function saveLuxAdminConfig() {
-const data = {
-  instrument: "Lux Meter",
-  model: document.getElementById("luxModel").value.trim(),
-  calibrationNo: document.getElementById("luxCert").value.trim(),
-  calibrationDate: document.getElementById("luxCalDate").value,
-  nextCalibrationDate: document.getElementById("luxNextCalDate").value
-};
-
-
-  firebase.database().ref("luxConfig").set(data, err => {
-    if (err) {
-      alert("Error saving LUX config");
-    } else {
-      alert("LUX configuration saved");
-    }
-  });
-}
-
-function loadLuxAdminConfig() {
-  firebase.database().ref("luxConfig").once("value").then(snap => {
-    const cfg = snap.val();
-    if (!cfg) return;
-
-    document.getElementById("luxModel").value = cfg.model || "";
-    document.getElementById("luxCert").value = cfg.calibrationNo || "";
-    document.getElementById("luxCalDate").value = cfg.calibrationDate || "";
-  });
-}
-
-function generateLuxQR() {
-  const canvas = document.getElementById("luxQrCanvas");
-  if (!canvas) {
-    alert("LUX QR canvas not found");
-    return;
-  }
-
-  const url = window.location.origin + "/panel-system/lux.html";
-
-
-  new QRious({
-    element: canvas,
-    value: url,
-    size: 220
-  });
-
-  document.getElementById("downloadLuxQR").style.display = "inline-block";
-}
-function downloadLuxQR() {
-  const qrCanvas = document.getElementById("luxQrCanvas");
-  if (!qrCanvas) return;
-
-  const W = 700, H = 900;
-  const finalCanvas = document.createElement("canvas");
-  finalCanvas.width = W;
-  finalCanvas.height = H;
-  const ctx = finalCanvas.getContext("2d");
-
-  // white background
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, W, H);
-
-  // logo
-  const logo = new Image();
-  logo.src = "logo.png";
-
-  logo.onload = () => {
-    const logoW = 420;
-    const logoH = (logo.height / logo.width) * logoW;
-    ctx.drawImage(logo, (W - logoW) / 2, 40, logoW, logoH);
-
-    // red ribbon
-    ctx.fillStyle = "#c40000";
-    ctx.fillRect(45, 200, W - 80, 70);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 24px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("LIGHT MONITORING – AUTHORIZED USE", W / 2, 245);
-
-    // QR
-    ctx.drawImage(qrCanvas, (W - 300) / 2, 300, 300, 300);
-
-    // bottom text
-    ctx.fillStyle = "#000";
-    ctx.font = "bold 28px Arial";
-    ctx.fillText("LUX METER QR CODE", W / 2, 650);
-
-    const link = document.createElement("a");
-    link.download = "LUX_QR_CODE.png";
-    link.href = finalCanvas.toDataURL();
-    link.click();
-  };
-
-  logo.onerror = () => {
-    alert("Logo not found (logo.png).");
-  };
-}
-
-/* auto-load when admin opens */
-document.addEventListener("DOMContentLoaded", () => {
-  loadLuxAdminConfig();
-});
-function uploadLuxCalibrationReport() {
-  const fileInput = document.getElementById("luxCalReport");
-  const status = document.getElementById("luxCalReportStatus");
-
-  const file = fileInput.files[0];
-  if (!file) {
-    alert("Please select a calibration report file");
-    return;
-  }
-
-  const data = {
-    model: document.getElementById("luxModel").value.trim(),
-    certificateNo: document.getElementById("luxCert").value.trim(),
-    calibrationDate: document.getElementById("luxCalDate").value,
-    nextCalibrationDate: document.getElementById("luxNextCalDate").value,
-    uploadedAt: new Date().toISOString()
-  };
-
-  status.innerText = "Uploading calibration report...";
-
-  const ref = firebase.storage().ref(
-    "luxCalibrationReports/" + Date.now() + "_" + file.name
-  );
-
-  ref.put(file).then(snapshot => {
-    snapshot.ref.getDownloadURL().then(url => {
-      data.fileUrl = url;
-
-      const key = firebase.database().ref().push().key;
-      firebase.database().ref("luxCalibrationReports/" + key).set(data, err => {
-        if (err) {
-          alert("Error saving calibration report");
-        } else {
-          status.innerText = "Calibration report uploaded successfully";
-          fileInput.value = "";
-          loadLuxCalibrationHistory();
-        }
-      });
-    });
-  });
-}
-function loadLuxCalibrationHistory() {
-  const container = document.getElementById("luxCalibrationHistory");
-  container.innerHTML = "Loading...";
-
-  firebase.database().ref("luxCalibrationReports").once("value").then(snap => {
-    const data = snap.val();
-    if (!data) {
-      container.innerHTML = "<i>No calibration reports uploaded yet.</i>";
-      return;
-    }
-
-    container.innerHTML = "";
-
-    Object.values(data).reverse().forEach(r => {
-      const div = document.createElement("div");
-      div.style.marginBottom = "8px";
-
-      div.innerHTML = `
-        <b>Date:</b> ${r.calibrationDate || "-"} |
-        <b>Cert:</b> ${r.certificateNo || "-"} |
-        <a href="${r.fileUrl}" target="_blank">View Report</a>
-      `;
-
-      container.appendChild(div);
-    });
-  });
-}
-document.addEventListener("DOMContentLoaded", () => {
-  loadLuxCalibrationHistory();
-});
 
 </script>
 
 </body>
 </html>
-
-
-

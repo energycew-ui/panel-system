@@ -9,93 +9,69 @@
   <script src="data.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f4f4f4;
-    }
+    body { font-family: Arial; margin:0; background:#f4f4f4; }
 
-    /* Premium Header */
     .topbar {
-      background: #0c0c0c;
-      padding: 20px 0 25px 0;
-      text-align: center;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.45);
+      background:#0c0c0c;
+      padding:20px 0 25px 0;
+      text-align:center;
+      box-shadow:0 3px 8px rgba(0,0,0,0.45);
     }
-    .topbar img {
-      width: 120px;
-      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.45));
-    }
+
+    .topbar img { width:120px; }
+
     .title {
-      margin-top: 10px;
-      font-size: 26px;
-      font-weight: bold;
-      background: linear-gradient(90deg,#ffd65a,#ffb300);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 8px rgba(0,0,0,0.4);
+      margin-top:10px;
+      font-size:26px;
+      font-weight:bold;
+      background:linear-gradient(90deg,#ffd65a,#ffb300);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
     }
 
-    /* Card */
     .card {
-      background: #fff;
-      padding: 20px;
-      max-width: 800px;
-      margin: 20px auto;
-      border-radius: 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      background:#fff;
+      padding:20px;
+      max-width:800px;
+      margin:20px auto;
+      border-radius:14px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.15);
     }
 
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
+    label { display:block; margin-top:10px; font-weight:bold; }
 
     input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-      margin-top: 4px;
+      width:100%;
+      padding:10px;
+      border-radius:6px;
+      border:1px solid #ccc;
+      margin-top:4px;
     }
 
-    textarea { height: 80px; }
+    textarea { height:80px; }
 
     .btn {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      margin-top: 12px;
-      border: none;
-      cursor: pointer;
-      color: white;
-    }
-
-    .btn-blue { background: #007bff; }
-    .btn-red { background: #c40000; }
-
-    #formCard { display: none; }
-
-    .section-title {
-      margin-top: 18px;
-      font-weight: bold;
-      font-size: 17px;
-      border-left: 4px solid #ffb300;
-      padding-left: 10px;
+      width:100%;
+      padding:12px;
+      border-radius:8px;
+      font-size:16px;
+      font-weight:bold;
+      margin-top:12px;
+      border:none;
+      cursor:pointer;
+      color:white;
+      background:#007bff;
     }
 
     img.preview {
-      width: 100%;
-      display: none;
-      margin-top: 10px;
-      border-radius: 10px;
-      border: 2px solid #444;
+      width:100%;
+      display:none;
+      margin-top:10px;
+      border-radius:10px;
+      border:2px solid #444;
     }
 
+    #formCard { display:none; }
   </style>
 </head>
 
@@ -106,15 +82,15 @@
   <div class="title">DB Fault Reporting</div>
 </div>
 
-<!-- LOGIN BOX -->
+<!-- LOGIN -->
 <div class="card" id="loginCard">
   <h2>Electrician Login</h2>
   <input type="password" id="loginKey" placeholder="Enter Electrician Password">
-  <button class="btn btn-red" onclick="doLogin()">Login</button>
+  <button class="btn" onclick="doLogin()">Login</button>
   <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
 
-<!-- FORM CARD -->
+<!-- FORM -->
 <div class="card" id="formCard">
 
   <h2>Fault Report</h2>
@@ -141,8 +117,6 @@
   <label>Description</label>
   <textarea id="fault_desc"></textarea>
 
-  <div class="section-title">Downtime</div>
-
   <label>Start Time</label>
   <input type="datetime-local" id="fault_start">
 
@@ -158,42 +132,66 @@
   <label>If Yes, describe loss</label>
   <textarea id="fault_lossDesc"></textarea>
 
-  <div class="section-title">Additional Questions</div>
-  <div id="faultQuestionsContainer">
-    <p style="font-size:13px;color:#666;">Loading questions...</p>
-  </div>
-
-  <div class="section-title">Photos</div>
+  <div id="faultQuestionsContainer"></div>
 
   <label>Photo 1</label>
-  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,1)">
+  <input type="file" accept="image/*" onchange="previewPhoto(event,1)">
   <img id="preview1" class="preview">
 
   <label>Photo 2</label>
-  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,2)">
+  <input type="file" accept="image/*" onchange="previewPhoto(event,2)">
   <img id="preview2" class="preview">
 
   <label>Photo 3</label>
-  <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(event,3)">
+  <input type="file" accept="image/*" onchange="previewPhoto(event,3)">
   <img id="preview3" class="preview">
 
-  <label>Corrective Actions / Remarks</label>
+  <label>Corrective Actions</label>
   <textarea id="fault_comments"></textarea>
 
-  <button class="btn btn-blue" onclick="submitFault()">Submit Fault Report</button>
+  <button class="btn" onclick="submitFault()">Submit Fault Report</button>
 
 </div>
 
 <script>
-/* -----------------------------
-   GET DB ID
-------------------------------*/
+
+/* ---------------- GET PARAMETERS ---------------- */
 const params = new URLSearchParams(window.location.search);
 const dbId = params.get("id");
+const safetyKey = params.get("safetyKey");
+/* CHECK SAFETY SCORE BEFORE ALLOWING FAULT */
 
-/* -----------------------------
-   AUTO-LOGIN CHECK
-------------------------------*/
+if (safetyKey && dbId) {
+
+  firebase.database()
+    .ref("safetyDeclarations/" + dbId + "/" + safetyKey)
+    .once("value")
+    .then(snap => {
+
+      const safetyData = snap.val();
+
+      if (!safetyData) {
+        alert("Safety record not found!");
+        window.location.href = "panel.html?id=" + dbId;
+        return;
+      }
+
+      if ((safetyData.checklistScore || 0) < 3) {
+        alert("Safety Score is below minimum requirement (3/5). Fault reporting blocked.");
+        window.location.href = "panel.html?id=" + dbId;
+        return;
+      }
+
+    });
+}
+
+/* Block if no safety key */
+if (!safetyKey) {
+  alert("Safety Declaration Required First!");
+  window.location.href = "safety.html?id=" + dbId;
+}
+
+/* ---------------- LOGIN ---------------- */
 const ELECTRICIAN_KEY = "9999";
 
 if (sessionStorage.getItem("electricianLogged") === "true") {
@@ -202,154 +200,90 @@ if (sessionStorage.getItem("electricianLogged") === "true") {
 
 function doLogin() {
   const key = document.getElementById("loginKey").value.trim();
-  const err = document.getElementById("loginError");
-
   if (key === ELECTRICIAN_KEY) {
-    sessionStorage.setItem("electricianLogged", "true");
+    sessionStorage.setItem("electricianLogged","true");
     showForm();
   } else {
-    err.innerText = "Incorrect password!";
+    document.getElementById("loginError").innerText="Incorrect password!";
   }
 }
 
 function showForm() {
-  document.getElementById("loginCard").style.display = "none";
-  document.getElementById("formCard").style.display = "block";
-
-  const now = new Date();
-  document.getElementById("fault_datetime").value = now.toISOString().slice(0,16);
+  document.getElementById("loginCard").style.display="none";
+  document.getElementById("formCard").style.display="block";
+  document.getElementById("fault_datetime").value =
+    new Date().toISOString().slice(0,16);
 }
 
-/* -----------------------------
-   PREVIEW PHOTOS
-------------------------------*/
-let photo1 = null, photo2 = null, photo3 = null;
+/* ---------------- PHOTO PREVIEW ---------------- */
+let photo1=null, photo2=null, photo3=null;
 
-function previewPhoto(event, num) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = document.getElementById("preview" + num);
-    img.src = e.target.result;
-    img.style.display = "block";
-
-    if (num === 1) photo1 = e.target.result;
-    if (num === 2) photo2 = e.target.result;
-    if (num === 3) photo3 = e.target.result;
+function previewPhoto(e,num){
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=x=>{
+    document.getElementById("preview"+num).src=x.target.result;
+    document.getElementById("preview"+num).style.display="block";
+    if(num===1) photo1=x.target.result;
+    if(num===2) photo2=x.target.result;
+    if(num===3) photo3=x.target.result;
   };
-
   reader.readAsDataURL(file);
 }
 
-/* -----------------------------
-   LOAD DYNAMIC QUESTIONS
-------------------------------*/
-let questionsGlobal = {};
+/* ---------------- SUBMIT FAULT ---------------- */
+function submitFault(){
 
-firebase.database().ref("questions").on("value", snap => {
-  questionsGlobal = snap.val() || {};
-  renderFaultQuestions();
-});
+  const name=document.getElementById("fault_name").value.trim();
+  if(!name) return alert("Enter electrician name.");
 
-function renderFaultQuestions() {
-  const container = document.getElementById("faultQuestionsContainer");
-  const list = Object.entries(questionsGlobal)
-    .filter(([id,q]) => q.applyFault && q.active !== false);
+  const start=document.getElementById("fault_start").value;
+  const end=document.getElementById("fault_end").value;
 
-  if (!list.length) {
-    container.innerHTML = "<p style='font-size:13px;color:#666;'>No additional questions.</p>";
-    return;
+  let downtime="";
+  if(start && end){
+    const diff=(new Date(end)-new Date(start))/60000;
+    downtime=diff>0?Math.round(diff):"";
   }
 
-  let html = "";
-  list.forEach(([id,q]) => { html += renderQ(id,q); });
-  container.innerHTML = html;
-}
-
-function renderQ(id,q) {
-  const fieldId = `q_fault_${id}`;
-  let field = "";
-
-  if (q.type === "text")
-    field = `<input type="text" id="${fieldId}">`;
-
-  else if (q.type === "number")
-    field = `<input type="number" id="${fieldId}" style="max-width:160px;">`;
-
-  else if (q.type === "yesno")
-    field = `<select id="${fieldId}">
-               <option></option>
-               <option>Yes</option>
-               <option>No</option>
-             </select>`;
-
-  else if (q.type === "dropdown")
-    field = `<select id="${fieldId}">
-               <option></option>
-               ${q.options.map(o => `<option>${o}</option>`).join("")}
-             </select>`;
-
-  return `<label>${q.text}</label>${field}`;
-}
-
-function collectDynamicFault() {
-  const output = {};
-  Object.entries(questionsGlobal).forEach(([id,q]) => {
-    if (!q.applyFault || q.active === false) return;
-    const inp = document.getElementById(`q_fault_${id}`);
-    if (!inp) return;
-    const val = inp.value.trim();
-    if (val) output[id] = val;
-  });
-  return Object.keys(output).length ? output : null;
-}
-
-/* -----------------------------
-   SUBMIT FAULT REPORT
-------------------------------*/
-function submitFault() {
-  const name = document.getElementById("fault_name").value.trim();
-  if (!name) return alert("Enter electrician name.");
-
-  const start = document.getElementById("fault_start").value;
-  const end = document.getElementById("fault_end").value;
-
-  let downtime = "";
-  if (start && end) {
-    const diff = (new Date(end) - new Date(start)) / 60000;
-    downtime = diff > 0 ? Math.round(diff) : "";
-  }
-
-  const data = {
-    timestamp: new Date().toISOString(),
-    datetimeLocal: document.getElementById("fault_datetime").value,
-
-    dbId: dbId,
-    electricianName: name,
-    faultType: document.getElementById("fault_type").value,
-    description: document.getElementById("fault_desc").value,
-
-    startTime: start,
-    endTime: end,
-    downtimeMinutes: downtime,
-
-    productionLoss: document.getElementById("fault_loss").value,
-    productionLossDesc: document.getElementById("fault_lossDesc").value,
-
-    extraAnswers: collectDynamicFault(),
-
-    photo1, photo2, photo3,
-
-    comments: document.getElementById("fault_comments").value
+  const data={
+    timestamp:new Date().toISOString(),
+    datetimeLocal:document.getElementById("fault_datetime").value,
+    dbId,
+    electricianName:name,
+    faultType:document.getElementById("fault_type").value,
+    description:document.getElementById("fault_desc").value,
+    startTime:start,
+    endTime:end,
+    downtimeMinutes:downtime,
+    productionLoss:document.getElementById("fault_loss").value,
+    productionLossDesc:document.getElementById("fault_lossDesc").value,
+    photo1,photo2,photo3,
+    comments:document.getElementById("fault_comments").value
   };
 
-  saveFault(dbId, data, () => {
-    alert("Fault Report Submitted.");
-    window.location.href = "panel.html?id=" + encodeURIComponent(dbId);
+  const faultRef=firebase.database()
+      .ref("faults/"+dbId)
+      .push();
+
+  faultRef.set(data,function(){
+
+    const faultKey=faultRef.key;
+
+    firebase.database()
+      .ref("safetyDeclarations/"+dbId+"/"+safetyKey)
+      .update({
+        status:"CLOSED",
+        closedAt:new Date().toISOString(),
+        faultRef:faultKey
+      });
+
+    alert("Fault Report Submitted Successfully!");
+    window.location.href="panel.html?id="+encodeURIComponent(dbId);
   });
 }
+
 </script>
 
 </body>
