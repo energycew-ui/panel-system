@@ -2002,7 +2002,7 @@ function loadMasterReport() {
     ids.forEach(id => {
       const p = all[id];
 let statusText = "No Record";
-let statusClass = "badge-info";
+let statusClass = "badge-warn";
 let nextDueText = "-";
 
 if (p.nextInspectionDue) {
@@ -2040,10 +2040,14 @@ if (p.nextInspectionDue) {
 <td><span class="badge ${statusClass}">${statusText}</span></td>
 <td>${nextDueText}</td>
 <td>
-  <button class="secondary-btn"
-    onclick="sendInspectionReminder('${p.dbNumber || id}', '${nextDueText}', '${statusText}')">
-    Send WhatsApp
-  </button>
+  ${
+    statusText === "No Record"
+    ? `<span style="color:#888;font-size:13px;">No inspection yet</span>`
+    : `<button class="secondary-btn"
+         onclick="sendInspectionReminder('${p.dbNumber || id}', '${nextDueText}', '${statusText}')">
+         Send WhatsApp
+       </button>`
+  }
 </td>
 <td>
 
