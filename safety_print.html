@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Safety Declaration Print</title>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 30px;
+      background: #fff;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .section {
+      margin-bottom: 15px;
+    }
+
+    .label {
+      font-weight: bold;
+    }
+
+    img {
+      max-width: 400px;
+      border: 2px solid #333;
+      margin-top: 10px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    @media print {
+      button { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Safety Declaration Report</h1>
+
+<div id="content">Loading...</div>
+
+<button onclick="window.print()">Print / Save as PDF</button>
+
+<script>
+
+const params = new URLSearchParams(window.location.search);
+const dbId = params.get("db");
+const recordKey = params.get("id");
+
+if (!dbId || !recordKey) {
+  document.getElementById("content").innerHTML = "Invalid record.";
+} else {
+
+  firebase.database()
+    .ref("safetyDeclarations/" + dbId + "/" + recordKey)
+    .once("value")
+    .then(snap => {
+
+      const data = snap.val();
+
+      if (!data) {
+        document.getElementById("content").innerHTML = "Record not found.";
+        return;
+      }
+
+      const openDate = data.timestamp
+        ? new Date(data.timestamp).toLocaleString()
+        : "";
+
+      const scoreColor = (data.checklistScore || 0) < 3 ? "red" : "green";
+
+      document.getElementById("content").innerHTML = `
+        <div class="section"><span class="label">DB:</span> ${dbId}</div>
+        <div class="section"><span class="label">Electrician:</span> ${data.electricianName || ""}</div>
+        <div class="section"><span class="label">Date Opened:</span> ${openDate}</div>
+        <div class="section"><span class="label">Permit No:</span> ${data.permitNo || ""}</div>
+
+        <hr>
+
+        <div class="section"><span class="label">PPE Worn:</span> ${data.ppe}</div>
+        <div class="section"><span class="label">Main Isolation:</span> ${data.isolation}</div>
+        <div class="section"><span class="label">Voltage Tested:</span> ${data.voltageTest}</div>
+        <div class="section"><span class="label">2 Persons Present:</span> ${data.lockout}</div>
+        <div class="section"><span class="label">Supervisor Informed:</span> ${data.supervisor}</div>
+
+        <hr>
+
+        <div class="section">
+          <span class="label">Checklist Score:</span>
+          <span style="color:${scoreColor}; font-weight:bold;">
+            ${data.checklistScore || 0} / 5
+          </span>
+        </div>
+
+        <hr>
+
+        <div class="section">
+          <span class="label">Safety Photo:</span><br>
+          ${data.safetyPhoto ? `<img src="${data.safetyPhoto}">` : "No photo"}
+        </div>
+      `;
+    });
+}
+
+</script>
+
+</body>
+</html>
