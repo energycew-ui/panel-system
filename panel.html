@@ -334,9 +334,10 @@ function openFault() {
     alert("No DB id in URL.");
     return;
   }
-  window.location.href = "fault.html?id=" + encodeURIComponent(dbId);
-}
 
+  // Redirect to safety page first
+  window.location.href = "safety.html?id=" + encodeURIComponent(dbId);
+}
 // 🔌 Transformer Inspection (by transformer QR)
 function openTransformer() {
   window.location.href = "transformer.html";

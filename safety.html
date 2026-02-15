@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Safety Declaration</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f4f4;
+      margin: 0;
+    }
+
+    .header {
+      background: #c40000;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      max-width: 600px;
+      margin: 20px auto;
+      border-radius: 10px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      background: #007bff;
+      color: white;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="header">
+  ⚠️ SAFETY DECLARATION REQUIRED ⚠️
+</div>
+
+<div class="card">
+
+  <h2>Before Starting Work</h2>
+
+  <label>Electrician Name</label>
+  <input type="text" id="name">
+
+  <label>PPE Worn?</label>
+  <select id="ppe">
+    <option value="">Select</option>
+    <option>Yes</option>
+    <option>No</option>
+  </select>
+
+  <label>Main Supply Isolated?</label>
+  <select id="isolation">
+    <option value="">Select</option>
+    <option>Yes</option>
+    <option>No</option>
+  </select>
+
+  <label>Lockout Applied?</label>
+  <select id="lockout">
+    <option value="">Select</option>
+    <option>Yes</option>
+    <option>No</option>
+  </select>
+
+  <button onclick="submitSafety()">Submit Safety Declaration</button>
+
+</div>
+
+<script>
+
+const params = new URLSearchParams(window.location.search);
+const dbId = params.get("id");
+
+function submitSafety() {
+
+  const name = document.getElementById("name").value.trim();
+  const ppe = document.getElementById("ppe").value;
+  const isolation = document.getElementById("isolation").value;
+  const lockout = document.getElementById("lockout").value;
+
+  if (!name || !ppe || !isolation || !lockout) {
+    alert("Please complete all safety fields.");
+    return;
+  }
+
+  const data = {
+    electricianName: name,
+    ppe,
+    isolation,
+    lockout,
+    timestamp: new Date().toISOString(),
+    status: "OPEN"
+  };
+
+  const ref = firebase.database().ref("safetyDeclarations/" + dbId).push();
+
+  ref.set(data, function() {
+    alert("Safety Declaration Submitted!");
+
+    // Redirect to fault page
+    window.location.href = "fault.html?id=" + dbId;
+  });
+
+}
+
+</script>
+
+</body>
+</html>
