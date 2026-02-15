@@ -22,6 +22,8 @@ const db = firebase.database();
 // =====================
 //   DB PANEL FUNCTIONS
 // =====================
+
+// Save DB panel data
 function savePanelToFirebase(dbId, data, callback) {
   db.ref("panels/" + dbId).set(data, function (error) {
     if (error) alert("Error saving DB: " + error);
@@ -29,12 +31,14 @@ function savePanelToFirebase(dbId, data, callback) {
   });
 }
 
+// Load a DB panel
 function loadPanelFromFirebase(dbId, callback) {
   db.ref("panels/" + dbId).once("value").then(snap => {
     callback(snap.val());
   });
 }
 
+// Load all DBs
 function loadAllPanels(callback) {
   db.ref("panels").once("value").then(snap => {
     callback(snap.val());
@@ -45,14 +49,38 @@ function loadAllPanels(callback) {
 // ============================
 //   DB INSPECTION FUNCTIONS
 // ============================
+
+// Save DB inspection report
 function saveInspection(dbId, data, callback) {
+
   const key = db.ref().push().key;
+
   db.ref("inspections/" + dbId + "/" + key).set(data, err => {
-    if (err) alert("Error saving inspection");
-    else if (callback) callback(key);
+
+    if (err) {
+      alert("Error saving inspection");
+      return;
+    }
+
+    // -------- UPDATE PANEL WITH INSPECTION DATES --------
+
+    const now = new Date();
+    const next = new Date();
+    next.setDate(now.getDate() + 15); // 15-day inspection cycle
+
+    db.ref("panels/" + dbId).update({
+      lastInspection: now.toISOString(),
+      nextInspectionDue: next.toISOString()
+    });
+
+    if (callback) callback(key);
+
   });
+
 }
 
+
+// Save DB fault report
 function saveFault(dbId, data, callback) {
   const key = db.ref().push().key;
   db.ref("faults/" + dbId + "/" + key).set(data, err => {
@@ -65,6 +93,8 @@ function saveFault(dbId, data, callback) {
 // ============================
 //     TRANSFORMER ENTRY
 // ============================
+
+// Save transformer metadata
 function saveTransformer(trId, data, callback) {
   db.ref("transformers/" + trId).set(data, err => {
     if (err) alert("Error saving transformer: " + err);
@@ -72,12 +102,14 @@ function saveTransformer(trId, data, callback) {
   });
 }
 
+// Load a transformer
 function loadTransformer(trId, callback) {
   db.ref("transformers/" + trId).once("value").then(snap => {
     callback(snap.val());
   });
 }
 
+// Load all transformers
 function loadAllTransformers(callback) {
   db.ref("transformers").once("value").then(snap => {
     callback(snap.val());
@@ -88,6 +120,7 @@ function loadAllTransformers(callback) {
 // ======================================
 //   TRANSFORMER INSPECTION REPORTS
 // ======================================
+
 function saveTransformerInspection(trId, data, callback) {
   const key = db.ref().push().key;
   db.ref("transformerInspections/" + trId + "/" + key).set(data, err => {
@@ -106,6 +139,7 @@ function loadTransformerInspection(trId, callback) {
 // ============================
 //       LUX REPORTS
 // ============================
+
 function saveLuxReport(data, callback) {
   const key = db.ref().push().key;
   db.ref("luxReports/" + key).set(data, err => {
@@ -122,18 +156,24 @@ function loadAllLuxReports(callback) {
 
 
 // ============================
-//   LUX MASTER CONFIG (ADMIN)
+//       DELETE FUNCTIONS
 // ============================
 
-function saveLuxConfig(data, callback) {
-  db.ref("luxConfig").set(data, err => {
-    if (err) alert("Error saving LUX configuration");
-    else if (callback) callback();
+function deleteTransformer(trId, callback) {
+  db.ref("transformers/" + trId).remove().then(() => {
+    if (callback) callback();
   });
 }
 
-function loadLuxConfig(callback) {
-  db.ref("luxConfig").once("value").then(snap => {
-    callback(snap.val());
+function deleteTransformerInspection(trId, key, callback) {
+  db.ref("transformerInspections/" + trId + "/" + key).remove().then(() => {
+    if (callback) callback();
   });
 }
+
+function deleteLuxReport(key, callback) {
+  db.ref("luxReports/" + key).remove().then(() => {
+    if (callback) callback();
+  });
+}
+
