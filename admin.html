@@ -9,6 +9,7 @@
 
   <!-- Your Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
   <script src="data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- QR Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -450,6 +451,34 @@
 
 <!-- MAIN ADMIN DASHBOARD -->
 <div id="adminWrapper" style="display:none;">
+<div class="card">
+  <h2>System KPI Dashboard</h2>
+
+  <div class="summary-row">
+    <div class="summary-card">
+      <div class="summary-title">Total DB Panels</div>
+      <div class="summary-value" id="kpi_db">0</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-title">Overdue Panels</div>
+      <div class="summary-value" id="kpi_overdue">0</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-title">Transformers</div>
+      <div class="summary-value" id="kpi_tr">0</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-title">LUX Reports</div>
+      <div class="summary-value" id="kpi_lux">0</div>
+    </div>
+  </div>
+
+  <canvas id="statusChart" height="100"></canvas>
+</div>
+
 
   <!-- PREMIUM HEADER -->
   <div class="topbar premium-header">
@@ -839,6 +868,8 @@ function afterLoginInit() {
   loadTransformerReports();
   loadLuxReports();
   loadSafetyRecords();
+loadDashboardAnalytics();
+
 setInterval(() => {
   if (masterPanelsGlobal) {
     loadMasterReport();
@@ -1203,7 +1234,7 @@ function showTransformers() {
   const div = document.getElementById("transformerList");
   if (!div) return;
 
-  firebase.database().ref("transformers").once("value").then(snap => {
+  firebase.database().ref("transformers").on("value").then(snap => {
 
     const all = snap.val();
 
@@ -1483,14 +1514,14 @@ function badgeForStatus(value, okValues = [], warnValues = [], badValues = []) {
 /* ------------ DB INSPECTION + FAULT REPORTS ------------ */
 
 function loadReports() {
-  firebase.database().ref("inspections").once("value", snap => {
+  firebase.database().ref("inspections").on("value", snap => {
     let data = snap.val() || {};
     inspectionsGlobal = convertInspectionData(data);
     renderInspectionTable(inspectionsGlobal);
     updateInspectionSummary(inspectionsGlobal);
   });
 
-  firebase.database().ref("faults").once("value", snap => {
+  firebase.database().ref("faults").on("value", snap => {
     let data = snap.val() || {};
     faultsGlobal = convertFaultData(data);
     renderFaultTable(faultsGlobal);
@@ -2433,7 +2464,7 @@ function collectDynamicAnswers(sectionPrefix) {
 
 /* ------------ TRANSFORMER REPORTS (from transformer.html) ------------ */
 function loadTransformerReports() {
-  firebase.database().ref("transformerInspections").once("value", snap => {
+  firebase.database().ref("transformerInspections").on("value", snap => {
     const data = snap.val() || {};
     const list = [];
     for (let trId in data) {
@@ -2600,7 +2631,7 @@ function exportTransformersCSV() {
 
 // Load all LUX reports from Firebase into luxReportsGlobal
 function loadLuxReports() {
-  firebase.database().ref("luxReports").once("value", snap => {
+  firebase.database().ref("luxReports").on("value", snap => {
     const data = snap.val() || {};
     const list = Object.keys(data).map(key => ({
       key,
@@ -3076,11 +3107,8 @@ function renderSafetyTable(list) {
 function showPanels() {
 
   const div = document.getElementById("panelList");
-  if (!div) return;
 
-  div.innerHTML = "Loading...";
-
-  firebase.database().ref("panels").once("value").then(snap => {
+  firebase.database().ref("panels").on("value", snap => {
 
     const all = snap.val();
 
@@ -3094,8 +3122,9 @@ function showPanels() {
         <tr>
           <th>DB</th>
           <th>Voltage</th>
-          <th>Main Breaker</th>
           <th>Location</th>
+          <th>Status</th>
+          <th>Next Due</th>
           <th>Action</th>
         </tr>
     `;
@@ -3104,28 +3133,116 @@ function showPanels() {
 
       const p = all[id];
 
+      let statusText = "FIRST INSPECTION REQUIRED";
+      let statusClass = "badge-bad";
+      let nextDueText = "-";
+
+      if (p.nextInspectionDue) {
+
+        const nextDate = new Date(p.nextInspectionDue);
+        const today = new Date();
+        const diffDays = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+
+        nextDueText = nextDate.toLocaleDateString("en-GB");
+
+        if (diffDays < 0) {
+          statusText = "OVERDUE";
+          statusClass = "badge-bad";
+        } 
+        else if (diffDays <= 5) {
+          statusText = "DUE SOON";
+          statusClass = "badge-warn";
+        } 
+        else {
+          statusText = "OK";
+          statusClass = "badge-ok";
+        }
+      }
+
       html += `
         <tr>
           <td>${p.dbNumber || id}</td>
           <td>${p.voltage || ""}</td>
-          <td>${p.mainBreaker || ""}</td>
           <td>${p.location || ""}</td>
+          <td><span class="badge ${statusClass}">${statusText}</span></td>
+          <td>${nextDueText}</td>
           <td>
             <button class="secondary-btn" onclick="editPanel('${id}')">Edit</button>
             <button class="danger-btn" onclick="deletePanel('${id}')">Delete</button>
           </td>
         </tr>
       `;
-
     });
 
     html += "</table>";
-
     div.innerHTML = html;
 
-  }).catch(err => {
-    console.error("Error loading panels:", err);
-    div.innerHTML = "Error loading panels.";
+  });
+}
+function loadDashboardAnalytics() {
+
+  firebase.database().ref("panels").on("value", snap => {
+
+    const data = snap.val() || {};
+    const total = Object.keys(data).length;
+
+    let overdue = 0;
+    let dueSoon = 0;
+    let ok = 0;
+
+    Object.values(data).forEach(p => {
+
+      if (!p.nextInspectionDue) {
+        overdue++;
+        return;
+      }
+
+      const nextDate = new Date(p.nextInspectionDue);
+      const today = new Date();
+      const diff = Math.ceil((nextDate - today)/(1000*60*60*24));
+
+      if (diff < 0) overdue++;
+      else if (diff <= 5) dueSoon++;
+      else ok++;
+
+    });
+
+    document.getElementById("kpi_db").innerText = total;
+    document.getElementById("kpi_overdue").innerText = overdue;
+
+    renderStatusChart(ok, dueSoon, overdue);
+
+  });
+
+  firebase.database().ref("transformers").on("value", snap => {
+    document.getElementById("kpi_tr").innerText =
+      snap.val() ? Object.keys(snap.val()).length : 0;
+  });
+
+  firebase.database().ref("luxReports").on("value", snap => {
+    document.getElementById("kpi_lux").innerText =
+      snap.val() ? Object.keys(snap.val()).length : 0;
+  });
+
+}
+
+let statusChart;
+
+function renderStatusChart(ok, dueSoon, overdue) {
+
+  const ctx = document.getElementById("statusChart");
+
+  if (statusChart) statusChart.destroy();
+
+  statusChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['OK', 'Due Soon', 'Overdue'],
+      datasets: [{
+        data: [ok, dueSoon, overdue],
+        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+      }]
+    }
   });
 }
 
