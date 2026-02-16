@@ -1,164 +1,611 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>KPI Dashboard</title>
+  <title>Management KPI Dashboard</title>
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- IMPORTANT: Load data.js AFTER firebase -->
+  <script src="data.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body{
-      font-family:Arial;
+      font-family: Arial;
+      margin:0;
       background:#f4f6f9;
+    }
+
+    .header{
+      background:#111;
+      color:#ffc800;
       padding:20px;
-    }
-
-    h2{
       text-align:center;
-      margin-bottom:20px;
+      font-size:22px;
+      font-weight:bold;
     }
 
-    .btnRow{
-      text-align:center;
-      margin-bottom:20px;
+    .section{
+      margin:25px;
     }
 
-    button{
-      padding:8px 16px;
-      margin:5px;
-      border:none;
-      border-radius:6px;
+    .kpi-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+      gap:15px;
+    }
+
+    .kpi-card{
+      background:#fff;
+      border-radius:10px;
+      padding:15px;
+      box-shadow:0 3px 8px rgba(0,0,0,.1);
       cursor:pointer;
-      background:#007bff;
-      color:white;
+      transition:.2s;
     }
 
-    #chartContainer{
-      width:400px;
-      margin:0 auto;
-      display:none;
+    .kpi-card:hover{
+      transform:translateY(-3px);
     }
+
+    .kpi-title{
+      font-size:14px;
+      color:#666;
+    }
+
+    .kpi-value{
+      font-size:28px;
+      font-weight:bold;
+      margin-top:6px;
+    }
+
+    .danger{ color:#dc3545; }
+    .warn{ color:#ffc107; }
+    .ok{ color:#28a745; }
+
+    .chart-box{
+      background:#fff;
+      padding:15px;
+      border-radius:10px;
+      box-shadow:0 3px 8px rgba(0,0,0,.1);
+      margin-top:20px;
+      max-width:500px;
+    }
+
+    /* MODAL */
+    .modal{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.6);
+      justify-content:center;
+      align-items:center;
+    }
+
+    .modal-content{
+      background:#fff;
+      width:80%;
+      max-height:80%;
+      overflow:auto;
+      padding:20px;
+      border-radius:10px;
+    }
+
+    .close-btn{
+      float:right;
+      cursor:pointer;
+      color:#c40000;
+      font-weight:bold;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:15px;
+    }
+
+    th,td{
+      border:1px solid #ddd;
+      padding:8px;
+      font-size:13px;
+    }
+
+    th{
+      background:#333;
+      color:#fff;
+    }
+
   </style>
 </head>
 
 <body>
 
-<h2>System KPI Analytics</h2>
-
-<div class="btnRow">
-  <button onclick="loadDbGraph()">DB Panels</button>
-  <button onclick="loadTransformerGraph()">Transformers</button>
-  <button onclick="loadFaultGraph()">Fault Reports</button>
-  <button onclick="loadLuxGraph()">LUX Monitoring</button>
+<div class="header">
+  Executive Electrical Management Dashboard
+  <div style="font-size:13px;margin-top:6px;">
+    <span id="liveIndicator" style="color:#28a745;">● LIVE</span> |
+    Last Updated: <span id="lastUpdated">--</span>
+  </div>
 </div>
 
-<div id="chartContainer">
-  <canvas id="kpiChart"></canvas>
+
+<div class="section">
+  <h3>DB Panels</h3>
+  <div class="kpi-grid">
+    <div class="kpi-card" onclick="showChart('db'); showDbDetails('total')">
+
+      <div class="kpi-title">Total Panels</div>
+      <div class="kpi-value" id="db_total">0</div>
+    </div>
+
+    <div class="kpi-card" onclick="showDbDetails('overdue')">
+      <div class="kpi-title">Overdue</div>
+      <div class="kpi-value danger" id="db_overdue">0</div>
+    </div>
+
+    <div class="kpi-card" onclick="showDbDetails('due')">
+      <div class="kpi-title">Due Soon</div>
+      <div class="kpi-value warn" id="db_due">0</div>
+    </div>
+  </div>
+
+
+<div class="section">
+  <h3>Fault Overview</h3>
+  <div class="kpi-grid">
+    <div class="kpi-card" onclick="showChart('fault'); showFaultDetails('total')">
+
+      <div class="kpi-title">Total Faults</div>
+      <div class="kpi-value" id="fault_total">0</div>
+    </div>
+
+    <div class="kpi-card" onclick="showFaultDetails('loss')">
+      <div class="kpi-title">Production Loss</div>
+      <div class="kpi-value danger" id="fault_loss">0</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title">Downtime (hrs)</div>
+      <div class="kpi-value warn" id="fault_downtime">0</div>
+    </div>
+  </div>
 </div>
+
+<div class="section">
+  <h3>Transformer Status</h3>
+  <div class="kpi-grid">
+    <div class="kpi-card" onclick="showChart('tr')">
+      <div class="kpi-title">Total Transformers</div>
+      <div class="kpi-value" id="tr_total">0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Overdue</div>
+      <div class="kpi-value danger" id="tr_overdue">0</div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <h3>LUX Monitoring</h3>
+  <div class="kpi-grid">
+   <div class="kpi-card" onclick="showChart('lux')">
+
+      <div class="kpi-title">Total LUX Reports</div>
+      <div class="kpi-value" id="lux_total">0</div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <h3>Overall Risk Index</h3>
+  <div class="kpi-card" style="max-width:300px;">
+    <div class="kpi-title">Plant Risk Score</div>
+    <div class="kpi-value" id="risk_score">0</div>
+  </div>
+</div>
+<div class="section" id="dynamicChartSection" style="display:none;">
+  <h3 id="chartTitle"></h3>
+  <div class="chart-box" style="max-width:400px;">
+    <canvas id="mainChart"></canvas>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="detailModal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeModal()">X</span>
+    <h3 id="modalTitle"></h3>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCpwcWdIGG21HNSO4LC9jXxCzCFXvE0fGY",
-  authDomain: "panel-system-842d9.firebaseapp.com",
-  databaseURL: "https://panel-system-842d9-default-rtdb.firebaseio.com",
-  projectId: "panel-system-842d9",
-  storageBucket: "panel-system-842d9.firebasestorage.app",
-  messagingSenderId: "1070113583184",
-  appId: "1:1070113583184:web:8d39b13d7391340d226155"
-};
+let mainChart = null;
+let globalDbOverdue = 0;
+let globalFaultLoss = 0;
+let globalTrOverdue = 0;
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 
-let chart;
+/* ================= DB KPI ================= */
 
-function showChart(labels, data, colors){
-  document.getElementById("chartContainer").style.display="block";
+firebase.database().ref("panels").on("value", snap => {
 
-  if(chart) chart.destroy();
+  const data = snap.val() || {};
+  const total = Object.keys(data).length;
 
-  chart = new Chart(document.getElementById("kpiChart"),{
-    type:'doughnut',
-    data:{
-      labels:labels,
-      datasets:[{
-        data:data,
-        backgroundColor:colors
-      }]
-    },
-    options:{
-      plugins:{
-        legend:{ position:'bottom' }
-      }
+  let overdue=0, due=0, ok=0;
+
+  Object.values(data).forEach(p=>{
+
+    if(!p.nextInspectionDue){
+      overdue++;
+      return;
+    }
+
+    const next = new Date(p.nextInspectionDue);
+    const diff = Math.ceil((next-new Date())/(1000*60*60*24));
+
+    if(diff<0) overdue++;
+    else if(diff<=5) due++;
+    else ok++;
+
+  });
+
+ document.getElementById("db_total").innerText = total;
+
+const compliance = total ? ((ok/total)*100).toFixed(1) : 0;
+
+// Create or update compliance element safely
+let complianceDiv = document.getElementById("db_compliance");
+
+if (!complianceDiv) {
+  complianceDiv = document.createElement("div");
+  complianceDiv.id = "db_compliance";
+  complianceDiv.style.marginTop = "8px";
+  complianceDiv.style.fontWeight = "bold";
+
+  // attach under DB section instead
+  document.querySelector(".section").appendChild(complianceDiv);
+}
+
+
+let color = "#28a745"; // green
+
+if (compliance < 70) color = "#dc3545";
+else if (compliance < 85) color = "#ffc107";
+
+complianceDiv.innerHTML = `
+  Compliance Score: 
+  <span style="color:${color};font-size:18px;">
+    ${compliance}%
+  </span>
+`;
+
+
+  document.getElementById("db_overdue").innerText=overdue;
+  document.getElementById("db_due").innerText=due;
+globalDbOverdue = overdue;
+calculateRisk();
+
+
+});
+
+
+/* ================= FAULT KPI ================= */
+
+firebase.database().ref("faults").on("value", snap=>{
+
+  const data=snap.val()||{};
+  let total=0;
+  let loss=0;
+  let downtime=0;
+
+  Object.values(data).forEach(db=>{
+    Object.values(db).forEach(f=>{
+      total++;
+      if(f.productionLoss==="Yes") loss++;
+      downtime+=Number(f.downtimeMinutes)||0;
+    });
+  });
+
+  document.getElementById("fault_total").innerText=total;
+  document.getElementById("fault_loss").innerText=loss;
+globalFaultLoss = loss;
+calculateRisk();
+
+  const hrs = (downtime/60);
+document.getElementById("fault_downtime").innerText = hrs.toFixed(1);
+
+const mttr = total ? (hrs/total).toFixed(2) : 0;
+
+if(!document.getElementById("mttr_value")){
+  const mttrCard = document.createElement("div");
+  mttrCard.className="kpi-card";
+  mttrCard.innerHTML=`
+    <div class="kpi-title">MTTR (hrs)</div>
+    <div class="kpi-value">${mttr}</div>
+  `;
+  document.querySelector(".section:nth-of-type(2) .kpi-grid")
+    .appendChild(mttrCard);
+}
+
+
+  
+
+});
+
+
+
+/* ================= TRANSFORMER KPI ================= */
+
+firebase.database().ref("transformers").on("value", snap=>{
+
+  const data=snap.val()||{};
+  const total=Object.keys(data).length;
+
+  let overdue=0;
+
+  Object.values(data).forEach(t=>{
+    if(t.nextInspectionDue){
+      const next=new Date(t.nextInspectionDue);
+      if(next<new Date()) overdue++;
     }
   });
-}
+
+  document.getElementById("tr_total").innerText=total;
+  document.getElementById("tr_overdue").innerText=overdue;
+globalTrOverdue = overdue;
+calculateRisk();
 
 
-/* DB GRAPH */
-function loadDbGraph(){
-  db.ref("panels").once("value").then(snap=>{
+});
+
+/* ================= LUX KPI ================= */
+
+firebase.database().ref("luxReports").on("value", snap=>{
+
+  const data=snap.val()||{};
+  const total=Object.keys(data).length;
+
+  document.getElementById("lux_total").innerText=total;
+
+});
+/* ================= DB DETAIL MODAL ================= */
+
+function showDbDetails(type){
+
+  firebase.database().ref("panels").once("value").then(snap=>{
+
     const data=snap.val()||{};
-    let ok=0,due=0,over=0;
+    let rows="";
 
     Object.values(data).forEach(p=>{
-      if(!p.nextInspectionDue){ over++; return; }
-      const diff=Math.ceil((new Date(p.nextInspectionDue)-new Date())/(1000*60*60*24));
-      if(diff<0) over++;
-      else if(diff<=5) due++;
-      else ok++;
+
+      let status="OK";
+
+      if(!p.nextInspectionDue){
+        status="OVERDUE";
+      }else{
+        const next=new Date(p.nextInspectionDue);
+        const diff=Math.ceil((next-new Date())/(1000*60*60*24));
+
+        if(diff<0) status="OVERDUE";
+        else if(diff<=5) status="DUE";
+        else status="OK";
+      }
+
+      if(type==="total" ||
+        (type==="overdue" && status==="OVERDUE") ||
+        (type==="due" && status==="DUE")){
+
+        rows+=`
+          <tr>
+            <td>${p.dbNumber || ""}</td>
+            <td>${p.location || ""}</td>
+            <td>${status}</td>
+          </tr>
+        `;
+      }
+
     });
 
-    showChart(
-      ["OK","Due Soon","Overdue"],
-      [ok,due,over],
-      ["#28a745","#ffc107","#dc3545"]
-    );
+    document.getElementById("modalTitle").innerText="DB Details";
+    document.getElementById("modalBody").innerHTML=`
+      <table>
+        <tr>
+          <th>DB</th>
+          <th>Location</th>
+          <th>Status</th>
+        </tr>
+        ${rows}
+      </table>
+    `;
+
+    document.getElementById("detailModal").style.display="flex";
+
   });
+
 }
+/* ================= FAULT DETAIL MODAL ================= */
 
-/* TRANSFORMER GRAPH */
-function loadTransformerGraph(){
-  db.ref("transformers").once("value").then(snap=>{
+function showFaultDetails(type){
+
+  firebase.database().ref("faults").once("value").then(snap=>{
+
     const data=snap.val()||{};
-    showChart(
-      ["Total Transformers"],
-      [Object.keys(data).length],
-      ["#17a2b8"]
-    );
-  });
-}
+    let rows="";
 
-/* FAULT GRAPH */
-function loadFaultGraph(){
-  db.ref("faults").once("value").then(snap=>{
-    const data=snap.val()||{};
-    let total=0;
+    Object.keys(data).forEach(db=>{
+      Object.values(data[db]).forEach(f=>{
 
-    Object.values(data).forEach(db=>{
-      total+=Object.keys(db).length;
+        const loss=f.productionLoss==="Yes";
+
+        if(type==="total" ||
+           (type==="loss" && loss)){
+
+          rows+=`
+            <tr>
+              <td>${db}</td>
+              <td>${f.faultType || ""}</td>
+              <td>${f.downtimeMinutes || 0} min</td>
+              <td>${loss?"YES":"NO"}</td>
+            </tr>
+          `;
+        }
+
+      });
     });
 
-    showChart(
-      ["Total Fault Reports"],
-      [total],
-      ["#dc3545"]
-    );
+    document.getElementById("modalTitle").innerText="Fault Details";
+    document.getElementById("modalBody").innerHTML=`
+      <table>
+        <tr>
+          <th>DB</th>
+          <th>Fault Type</th>
+          <th>Downtime</th>
+          <th>Production Loss</th>
+        </tr>
+        ${rows}
+      </table>
+    `;
+
+    document.getElementById("detailModal").style.display="flex";
+
   });
+
+}
+function closeModal(){
+  document.getElementById("detailModal").style.display="none";
+}
+function updateLiveTime(){
+  const now = new Date();
+  document.getElementById("lastUpdated").innerText =
+    now.toLocaleString();
 }
 
-/* LUX GRAPH */
-function loadLuxGraph(){
-  db.ref("luxReports").once("value").then(snap=>{
-    const total=snap.val()?Object.keys(snap.val()).length:0;
-    showChart(
-      ["Total LUX Reports"],
-      [total],
-      ["#ffc107"]
-    );
-  });
+setInterval(updateLiveTime, 1000);
+updateLiveTime();
+function calculateRisk(){
+
+  const risk =
+    (globalDbOverdue * 3) +
+    (globalFaultLoss * 4) +
+    (globalTrOverdue * 5);
+
+  let color = "#28a745";
+
+  if(risk > 30){
+    color = "#dc3545";
+  }
+  else if(risk > 15){
+    color = "#ffc107";
+  }
+
+  document.getElementById("risk_score").innerHTML =
+    `<span style="color:${color}">${risk}</span>`;
 }
+function showChart(type){
+
+  document.getElementById("dynamicChartSection").style.display="block";
+
+  const canvas = document.getElementById("mainChart");
+if (!canvas) return;
+const ctx = canvas.getContext("2d");
+
+
+  if(mainChart) mainChart.destroy();
+
+  if(type==="db"){
+
+    document.getElementById("chartTitle").innerText="DB Compliance Status";
+
+    mainChart=new Chart(ctx,{
+      type:'doughnut',
+      data:{
+        labels:["OK","Due Soon","Overdue"],
+        datasets:[{
+          data:[
+            document.getElementById("db_total").innerText -
+            document.getElementById("db_due").innerText -
+            document.getElementById("db_overdue").innerText,
+            document.getElementById("db_due").innerText,
+            document.getElementById("db_overdue").innerText
+          ],
+          backgroundColor:["#28a745","#ffc107","#dc3545"]
+        }]
+      },
+      options:{plugins:{legend:{position:'bottom'}}}
+    });
+
+  }
+
+  if(type==="fault"){
+
+    document.getElementById("chartTitle").innerText="Fault Impact Overview";
+
+    mainChart=new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:["Total Faults","Loss Cases","Downtime (hrs)"],
+        datasets:[{
+          data:[
+            document.getElementById("fault_total").innerText,
+            document.getElementById("fault_loss").innerText,
+            document.getElementById("fault_downtime").innerText
+          ],
+          backgroundColor:["#007bff","#dc3545","#ffc107"]
+        }]
+      },
+      options:{plugins:{legend:{display:false}}}
+    });
+
+  }
+
+  if(type==="tr"){
+
+    document.getElementById("chartTitle").innerText="Transformer Status";
+
+    mainChart=new Chart(ctx,{
+      type:'doughnut',
+      data:{
+        labels:["Overdue","OK"],
+        datasets:[{
+          data:[
+            document.getElementById("tr_overdue").innerText,
+            document.getElementById("tr_total").innerText -
+            document.getElementById("tr_overdue").innerText
+          ],
+          backgroundColor:["#dc3545","#28a745"]
+        }]
+      }
+    });
+
+  }
+
+  if(type==="lux"){
+
+    document.getElementById("chartTitle").innerText="LUX Monitoring Reports";
+
+    mainChart=new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:["Total Reports"],
+        datasets:[{
+          data:[document.getElementById("lux_total").innerText],
+          backgroundColor:["#17a2b8"]
+        }]
+      },
+      options:{plugins:{legend:{display:false}}}
+    });
+
+  }
+
+}
+
 </script>
+
 
 </body>
 </html>
