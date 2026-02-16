@@ -831,7 +831,7 @@ function afterLoginInit() {
   initTabs();
   renderCircuits(null);
   renderDistributionBreakers(null);   // NEW: start with empty distribution breaker row
-  //showPanels();
+  showPanels();
   loadReports();
   loadMasterReport();
   loadQuestions();
@@ -3072,6 +3072,61 @@ function renderSafetyTable(list) {
 
   html += "</table>";
   container.innerHTML = html;
+}
+function showPanels() {
+
+  const div = document.getElementById("panelList");
+  if (!div) return;
+
+  div.innerHTML = "Loading...";
+
+  firebase.database().ref("panels").once("value").then(snap => {
+
+    const all = snap.val();
+
+    if (!all) {
+      div.innerHTML = "<p>No panels found.</p>";
+      return;
+    }
+
+    let html = `
+      <table>
+        <tr>
+          <th>DB</th>
+          <th>Voltage</th>
+          <th>Main Breaker</th>
+          <th>Location</th>
+          <th>Action</th>
+        </tr>
+    `;
+
+    Object.keys(all).forEach(id => {
+
+      const p = all[id];
+
+      html += `
+        <tr>
+          <td>${p.dbNumber || id}</td>
+          <td>${p.voltage || ""}</td>
+          <td>${p.mainBreaker || ""}</td>
+          <td>${p.location || ""}</td>
+          <td>
+            <button class="secondary-btn" onclick="editPanel('${id}')">Edit</button>
+            <button class="danger-btn" onclick="deletePanel('${id}')">Delete</button>
+          </td>
+        </tr>
+      `;
+
+    });
+
+    html += "</table>";
+
+    div.innerHTML = html;
+
+  }).catch(err => {
+    console.error("Error loading panels:", err);
+    div.innerHTML = "Error loading panels.";
+  });
 }
 
 </script>
