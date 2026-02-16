@@ -1234,8 +1234,7 @@ function showTransformers() {
   const div = document.getElementById("transformerList");
   if (!div) return;
 
-  firebase.database().ref("transformers").on("value").then(snap => {
-
+  firebase.database().ref("transformers").on("value"function(snap) {
     const all = snap.val();
 
     if (!all) {
@@ -1514,7 +1513,7 @@ function badgeForStatus(value, okValues = [], warnValues = [], badValues = []) {
 /* ------------ DB INSPECTION + FAULT REPORTS ------------ */
 
 function loadReports() {
-  firebase.database().ref("inspections").on("value", snap => {
+  firebase.database().ref("inspections").on("value", function(snap) {
     let data = snap.val() || {};
     inspectionsGlobal = convertInspectionData(data);
     renderInspectionTable(inspectionsGlobal);
@@ -2464,7 +2463,7 @@ function collectDynamicAnswers(sectionPrefix) {
 
 /* ------------ TRANSFORMER REPORTS (from transformer.html) ------------ */
 function loadTransformerReports() {
-  firebase.database().ref("transformerInspections").on("value", snap => {
+  firebase.database().ref("transformerInspections").on("value", function(snap) {
     const data = snap.val() || {};
     const list = [];
     for (let trId in data) {
@@ -2631,7 +2630,7 @@ function exportTransformersCSV() {
 
 // Load all LUX reports from Firebase into luxReportsGlobal
 function loadLuxReports() {
-  firebase.database().ref("luxReports").on("value", snap => {
+  firebase.database().ref("luxReports").on("value", function(snap) {
     const data = snap.val() || {};
     const list = Object.keys(data).map(key => ({
       key,
@@ -3181,7 +3180,7 @@ function showPanels() {
 }
 function loadDashboardAnalytics() {
 
-  firebase.database().ref("panels").on("value", snap => {
+  firebase.database().ref("panels").on("value",function(snap) {
 
     const data = snap.val() || {};
     const total = Object.keys(data).length;

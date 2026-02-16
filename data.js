@@ -40,8 +40,8 @@ function loadPanelFromFirebase(dbId, callback) {
 
 // Load all DBs
 function loadAllPanels(callback) {
-  db.ref("panels").on("value").then(snap => {
-    callback(snap.val());
+  db.ref("panels").on("value", function(snapshot) {
+    callback(snapshot.val());
   });
 }
 
