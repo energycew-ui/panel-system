@@ -1152,26 +1152,28 @@ let safetyGlobal = [];
 
 function loadSafetyRecords() {
 
-  firebase.database().ref("safetyDeclarations").once("value", snap => {
+  firebase.database().ref("safetyDeclarations").on("value", function(snap) {
 
-    const data = snap.val() || {};
-    const list = [];
+  const data = snap.val() || {};
+  const list = [];
 
-    Object.keys(data).forEach(dbId => {
-      Object.keys(data[dbId]).forEach(key => {
-        list.push({
-          dbId,
-          recordKey: key,
-          ...data[dbId][key]
-        });
+  Object.keys(data).forEach(dbId => {
+    Object.keys(data[dbId]).forEach(key => {
+      list.push({
+        dbId,
+        recordKey: key,
+        ...data[dbId][key]
       });
     });
-
-    safetyGlobal = list;
-
-    renderSafetyTable(list);
-    updateSafetySummary(list);
   });
+
+  safetyGlobal = list;
+
+  renderSafetyTable(list);
+  updateSafetySummary(list);
+
+});
+
 }
 
 function updateSafetySummary(list) {
@@ -1234,7 +1236,7 @@ function showTransformers() {
   const div = document.getElementById("transformerList");
   if (!div) return;
 
-  firebase.database().ref("transformers").on("value"function(snap) {
+  firebase.database().ref("transformers").on("value",function(snap) {
     const all = snap.val();
 
     if (!all) {
