@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>KPI Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body{
+      font-family:Arial;
+      background:#f4f6f9;
+      padding:20px;
+    }
+
+    h2{
+      text-align:center;
+      margin-bottom:20px;
+    }
+
+    .btnRow{
+      text-align:center;
+      margin-bottom:20px;
+    }
+
+    button{
+      padding:8px 16px;
+      margin:5px;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      background:#007bff;
+      color:white;
+    }
+
+    #chartContainer{
+      width:400px;
+      margin:0 auto;
+      display:none;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>System KPI Analytics</h2>
+
+<div class="btnRow">
+  <button onclick="loadDbGraph()">DB Panels</button>
+  <button onclick="loadTransformerGraph()">Transformers</button>
+  <button onclick="loadFaultGraph()">Fault Reports</button>
+  <button onclick="loadLuxGraph()">LUX Monitoring</button>
+</div>
+
+<div id="chartContainer">
+  <canvas id="kpiChart"></canvas>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_DOMAIN",
+  databaseURL: "YOUR_DB_URL",
+  projectId: "YOUR_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let chart;
+
+function showChart(labels, data, colors){
+  document.getElementById("chartContainer").style.display="block";
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("kpiChart"),{
+    type:'doughnut',
+    data:{
+      labels:labels,
+      datasets:[{
+        data:data,
+        backgroundColor:colors
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{ position:'bottom' }
+      }
+    }
+  });
+}
+
+/* DB GRAPH */
+function loadDbGraph(){
+  db.ref("panels").once("value").then(snap=>{
+    const data=snap.val()||{};
+    let ok=0,due=0,over=0;
+
+    Object.values(data).forEach(p=>{
+      if(!p.nextInspectionDue){ over++; return; }
+      const diff=Math.ceil((new Date(p.nextInspectionDue)-new Date())/(1000*60*60*24));
+      if(diff<0) over++;
+      else if(diff<=5) due++;
+      else ok++;
+    });
+
+    showChart(
+      ["OK","Due Soon","Overdue"],
+      [ok,due,over],
+      ["#28a745","#ffc107","#dc3545"]
+    );
+  });
+}
+
+/* TRANSFORMER GRAPH */
+function loadTransformerGraph(){
+  db.ref("transformers").once("value").then(snap=>{
+    const data=snap.val()||{};
+    showChart(
+      ["Total Transformers"],
+      [Object.keys(data).length],
+      ["#17a2b8"]
+    );
+  });
+}
+
+/* FAULT GRAPH */
+function loadFaultGraph(){
+  db.ref("faults").once("value").then(snap=>{
+    const data=snap.val()||{};
+    let total=0;
+
+    Object.values(data).forEach(db=>{
+      total+=Object.keys(db).length;
+    });
+
+    showChart(
+      ["Total Fault Reports"],
+      [total],
+      ["#dc3545"]
+    );
+  });
+}
+
+/* LUX GRAPH */
+function loadLuxGraph(){
+  db.ref("luxReports").once("value").then(snap=>{
+    const total=snap.val()?Object.keys(snap.val()).length:0;
+    showChart(
+      ["Total LUX Reports"],
+      [total],
+      ["#ffc107"]
+    );
+  });
+}
+</script>
+
+</body>
+</html>

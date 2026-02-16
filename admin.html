@@ -452,35 +452,10 @@
 <!-- MAIN ADMIN DASHBOARD -->
 <div id="adminWrapper" style="display:none;">
 <div class="card">
-  <h2>System KPI Dashboard</h2>
-
-  <div class="summary-row">
-    <div class="summary-card">
-      <div class="summary-title">Total DB Panels</div>
-      <div class="summary-value" id="kpi_db">0</div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-title">Overdue Panels</div>
-      <div class="summary-value" id="kpi_overdue">0</div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-title">Transformers</div>
-      <div class="summary-value" id="kpi_tr">0</div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-title">LUX Reports</div>
-      <div class="summary-value" id="kpi_lux">0</div>
-    </div>
-  </div>
-
-  <canvas id="statusChart" height="100"></canvas>
-</div>
-
+  
 
   <!-- PREMIUM HEADER -->
+
   <div class="topbar premium-header">
     <div class="logo-wrapper">
       <img src="logo.png" class="topbar-logo" alt="Chenab Engineering Logo">
@@ -490,6 +465,9 @@
     </div>
     <div class="header-separator"></div>
   </div>
+<button class="primary-btn" onclick="openKpiWindow()" style="margin-top:10px;">
+  📊 KPI Dashboard
+</button>
 
   <!-- TABS -->
   <div class="tabs">
@@ -3245,6 +3223,9 @@ function renderStatusChart(ok, dueSoon, overdue) {
       }]
     }
   });
+}
+function openKpiWindow(){
+  window.open("kpi.html","_blank","width=600,height=600");
 }
 
 </script>
