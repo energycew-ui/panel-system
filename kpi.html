@@ -130,6 +130,33 @@
     Last Updated: <span id="lastUpdated">--</span>
   </div>
 </div>
+<div class="section" id="executiveSummary">
+  <h3>Executive Summary</h3>
+
+  <div class="kpi-grid">
+
+    <div class="kpi-card">
+      <div class="kpi-title">Plant Health Status</div>
+      <div class="kpi-value" id="plant_status">--</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title">Overall Compliance (%)</div>
+      <div class="kpi-value" id="overall_compliance">0</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title">Critical Items</div>
+      <div class="kpi-value danger" id="critical_items">0</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-title">System Stability</div>
+      <div class="kpi-value" id="system_stability">Stable</div>
+    </div>
+
+  </div>
+</div>
 
 
 <div class="section">
@@ -208,6 +235,12 @@
   <h3 id="chartTitle"></h3>
   <div class="chart-box" style="max-width:400px;">
     <canvas id="mainChart"></canvas>
+  </div>
+</div>
+<div class="section">
+  <h3>30-Day Operational Trend</h3>
+  <div class="chart-box" style="max-width:700px;">
+    <canvas id="trendChart"></canvas>
   </div>
 </div>
 
@@ -505,6 +538,41 @@ function calculateRisk(){
 
   document.getElementById("risk_score").innerHTML =
     `<span style="color:${color}">${risk}</span>`;
+
+  /* ===== EXECUTIVE SUMMARY UPDATE ===== */
+
+  const compliancePercent = Math.max(0, 100 - risk);
+  document.getElementById("overall_compliance").innerText =
+    compliancePercent.toFixed(1);
+
+  const criticalItems =
+    globalDbOverdue + globalTrOverdue + globalFaultLoss;
+
+  document.getElementById("critical_items").innerText =
+    criticalItems;
+
+  let statusText = "Excellent";
+  let statusColor = "#28a745";
+
+  if(risk >= 60){
+    statusText = "Critical";
+    statusColor = "#dc3545";
+  }
+  else if(risk >= 30){
+    statusText = "Warning";
+    statusColor = "#ffc107";
+  }
+
+  document.getElementById("plant_status").innerHTML =
+    `<span style="color:${statusColor}">${statusText}</span>`;
+
+  let stability = "Stable";
+
+  if(risk >= 50) stability = "Unstable";
+  if(risk >= 70) stability = "Highly Unstable";
+
+  document.getElementById("system_stability").innerText =
+    stability;
 }
 function showChart(type){
 
@@ -603,6 +671,114 @@ const ctx = canvas.getContext("2d");
   }
 
 }
+/* ================= 30 DAY TREND ANALYTICS ================= */
+
+let trendChart = null;
+
+function loadTrendAnalytics(){
+
+  const today = new Date();
+  const last30Days = [];
+
+  for(let i = 29; i >= 0; i--){
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    last30Days.push(d.toISOString().slice(0,10));
+  }
+
+  let faultData = Array(30).fill(0);
+  let inspectionData = Array(30).fill(0);
+
+  /* ===== FAULT TREND ===== */
+  firebase.database().ref("faults").once("value").then(snap=>{
+
+    const data = snap.val() || {};
+
+    Object.values(data).forEach(db=>{
+      Object.values(db).forEach(f=>{
+
+        if(!f.timestamp) return;
+
+        const date = f.timestamp.slice(0,10);
+        const index = last30Days.indexOf(date);
+        if(index >= 0){
+          faultData[index]++;
+        }
+
+      });
+    });
+
+  }).then(()=>{
+
+    /* ===== INSPECTION TREND (DB + TR + LUX) ===== */
+
+    firebase.database().ref("inspections").once("value").then(snap=>{
+      const data = snap.val() || {};
+
+      Object.values(data).forEach(db=>{
+        Object.values(db).forEach(i=>{
+          if(!i.timestamp) return;
+          const date = i.timestamp.slice(0,10);
+          const index = last30Days.indexOf(date);
+          if(index >= 0){
+            inspectionData[index]++;
+          }
+        });
+      });
+
+    });
+
+  }).then(()=>{
+
+    renderTrendChart(last30Days, faultData, inspectionData);
+
+  });
+
+}
+
+function renderTrendChart(labels, faults, inspections){
+
+  const ctx = document.getElementById("trendChart").getContext("2d");
+
+  if(trendChart) trendChart.destroy();
+
+  trendChart = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels: labels,
+      datasets:[
+        {
+          label:'Faults',
+          data: faults,
+          borderColor:'#dc3545',
+          backgroundColor:'rgba(220,53,69,0.1)',
+          tension:0.3
+        },
+        {
+          label:'Inspections',
+          data: inspections,
+          borderColor:'#28a745',
+          backgroundColor:'rgba(40,167,69,0.1)',
+          tension:0.3
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'bottom'}
+      },
+      scales:{
+        x:{display:false},
+        y:{beginAtZero:true}
+      }
+    }
+  });
+
+}
+
+/* LOAD TREND AFTER PAGE LOAD */
+loadTrendAnalytics();
 
 </script>
 
