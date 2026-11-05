@@ -35,7 +35,7 @@
     #loginBox input { width: 100%; padding: 11px 12px; margin-top: 6px; }
     #loginBox button { width: 100%; padding: 11px; margin-top: 14px; font-size: 15px; color: #fff; }
     #loginError { color: #d92d20; font-size: 13px; margin-top: 8px; }
-    .login-logo { width: 130px; height: auto; }
+    .login-logo { width: 100%; max-width: 280px; height: auto; margin-bottom: 4px; }
 
     #previewImage,
     #previewTransformerImage {
@@ -107,11 +107,10 @@
   <!-- SIDEBAR NAVIGATION -->
   <aside class="sidebar">
     <div class="brand">
-      <img src="logo.png" alt="Chenab Engineering Logo">
-      <div>
-        <div class="brand-name">Chenab Engineering</div>
-        <div class="brand-sub">Electrical System</div>
+      <div class="brand-logo">
+        <img src="logo.png" alt="Chenab Engineering Works &amp; Foundries (Pvt) Ltd.">
       </div>
+      <div class="brand-sub">Electrical Management System</div>
     </div>
 
     <div class="nav-group">Dashboard</div>
@@ -137,6 +136,7 @@
 
   <div class="main">
   <header class="page-header">
+    <img class="header-logo" src="logo.png" alt="Chenab Engineering Works &amp; Foundries (Pvt) Ltd.">
     <div>
       <h1 id="pageTitle">Overview</h1>
       <div class="crumb">Chenab Engineering Works · Electrical &amp; Transformer Management</div>

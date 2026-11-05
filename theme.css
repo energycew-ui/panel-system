@@ -54,11 +54,14 @@ h3 { font-size: 16px; font-weight: 600; }
   box-shadow: none !important;
 }
 .topbar img {
-  width: 120px !important;
+  width: 260px !important;
+  max-width: 82% !important;
+  height: auto !important;
   filter: none !important;
   background: #fff;
-  padding: 6px 12px;
-  border-radius: 10px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
   display: inline-block !important;   /* some pages hide all <img> for photo previews */
   margin: 0 !important;
   border: none !important;
@@ -267,17 +270,35 @@ button:active, .btn:active { transform: translateY(1px); }
   flex-direction: column;
   padding: 18px 14px;
 }
+/* company logo: full wordmark on a white card across the sidebar */
 .brand {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
-  padding: 4px 8px 18px;
+  padding: 2px 0 18px;
   border-bottom: 1px solid #33291f;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
-.brand img { width: 46px; height: auto; background: #fff; border-radius: 8px; padding: 3px; }
-.brand-name { font-weight: 800; color: #fff; font-size: 15px; line-height: 1.2; }
-.brand-sub { font-size: 11px; color: var(--brand); font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+.brand-logo {
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+  border-bottom: 4px solid var(--brand);
+  overflow: hidden;
+}
+/* logo.png has wide white margins built in – trim them so the wordmark fills the card */
+.brand-logo img { display: block; width: 112%; max-width: none; height: auto; margin: -4% -6%; }
+.brand-sub {
+  font-size: 10.5px;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  text-align: center;
+}
+.header-logo { display: none; }
 
 .nav-group {
   font-size: 10.5px;
@@ -525,13 +546,22 @@ button:active, .btn:active { transform: translateY(1px); }
     overflow-x: auto;
     overflow-y: hidden;
   }
-  .brand { border: none; margin: 0; padding: 0 8px 0 0; flex: 0 0 auto; }
-  .brand-name, .brand-sub { display: none; }
-  .brand img { width: 38px; }
+  .brand { display: none; }            /* logo moves into the page header on phones */
   .nav-group { display: none; }
   .sidebar .tab-btn { width: auto; flex: 0 0 auto; white-space: nowrap; }
   .sidebar-footer { margin: 0; padding: 0; border: none; flex: 0 0 auto; }
-  .page-header { position: static; padding: 12px 16px; }
+  .page-header { position: static; padding: 14px 16px; flex-wrap: wrap; }
+  .header-logo {
+    display: block;
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    margin: 0 auto 6px;
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px 12px;
+    border-bottom: 3px solid var(--brand);
+  }
   .tab-wrapper { padding: 16px 16px 40px !important; }
   .overview-grid { grid-template-columns: 1fr; }
 }
@@ -550,6 +580,7 @@ body.doc .doc-sheet {
   padding: 32px 36px;
 }
 body.doc h1 { color: var(--text) !important; font-size: 24px; }
+body.doc .logo, body.doc .header img { width: 280px !important; max-width: 70%; height: auto !important; }
 body.doc h2, body.doc .section-title {
   background: var(--dark) !important;
   color: #fff !important;

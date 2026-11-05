@@ -41,6 +41,18 @@ firebase.initializeApp(firebaseConfig);
       border-bottom: 4px solid #fd0000;
     }
     .header > div { color: #d6cec5; font-weight: 500; }
+    .header > .kpi-heading { color: #fff; font-weight: 800; font-size: 22px; }
+    .kpi-logo {
+      display: block;
+      width: 280px;
+      max-width: 82%;
+      height: auto;
+      margin: 0 auto 12px;
+      background: #fff;
+      padding: 10px 18px;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.25);
+    }
 
     .section { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
     .section .section { padding: 0; }
@@ -136,7 +148,8 @@ firebase.initializeApp(firebaseConfig);
 <body>
 
 <div class="header">
-  Executive Electrical Management Dashboard
+  <img class="kpi-logo" src="logo.png" alt="Chenab Engineering Works &amp; Foundries (Pvt) Ltd.">
+  <div class="kpi-heading">Executive Electrical Management Dashboard</div>
   <div style="font-size:13px;margin-top:6px;">
     <span id="liveIndicator" style="color:#28a745;">● LIVE</span> |
     Last Updated: <span id="lastUpdated">--</span>
