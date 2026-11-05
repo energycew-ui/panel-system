@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Safety Declaration Report</title>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -97,6 +98,50 @@
 
 <script>
 
+/* Permit to Work section (CEWF-IMS-FRM-043), shown when the record has ptw data */
+function ptwHtml(data) {
+  const p = data.ptw;
+  if (!p) return "";
+  const nature = ["Hot Work", "Work-at-Height", "Electrical", "Excavation", "Confined Space"]
+    .map(n => ((p.jobNature || []).includes(n) ? "&#9746; " : "&#9744; ") + n)
+    .join("&nbsp;&nbsp;&nbsp;");
+  const c = p.checklist || {};
+  const checks = [
+    ["Are all personnel familiar with the associated risks and control measures?", c.personnelFamiliarWithRisks],
+    ["Are all protective measures in place?", c.protectiveMeasuresInPlace],
+    ["Do all personnel understand the emergency procedures?", c.emergencyProceduresUnderstood],
+    ["Have all flammable materials and other combustibles been moved away from the area or covered?", c.flammablesRemovedOrCovered],
+    ["Is all work equipment in good order?", c.equipmentInGoodOrder],
+    ["Have sufficient fire extinguishers been provided?", c.fireExtinguishersProvided],
+    ["Is all the required PPE issued and worn?", c.ppeIssuedAndWorn]
+  ].map(([q, a]) => `<tr><td>${q}</td><td style="width:15%;text-align:center;">${a || ""}</td></tr>`).join("");
+  const closed = data.closedAt ? new Date(data.closedAt).toLocaleString() : "";
+
+  return `
+    <div class="section-title">Permit to Work (${data.formCode || "CEWF-IMS-FRM-043"})</div>
+    <table>
+      <tr><td class="label">Location</td><td>${p.location || ""}</td></tr>
+      <tr><td class="label">Manager in Charge</td><td>${p.permitIssuer || ""}</td></tr>
+      <tr><td class="label">Job Nature</td><td>${nature}</td></tr>
+      <tr><td class="label">Specification of Task</td><td>${p.taskSpecification || ""}</td></tr>
+      <tr><td class="label">Timescale</td><td>Date: ${p.date || ""} &nbsp; Time: From ${p.timeFrom || ""} To ${p.timeTo || ""}</td></tr>
+      <tr><td class="label">Hazards</td><td>${p.hazards || ""}</td></tr>
+      <tr><td class="label">Control Measures</td><td>${p.controlMeasures || ""}</td></tr>
+    </table>
+
+    <div class="section-title">Management Checklist</div>
+    <table>${checks}</table>
+
+    <div class="section-title">Authorisation &amp; Cancellation</div>
+    <table>
+      <tr><td class="label">Permit Issued By</td><td>${p.permitIssuer || ""} ${p.issuerPosition ? "(" + p.issuerPosition + ")" : ""}</td></tr>
+      <tr><td class="label">Permit Received By</td><td>${p.permitReceiver || ""} ${p.receiverPosition ? "(" + p.receiverPosition + ")" : ""}</td></tr>
+      <tr><td class="label">Job Closed</td><td>${closed}</td></tr>
+      <tr><td class="label">Permit Cancelled (area inspected)</td><td>${(p.cancelledAt || "").replace("T", " ")}</td></tr>
+    </table>
+  `;
+}
+
 const params = new URLSearchParams(window.location.search);
 const dbId = params.get("db");
 const recordKey = params.get("id");
@@ -178,6 +223,8 @@ if (!dbId || !recordKey) {
             </td>
           </tr>
         </table>
+
+        ${ptwHtml(data)}
 
         <div class="section-title">Safety Photo</div>
 

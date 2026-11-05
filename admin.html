@@ -3105,6 +3105,11 @@ function renderSafetyTable(list) {
         <td>${durationHours}</td>
         <td>${alertBadge}</td>
         <td>
+          ${r.permitNo ? `<small>${r.permitNo}</small><br>` : ""}
+          <button class="secondary-btn"
+            onclick="window.open('safety_print.html?db=${encodeURIComponent(r.dbId)}&id=${encodeURIComponent(r.recordKey)}','_blank')">
+            View / Print
+          </button>
           <button class="danger-btn"
             onclick="deleteSafetyRecord('${r.dbId}','${r.recordKey}')">
             Delete

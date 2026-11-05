@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Safety Declaration</title>
 
   <!-- Firebase -->
@@ -39,11 +41,38 @@
       font-weight: bold;
     }
 
-    input, select {
+    input, select, textarea {
       width: 100%;
       padding: 10px;
       margin-top: 5px;
+      box-sizing: border-box;
+      font-family: inherit;
     }
+
+    textarea { height: 70px; }
+
+    .section-title {
+      margin-top: 25px;
+      padding: 8px 10px;
+      background: #111;
+      color: #ffc800;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+
+    .nature label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 14px 0 0;
+      font-weight: normal;
+    }
+    .nature input { width: auto; margin: 0; }
+
+    .row { display: flex; flex-wrap: wrap; gap: 0 10px; }
+    .row > div { flex: 1 1 130px; min-width: 0; }
+
+    .check-q { font-weight: normal; }
 
     button {
       margin-top: 20px;
@@ -117,7 +146,62 @@
   </select>
 
   <label>Work Permit Number</label>
-  <input type="text" id="permitNo">
+  <input type="text" id="permitNo" placeholder="e.g. PTW-2026-045">
+
+  <!-- ===== PERMIT TO WORK (CEWF-IMS-FRM-043) ===== -->
+  <div class="section-title">Permit to Work (CEWF-IMS-FRM-043)</div>
+
+  <label>Location</label>
+  <input type="text" id="ptwLocation">
+
+  <label>Manager in Charge / Permit Issued By *</label>
+  <input type="text" id="ptwIssuer" list="issuerList" placeholder="Select or type name">
+  <datalist id="issuerList">
+    <option value="Engr Touseef">
+    <option value="Fazal Maqsood">
+    <option value="Suleman Akram">
+    <option value="Nadeem">
+    <option value="Ijaz">
+  </datalist>
+
+  <label>Issuer Position</label>
+  <input type="text" id="ptwIssuerPos">
+
+  <label>Job Nature *</label>
+  <div class="nature">
+    <label><input type="checkbox" name="jobNature" value="Hot Work"> Hot Work</label>
+    <label><input type="checkbox" name="jobNature" value="Work-at-Height"> Work-at-Height</label>
+    <label><input type="checkbox" name="jobNature" value="Electrical" checked> Electrical</label>
+    <label><input type="checkbox" name="jobNature" value="Excavation"> Excavation</label>
+    <label><input type="checkbox" name="jobNature" value="Confined Space"> Confined Space</label>
+  </div>
+
+  <label>Specification of the Task *</label>
+  <textarea id="ptwTask" placeholder="What work will be done, on which machine/equipment"></textarea>
+
+  <div class="row">
+    <div>
+      <label>Date</label>
+      <input type="date" id="ptwDate">
+    </div>
+    <div>
+      <label>Time From</label>
+      <input type="time" id="ptwFrom">
+    </div>
+    <div>
+      <label>Time To</label>
+      <input type="time" id="ptwTo">
+    </div>
+  </div>
+
+  <label>Hazards *</label>
+  <textarea id="ptwHazards">Electric shock, arc flash, unexpected start-up of machine</textarea>
+
+  <label>Control Measures *</label>
+  <textarea id="ptwControls">Supply isolated, lock-out/tag-out applied, voltage tested dead, insulated tools used, area barricaded, PPE (insulated gloves, helmet, safety shoes)</textarea>
+
+  <div class="section-title">Management Checklist</div>
+  <div id="ptwChecklist"></div>
 
   <label>Safety Photo (Before Work) *</label>
   <input type="file" accept="image/*" onchange="previewSafetyPhoto(event)">
@@ -133,6 +217,53 @@ const params = new URLSearchParams(window.location.search);
 const dbId = params.get("id");
 
 let safetyPhoto = null;
+
+/* ---------- PERMIT TO WORK SETUP ---------- */
+const ISSUER_POSITIONS = {
+  "Engr Touseef": "Electrical Engineer",
+  "Fazal Maqsood": "Electrical Supervisor",
+  "Suleman Akram": "Standby Electrical (Night)",
+  "Nadeem": "Molding Supervisor",
+  "Ijaz": "Molding Supervisor"
+};
+
+const PTW_CHECKS = [
+  ["personnelFamiliarWithRisks", "Are all personnel familiar with the associated risks and control measures?"],
+  ["protectiveMeasuresInPlace", "Are all protective measures in place?"],
+  ["emergencyProceduresUnderstood", "Do all personnel understand the emergency procedures?"],
+  ["flammablesRemovedOrCovered", "Have all flammable materials and other combustibles been moved away from the area or covered?"],
+  ["equipmentInGoodOrder", "Is all work equipment in good order?"],
+  ["fireExtinguishersProvided", "Have sufficient fire extinguishers been provided?"],
+  ["ppeIssuedAndWorn", "Is all the required PPE issued and worn?"]
+];
+
+document.getElementById("ptwChecklist").innerHTML = PTW_CHECKS.map(([id, q]) => `
+  <label class="check-q">${q}</label>
+  <select id="chk_${id}">
+    <option value="">Select</option>
+    <option>Yes</option>
+    <option>No</option>
+  </select>
+`).join("");
+
+document.getElementById("ptwIssuer").addEventListener("change", e => {
+  const pos = ISSUER_POSITIONS[e.target.value.trim()];
+  if (pos) document.getElementById("ptwIssuerPos").value = pos;
+});
+
+// defaults: local date/time now, location from the DB record
+(function () {
+  const now = new Date();
+  const local = new Date(now - now.getTimezoneOffset() * 60000).toISOString();
+  document.getElementById("ptwDate").value = local.slice(0, 10);
+  document.getElementById("ptwFrom").value = local.slice(11, 16);
+  if (dbId) {
+    document.getElementById("ptwLocation").value = dbId;
+    firebase.database().ref("panels/" + dbId + "/location").once("value").then(s => {
+      if (s.val()) document.getElementById("ptwLocation").value = s.val() + " (" + dbId + ")";
+    });
+  }
+})();
 
 /* PHOTO PREVIEW */
 function previewSafetyPhoto(event) {
@@ -165,6 +296,35 @@ function submitSafety() {
     return;
   }
 
+  /* PERMIT TO WORK */
+  const issuer = document.getElementById("ptwIssuer").value.trim();
+  const jobNature = [...document.querySelectorAll("input[name=jobNature]:checked")].map(c => c.value);
+  const task = document.getElementById("ptwTask").value.trim();
+  const hazards = document.getElementById("ptwHazards").value.trim();
+  const controls = document.getElementById("ptwControls").value.trim();
+
+  if (!issuer || !jobNature.length || !task || !hazards || !controls) {
+    alert("Please complete the Permit to Work: issuer, job nature, task, hazards and control measures.");
+    return;
+  }
+  if (issuer.toLowerCase() === name.toLowerCase()) {
+    alert("Permit issuer and permit receiver cannot be the same person.");
+    return;
+  }
+
+  const checklist = {};
+  for (const [id] of PTW_CHECKS) {
+    checklist[id] = document.getElementById("chk_" + id).value;
+    if (!checklist[id]) {
+      alert("Please answer all Management Checklist questions.");
+      return;
+    }
+  }
+  if (Object.values(checklist).includes("No") &&
+      !confirm("Some Management Checklist answers are 'No'. The permit should not be issued until they are resolved. Continue anyway?")) {
+    return;
+  }
+
   if (!safetyPhoto) {
     alert("Safety photo is mandatory before starting work.");
     return;
@@ -189,7 +349,23 @@ function submitSafety() {
     safetyPhoto: safetyPhoto,
     checklistScore: score,
     timestamp: new Date().toISOString(),
-    status: "OPEN"
+    status: "OPEN",
+    formCode: "CEWF-IMS-FRM-043",
+    ptw: {
+      location: document.getElementById("ptwLocation").value.trim(),
+      jobNature,
+      taskSpecification: task,
+      date: document.getElementById("ptwDate").value,
+      timeFrom: document.getElementById("ptwFrom").value,
+      timeTo: document.getElementById("ptwTo").value,
+      hazards,
+      controlMeasures: controls,
+      checklist,
+      permitIssuer: issuer,
+      issuerPosition: document.getElementById("ptwIssuerPos").value.trim(),
+      permitReceiver: name,
+      receiverPosition: "Electrician"
+    }
   };
 
   const ref = firebase.database().ref("safetyDeclarations/" + dbId).push();

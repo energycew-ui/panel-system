@@ -211,8 +211,10 @@ function doLogin() {
 function showForm() {
   document.getElementById("loginCard").style.display="none";
   document.getElementById("formCard").style.display="block";
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // local time, not UTC
   document.getElementById("fault_datetime").value =
-    new Date().toISOString().slice(0,16);
+    now.toISOString().slice(0,16);
 }
 
 /* ---------------- PHOTO PREVIEW ---------------- */
@@ -260,7 +262,8 @@ function submitFault(){
     productionLoss:document.getElementById("fault_loss").value,
     productionLossDesc:document.getElementById("fault_lossDesc").value,
     photo1,photo2,photo3,
-    comments:document.getElementById("fault_comments").value
+    comments:document.getElementById("fault_comments").value,
+    safetyRef:safetyKey
   };
 
   const faultRef=firebase.database()
@@ -271,13 +274,20 @@ function submitFault(){
 
     const faultKey=faultRef.key;
 
+    // close the job and cancel its Permit to Work
+    const closeNow=new Date();
+    const localNow=new Date(closeNow-closeNow.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    const closeData={
+      status:"CLOSED",
+      closedAt:closeNow.toISOString(),
+      faultRef:faultKey,
+      "ptw/cancelledAt":localNow
+    };
+    if(end) closeData["ptw/timeTo"]=end.slice(11,16);
+
     firebase.database()
       .ref("safetyDeclarations/"+dbId+"/"+safetyKey)
-      .update({
-        status:"CLOSED",
-        closedAt:new Date().toISOString(),
-        faultRef:faultKey
-      });
+      .update(closeData);
 
     alert("Fault Report Submitted Successfully!");
     window.location.href="panel.html?id="+encodeURIComponent(dbId);
