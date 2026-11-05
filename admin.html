@@ -2610,6 +2610,13 @@ function exportTransformersCSV() {
 
 // Load all LUX reports from Firebase into luxReportsGlobal
 function loadLuxReports() {
+  // other reports (with photos) download first, so this can take a while
+  const loadingMsg = "<p>Loading LUX reports... please wait.</p>";
+  const s = document.getElementById("luxSummary");
+  const t = document.getElementById("luxTable");
+  if (s) s.innerHTML = loadingMsg;
+  if (t) t.innerHTML = "";
+
   firebase.database().ref("luxReports").on("value", function(snap) {
     const data = snap.val() || {};
     const list = Object.keys(data).map(key => ({
@@ -2617,10 +2624,17 @@ function loadLuxReports() {
       ...data[key]
     }));
     luxReportsGlobal = list;
-    renderLuxTable(list);
-    updateLuxSummary(list);
+    luxLoaded = true;
+    if (luxFilterPending) {
+      luxFilterPending = false;
+      applyLuxFilters();
+    } else {
+      renderLuxTable(list);
+      updateLuxSummary(list);
+    }
   });
 }
+let luxLoaded = false, luxFilterPending = false;
 
 // Summary cards for LUX tab
 function updateLuxSummary(list) {
@@ -2677,6 +2691,13 @@ function renderLuxTable(list) {
       </tr>
   `;
 
+  // latest report per location (from all reports, not just filtered ones)
+  const latestByLoc = {};
+  (luxReportsGlobal.length ? luxReportsGlobal : list).forEach(x => {
+    const k = (x.samplingLocation || x.department || "").trim().toLowerCase();
+    if (x.timestamp && (!latestByLoc[k] || x.timestamp > latestByLoc[k])) latestByLoc[k] = x.timestamp;
+  });
+
   list.forEach(r => {
 
     const dateStr = r.sampleDate || r.date || "";
@@ -2703,7 +2724,13 @@ function renderLuxTable(list) {
 
       nextDueText = nextDate.toLocaleDateString("en-GB");
 
-      if (diffDays < 0) {
+      const locKey = loc.trim().toLowerCase();
+      if (latestByLoc[locKey] && r.timestamp < latestByLoc[locKey]) {
+        // a newer report exists for this location: this check was followed up
+        statusText = "DONE";
+        statusClass = "badge-info";
+      }
+      else if (diffDays < 0) {
         statusText = "OVERDUE";
         statusClass = "badge-bad";
       } 
@@ -2762,6 +2789,13 @@ function renderLuxTable(list) {
 
 // Filters at top of LUX tab
 function applyLuxFilters() {
+  if (!luxLoaded) {
+    // data not downloaded yet: filter will run automatically when it arrives
+    luxFilterPending = true;
+    document.getElementById("luxSummary").innerHTML =
+      "<p>Loading LUX reports... filter will apply when loading finishes.</p>";
+    return;
+  }
   let fDept = document.getElementById("filterLX_dept").value.toLowerCase();
   let fElec = document.getElementById("filterLX_elec").value.toLowerCase();
   let from = document.getElementById("filterLX_from").value;

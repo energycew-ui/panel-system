@@ -200,15 +200,30 @@ firebase.database()
 
   nextDueEl.textContent = nextDate.toLocaleDateString("en-GB");
 
-  if (diff < 0) {
-    statusBox.innerHTML = `<span class="status-box red">OVERDUE</span>`;
-  } 
-  else if (diff <= 5) {
-    statusBox.innerHTML = `<span class="status-box orange">DUE SOON</span>`;
-  } 
-  else {
-    statusBox.innerHTML = `<span class="status-box green">OK</span>`;
-  }
+  const showStatus = () => {
+    if (diff < 0) {
+      statusBox.innerHTML = `<span class="status-box red">OVERDUE</span>`;
+    }
+    else if (diff <= 5) {
+      statusBox.innerHTML = `<span class="status-box orange">DUE SOON</span>`;
+    }
+    else {
+      statusBox.innerHTML = `<span class="status-box green">OK</span>`;
+    }
+  };
+
+  // If a newer report exists for the same location, this check was followed up
+  const loc = (r.samplingLocation || "").trim().toLowerCase();
+  firebase.database().ref("luxReports").once("value").then(all => {
+    const newer = Object.values(all.val() || {}).some(x =>
+      (x.samplingLocation || "").trim().toLowerCase() === loc &&
+      x.timestamp && x.timestamp > r.timestamp);
+    if (newer) {
+      statusBox.innerHTML = `<span class="status-box green">DONE</span>`;
+    } else {
+      showStatus();
+    }
+  }).catch(showStatus);
 
 });
 
