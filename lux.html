@@ -451,7 +451,7 @@ function showForm() {
 /* =================== DEFAULT DATE & TIME =================== */
 document.addEventListener("DOMContentLoaded", () => {
   const now = new Date();
-  const isoDate = now.toISOString().slice(0,10);
+  const isoDate = new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(0,10); // local date
   const time = now.toTimeString().slice(0,5);
   document.getElementById("sampleDate").value = isoDate;
   document.getElementById("timeFrom").value = time;
@@ -498,9 +498,6 @@ function fileToBase64(inputId) {
 
 /* =================== SUBMIT TO FIREBASE (new structure) =================== */
 /* =================== SUBMIT TO FIREBASE =================== */
-
-const params = new URLSearchParams(window.location.search);
-const luxId = params.get("id") || samplingLocation || "AREA-01";
 
 document.getElementById("luxForm").addEventListener("submit", async function(e){
   e.preventDefault();
@@ -551,10 +548,16 @@ document.getElementById("luxForm").addEventListener("submit", async function(e){
     model: document.getElementById("model").value.trim(),
     calibrationNo: document.getElementById("calibrationNo").value.trim(),
     calibrationDate: document.getElementById("calibrationDate").value,
+    formCode: "CEWF-ADM-FRM-002",
+    effectiveDate: "20-11-2025",
+    issueNo: "01",
+    revisionNo: "00",
+    typeSpot: document.getElementById("typeSpot").checked ? "Spot Sample" : "",
+    typeArea: document.getElementById("typeArea").checked ? "Area Survey" : "",
     measurements
   };
 
-  saveLuxReport(samplingLocation, data, function() {
+  saveLuxReport(data, function() {
       alert("LUX Report submitted successfully.");
       window.location.reload();
   });
