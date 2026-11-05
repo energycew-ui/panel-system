@@ -145,6 +145,7 @@ function showForm(){
   document.getElementById("loginCard").style.display="none";
   document.getElementById("formArea").style.display="block";
   const now=new Date();
+  now.setMinutes(now.getMinutes()-now.getTimezoneOffset()); // local time, not UTC
   document.getElementById("insp_datetime").value=now.toISOString().slice(0,16);
 }
 
@@ -189,7 +190,7 @@ function submitInspection(){
 
     const today=new Date();
     const nextDue=new Date();
-    nextDue.setDate(today.getDate()+15);
+    nextDue.setDate(today.getDate()+30);
 
     firebase.database()
       .ref("panels/"+dbId)

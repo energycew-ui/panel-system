@@ -66,7 +66,7 @@ function saveInspection(dbId, data, callback) {
 
     const now = new Date();
     const next = new Date();
-    next.setDate(now.getDate() + 15); // 15-day inspection cycle
+    next.setDate(now.getDate() + 30); // 30-day (monthly) inspection cycle
 
     db.ref("panels/" + dbId).update({
       lastInspection: now.toISOString(),

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Transformer Inspection</title>
 
   <!-- Firebase -->
@@ -44,6 +46,7 @@
       margin-top:3px;
       border:1px solid #ccc;
       border-radius:7px;
+      box-sizing:border-box;
     }
 
     textarea { height:80px; }
@@ -90,6 +93,9 @@
 <!-- FORM -->
 <div class="card" id="formCard">
   <h2>Inspection Form</h2>
+
+  <label>Transformer</label>
+  <select id="tr_select"></select>
 
   <label>Date & Time</label>
   <input type="datetime-local" id="tr_datetime">
@@ -154,6 +160,12 @@
     <option>Needs Maintenance</option>
   </select>
 
+  <label>IR Test (MΩ)</label>
+  <input type="number" id="ir_test">
+
+  <label>Earth Resistance (Ω)</label>
+  <input type="number" step="0.1" id="earth_res">
+
   <label>Load Current</label>
   <input type="number" id="load_current">
 
@@ -192,22 +204,49 @@ function showForm() {
   document.getElementById("loginCard").style.display = "none";
   document.getElementById("formCard").style.display = "block";
 
+  // local date & time (toISOString would give UTC)
   const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   document.getElementById("tr_datetime").value =
     now.toISOString().slice(0,16);
+
+  loadTransformerOptions();
 }
 
 /* ------------- GET TRANSFORMER ID ------------- */
 
 const params = new URLSearchParams(window.location.search);
-const trId = params.get("id") || "TR-001";
+const urlTrId = params.get("id");
+
+// Fill dropdown; QR link (?id=TR-xxx) pre-selects its transformer
+function loadTransformerOptions() {
+  loadAllTransformers(all => {
+    const sel = document.getElementById("tr_select");
+    sel.innerHTML = '<option value="">-- Select Transformer --</option>';
+    Object.keys(all || {}).sort().forEach(id => {
+      const t = all[id];
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = id + (t.location ? " - " + t.location : "");
+      sel.appendChild(opt);
+    });
+    if (urlTrId) sel.value = urlTrId;
+  });
+}
 
 /* ------------- SUBMIT ------------- */
 
 function submitTransformer() {
 
+  const trId = document.getElementById("tr_select").value;
+  if (!trId) return alert("Select transformer.");
+
   const name = document.getElementById("tr_name").value.trim();
   if (!name) return alert("Enter electrician name.");
+
+  const tempOil = document.getElementById("temp_oil").value;
+  const tempWinding = document.getElementById("temp_winding").value;
+  const remarks = document.getElementById("tr_comments").value;
 
   const data = {
     timestamp: new Date().toISOString(),
@@ -216,21 +255,26 @@ function submitTransformer() {
     oilLevel: document.getElementById("oil_level").value,
     oilCondition: document.getElementById("oil_condition").value,
     oilLeakage: document.getElementById("oil_leakage").value,
-    tempWinding: document.getElementById("temp_winding").value,
-    tempOil: document.getElementById("temp_oil").value,
+    tempWinding: tempWinding,
+    tempOil: tempOil,
+    windingTemperature: tempWinding,   // names used by admin table + print view
+    oilTemperature: tempOil,
+    irTest: document.getElementById("ir_test").value,
+    earthResistance: document.getElementById("earth_res").value,
     fanStatus: document.getElementById("fan_status").value,
     noise: document.getElementById("noise").value,
     bushing: document.getElementById("bushing").value,
     earth: document.getElementById("earth").value,
     tapChanger: document.getElementById("tap_changer").value,
     loadCurrent: document.getElementById("load_current").value,
-    comments: document.getElementById("tr_comments").value
+    comments: remarks,
+    remarks: remarks
   };
 
   // IMPORTANT: Use central function from data.js
   saveTransformerInspection(trId, data, function() {
     alert("Inspection Saved Successfully!");
-    window.location.href = "transformers.html";
+    window.location.href = "transformer.html?id=" + encodeURIComponent(trId);
   });
 }
 
