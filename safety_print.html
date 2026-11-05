@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Safety Declaration Report</title>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -85,9 +86,11 @@
       body { background: white; }
     }
   </style>
+  <link rel="stylesheet" href="theme.css">
 </head>
 
-<body>
+<body class="doc">
+<div class="doc-sheet">
 
 <h1>Safety Declaration Report</h1>
 <h3>Chenab Engineering Works</h3>
@@ -238,5 +241,6 @@ if (!dbId || !recordKey) {
 
 </script>
 
+</div>
 </body>
 </html>

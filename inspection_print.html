@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DB Inspection Report – Print View</title>
   <style>
     body {
@@ -65,9 +67,11 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="data.js?v=5"></script>
+  <link rel="stylesheet" href="theme.css">
 </head>
 
-<body>
+<body class="doc">
+<div class="doc-sheet">
 
 <div class="header">
   <img src="logo.png" class="logo">
@@ -150,5 +154,6 @@ function loadReport() {
 window.onload = loadReport;
 </script>
 
+</div>
 </body>
 </html>

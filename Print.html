@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Print Sheet</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="data.js"></script>
+
+<style>
+@page {
+    size: A4;
+    margin: 20mm;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.header {
+    background: #c40000;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.sheet {
+    padding: 20px;
+}
+
+.section-title {
+    font-size: 18px;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+.data-row {
+    margin: 6px 0;
+    font-size: 16px;
+}
+
+.qr-box {
+    text-align: center;
+    margin-top: 20px;
+}
+
+#qrCanvas {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+#panelImg {
+    width: 90%;
+    margin-top: 10px;
+    border-radius: 6px;
+}
+
+table {
+    width: 100%;
+    margin-top: 15px;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+table, th, td {
+    border: 1px solid #999;
+    padding: 6px;
+}
+
+.print-btn {
+    margin: 20px;
+    padding: 10px 20px;
+    font-size: 18px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="header">⚠️ ELECTRICAL PANEL SAFETY SHEET ⚡</div>
+
+<div class="sheet">
+
+    <div class="qr-box">
+        <canvas id="qrCanvas" width="220" height="220"></canvas>
+        <h2 id="dbTitle"></h2>
+    </div>
+
+    <div class="section-title">Panel Information</div>
+    <div class="data-row"><b>Voltage:</b> <span id="volt"></span></div>
+    <div class="data-row"><b>Main Breaker:</b> <span id="breaker"></span></div>
+    <div class="data-row"><b>Cable Size:</b> <span id="cable"></span></div>
+    <div class="data-row"><b>Earth Status:</b> <span id="earth"></span></div>
+    <div class="data-row"><b>Location:</b> <span id="location"></span></div>
+    <div class="data-row"><b>Purpose:</b> <span id="purpose"></span></div>
+
+    <div class="section-title">Panel Image</div>
+    <img id="panelImg">
+
+    <div class="section-title">Circuit Details</div>
+    <table id="circuitsTable">
+        <tr><th>Name</th><th>Breaker</th><th>Load</th></tr>
+    </table>
+
+    <div class="section-title">Printed On:</div>
+    <div class="data-row" id="printDate"></div>
+
+</div>
+
+<center><button class="print-btn" onclick="window.print()">PRINT</button></center>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const dbId = params.get("id");
+
+document.getElementById("dbTitle").innerText = dbId;
+document.getElementById("printDate").innerText = new Date().toLocaleString();
+
+// load data
+loadPanelFromFirebase(dbId, p => {
+    if (!p) {
+        document.body.innerHTML = "<h2>No data found!</h2>";
+        return;
+    }
+
+    document.getElementById("volt").innerText = p.voltage;
+    document.getElementById("breaker").innerText = p.mainBreaker;
+    document.getElementById("cable").innerText = p.cableSize;
+    document.getElementById("earth").innerText = p.earthStatus;
+    document.getElementById("location").innerText = p.location;
+    document.getElementById("purpose").innerText = p.purpose;
+
+    if (p.image) document.getElementById("panelImg").src = p.image;
+
+    if (p.circuits) {
+        let table = document.getElementById("circuitsTable");
+        Object.values(p.circuits).forEach(c => {
+            table.innerHTML += `
+                <tr>
+                    <td>${c.name}</td>
+                    <td>${c.breaker}</td>
+                    <td>${c.load}</td>
+                </tr>`;
+        });
+    }
+});
+
+// generate QR
+let qr = new QRious({
+    element: document.getElementById("qrCanvas"),
+    value: "https://energycew-ui.github.io/panel-system/index.html?id=" + dbId,
+    size: 220
+});
+</script>
+
+</body>
+</html>

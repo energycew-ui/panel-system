@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Transformer Inspection Report – Print View</title>
 
   <style>
@@ -77,9 +79,11 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="data.js?v=5"></script>
 
+  <link rel="stylesheet" href="theme.css">
 </head>
 
-<body>
+<body class="doc">
+<div class="doc-sheet">
 
 <!-- HEADER -->
 <div class="header">
@@ -93,8 +97,6 @@
 <table>
   <tr><th>Transformer ID</th><td id="trId"></td></tr>
   <tr><th>Electrician</th><td id="electrician"></td></tr>
-<tr><th>Rating</th><td id="trRating"></td></tr>
-<tr><th>Location</th><td id="trLocation"></td></tr>
   <tr><th>Date & Time</th><td id="dt"></td></tr>
   <tr><th>Remarks</th><td id="remarks"></td></tr>
 </table>
@@ -126,22 +128,6 @@ function qs(n) {
 
 const trId = qs("tr");
 const recordKey = qs("id");
-/* --------------------------
-   LOAD TRANSFORMER MASTER INFO
----------------------------*/
-firebase.database()
-  .ref("transformers/" + trId)
-  .once("value")
-  .then(snap => {
-    const tr = snap.val();
-    if (!tr) return;
-
-    document.getElementById("trRating").textContent =
-      tr.rating || "-";
-
-    document.getElementById("trLocation").textContent =
-      tr.location || "-";
-  });
 
 function loadReport() {
   firebase.database()
@@ -197,5 +183,6 @@ function loadReport() {
 window.onload = loadReport;
 </script>
 
+</div>
 </body>
 </html>

@@ -1,6 +1,8 @@
 <!DOCTYPE html> 
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin Dashboard</title>
 
   <!-- Firebase SDK -->
@@ -15,81 +17,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f2f4f7;
-    }
-
-    /* BASIC TOPBAR (used by premium header) */
-    .topbar {
-      background: #111;
-      color: #ffc800;
-      padding: 12px 24px 16px 24px;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .topbar-title {
-      font-size: 22px;
-      font-weight: bold;
-    }
-
-    /* TABS */
-    .tabs {
-      display: flex;
-      justify-content: center;
-      background: #1e1e1e;
-      padding: 8px;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .tab-btn {
-      border: none;
-      padding: 10px 18px;
-      font-size: 14px;
-      border-radius: 999px;
-      cursor: pointer;
-      background: #333;
-      color: #eee;
-      transition: background 0.2s, transform 0.1s;
-    }
-
-    .tab-btn:hover {
-      background: #444;
-      transform: translateY(-1px);
-    }
-
-    .tab-btn.active {
-      background: #ffc800;
-      color: #111;
-      font-weight: bold;
-    }
-
-    .tab-wrapper {
-      padding: 20px;
-      max-width: 1100px;
-      margin: 0 auto 40px auto;
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    /* LOGIN */
+    /* Admin-only styles. Shared look lives in theme.css */
     #loginOverlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -97,343 +28,63 @@
     }
     #loginBox {
       background: #fff;
-      padding: 25px 30px;
-      border-radius: 10px;
-      max-width: 320px;
+      max-width: 340px;
       width: 90%;
       text-align: center;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
     }
-    #loginBox input {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 10px;
-    }
-    #loginBox button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 15px;
-      font-size: 16px;
-      cursor: pointer;
-      background: #c40000;
-      border: none;
-      color: #fff;
-      border-radius: 6px;
-    }
-    #loginError {
-      color: red;
-      font-size: 14px;
-      margin-top: 8px;
-    }
-    .login-logo {
-      width: 140px;
-      height: auto;
-      margin-bottom: 10px;
-    }
-
-    /* CARD STYLE */
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      margin-bottom: 20px;
-    }
-
-    h2, h3 {
-      margin-top: 0;
-    }
-
-    /* FORM ELEMENTS */
-    label {
-      display: block;
-      margin-top: 12px;
-      font-weight: bold;
-    }
-    input[type="text"],
-    input[type="file"],
-    select {
-      padding: 8px;
-      font-size: 16px;
-    }
-    input[type="text"],
-    input[type="file"] {
-      width: 300px;
-    }
-    button {
-      padding: 8px 16px;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: 10px;
-      border-radius: 6px;
-      border: none;
-    }
+    #loginBox input { width: 100%; padding: 11px 12px; margin-top: 6px; }
+    #loginBox button { width: 100%; padding: 11px; margin-top: 14px; font-size: 15px; color: #fff; }
+    #loginError { color: #d92d20; font-size: 13px; margin-top: 8px; }
+    .login-logo { width: 130px; height: auto; }
 
     #previewImage,
     #previewTransformerImage {
       width: 200px;
       margin-top: 10px;
-      border: 2px solid #444;
-      border-radius: 6px;
+      border: 1px solid #e3e6eb;
+      border-radius: 8px;
       display: none;
     }
 
     /* CIRCUITS (ENTRY TAB) */
-    .circuit-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-      flex-wrap: wrap;
-    }
-    .circuit-row input {
-      flex: 1;
-      min-width: 120px;
-    }
-    .circuit-remove-btn {
-      background: #c40000;
-      color: white;
-      border-radius: 4px;
-      padding: 0 8px;
-      cursor: pointer;
-    }
+    .circuit-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .circuit-row input { flex: 1; min-width: 120px; width: auto !important; }
+    .circuit-remove-btn { background: #d92d20; color: #fff; padding: 0 10px; }
 
     /* QR PREVIEW */
-    #qrPreview, #trQrPreview {
-      text-align: center;
-      margin-top: 20px;
-    }
+    #qrPreview, #trQrPreview { text-align: center; margin-top: 20px; }
     .dangerBanner {
-      background: #c40000;
+      background: #d92d20;
       color: #fff;
       padding: 10px 12px;
-      font-weight: bold;
+      font-weight: 700;
       border-radius: 8px;
       max-width: 460px;
       margin: 0 auto 15px auto;
-      font-size: 16px;
+      font-size: 15px;
     }
-    #qrCanvas, #trQrCanvas {
-      border: 1px solid #ccc;
-      padding: 10px;
-      background: #fff;
-    }
-    #qrDBname, #trQrName {
-      font-size: 22px;
-      font-weight: bold;
-      margin-top: 12px;
-      color: #111;
-    }
+    #qrCanvas, #trQrCanvas { border: 1px solid #e3e6eb; padding: 10px; background: #fff; border-radius: 8px; }
+    #qrDBname, #trQrName { font-size: 22px; font-weight: 800; margin-top: 12px; color: #111; }
 
-    /* TABLES */
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-      font-size: 14px;
-    }
-    th {
-      background: #333;
-      color: white;
-      padding: 8px;
-      text-align: left;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-    td {
-      border: 1px solid #ddd;
-      padding: 6px 8px;
-      vertical-align: top;
-    }
-    tr:nth-child(even) { background: #f9f9f9; }
+    /* MASTER DB TABLE */
+    .master-main-row { cursor: pointer; }
+    .master-main-row:hover td { background: #fff8e6 !important; }
+    .master-details-row td { background: #fafbfc; }
+    .master-details-wrapper { display: flex; flex-wrap: wrap; gap: 20px; }
+    .master-details-left { flex: 1 1 60%; min-width: 250px; }
+    .master-details-right { flex: 1 1 35%; min-width: 200px; text-align: center; }
+    .master-details-image { max-width: 100%; max-height: 240px; border-radius: 8px; border: 1px solid #e3e6eb; object-fit: cover; }
+    .master-circuit-box { background: #f8f9fb; border: 1px solid #e3e6eb; border-radius: 8px; padding: 8px; margin-bottom: 6px; font-size: 13px; }
 
-    .photo-btn {
-      background: #007bff;
-      color: white;
-      padding: 4px 6px;
-      border-radius: 5px;
-      cursor: pointer;
-      border: none;
-      font-size: 12px;
-    }
-
-    .filterBox {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-    .filterBox input, .filterBox select {
-      padding: 6px 8px;
-      font-size: 14px;
-    }
-
-    .primary-btn {
-      background:#007bff;
-      color:#fff;
-    }
-    .danger-btn {
-      background:#c40000;
-      color:#fff;
-    }
-    .secondary-btn {
-      background:#555;
-      color:#fff;
-    }
-
-    /* SUMMARY CARDS */
-    .summary-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 10px 0 5px 0;
-    }
-    .summary-card {
-      background: #f6f8fc;
-      border-radius: 10px;
-      padding: 8px 12px;
-      min-width: 150px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      font-size: 13px;
-    }
-    .summary-title {
-      font-weight: bold;
-      color: #444;
-      margin-bottom: 2px;
-    }
-    .summary-value {
-      font-size: 20px;
-      font-weight: bold;
-      color: #111;
-    }
-
-    /* BADGES */
-    .badge {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: bold;
-    }
-    .badge-ok {
-      background: #e5f8e8;
-      color: #0b7a2a;
-    }
-    .badge-warn {
-      background: #fff4e5;
-      color: #b26b00;
-    }
-    .badge-bad {
-      background: #fde7e7;
-      color: #b00020;
-    }
-    .badge-info {
-      background: #e6f0ff;
-      color: #174ea6;
-    }
-
-    /* MASTER DB TABLE SPECIFIC */
-    .master-main-row {
-      cursor: pointer;
-    }
-    .master-main-row:hover {
-      background: #f1f5ff;
-    }
-    .master-details-row td {
-      background: #f9fbff;
-      border-top: none;
-    }
-    .master-details-wrapper {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-    .master-details-left {
-      flex: 1 1 60%;
-      min-width: 250px;
-    }
-    .master-details-right {
-      flex: 1 1 35%;
-      min-width: 200px;
-      text-align: center;
-    }
-    .master-details-image {
-      max-width: 100%;
-      max-height: 240px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      object-fit: cover;
-    }
-    .master-circuit-box {
-      background:#fafafa;
-      border:1px solid #ddd;
-      border-radius:6px;
-      padding:8px;
-      margin-bottom:6px;
-      font-size:13px;
-    }
-
-    /* PREMIUM HEADER DESIGN */
-    .premium-header {
-      position: relative;
-      padding: 20px 0 28px 0;
-      background: #0c0c0c;
-    }
-
-    .logo-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .topbar-logo {
-      width: 110px;
-      height: auto;
-      margin-bottom: 10px;
-      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.45));
-      opacity: 1;
-      animation: fadeInDown 0.7s ease-out;
-    }
-
-    .premium-title {
-      background: linear-gradient(90deg, #ffd65a, #ffb300);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      text-align: center;
-      animation: fadeInUp 0.7s ease-out;
-    }
-
-    .header-separator {
-      width: 80%;
-      height: 2px;
-      margin: 12px auto 0 auto;
-      background: linear-gradient(90deg, #ffefc1, #ffb300, #ffefc1);
-      border-radius: 2px;
-      animation: fadeIn 1.2s ease-out;
-    }
-
-    @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
+    /* OVERVIEW: latest faults list */
+    .mini-list { list-style: none; margin: 0; padding: 0; }
+    .mini-list li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eef0f3; font-size: 13.5px; }
+    .mini-list li:last-child { border-bottom: none; }
+    .mini-list .when { color: #667085; font-size: 12px; white-space: nowrap; }
+    .mini-list .what { font-weight: 600; }
+    .mini-list .meta { color: #667085; font-size: 12px; margin-top: 2px; }
   </style>
+  <link rel="stylesheet" href="theme.css">
 </head>
 
 <body>
@@ -451,91 +102,150 @@
 
 <!-- MAIN ADMIN DASHBOARD -->
 <div id="adminWrapper" style="display:none;">
-<div class="card">
-  
+<div class="app">
 
-  <!-- PREMIUM HEADER -->
-
-  <div class="topbar premium-header">
-    <div class="logo-wrapper">
-      <img src="logo.png" class="topbar-logo" alt="Chenab Engineering Logo">
+  <!-- SIDEBAR NAVIGATION -->
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="logo.png" alt="Chenab Engineering Logo">
+      <div>
+        <div class="brand-name">Chenab Engineering</div>
+        <div class="brand-sub">Electrical System</div>
+      </div>
     </div>
-    <div class="topbar-title premium-title">
-      Admin Dashboard – Electrical & Transformer System
+
+    <div class="nav-group">Dashboard</div>
+    <button class="tab-btn active" data-target="tab-overview"><span class="ico">📊</span>Overview</button>
+
+    <div class="nav-group">Reports</div>
+    <button class="tab-btn" data-target="tab-inspections"><span class="ico">📋</span>DB Inspections</button>
+    <button class="tab-btn" data-target="tab-faults"><span class="ico">⚡</span>Fault Reports</button>
+    <button class="tab-btn" data-target="tab-transformer-reports"><span class="ico">🔌</span>Transformer Reports</button>
+    <button class="tab-btn" data-target="tab-lux-reports"><span class="ico">💡</span>LUX Reports</button>
+    <button class="tab-btn" data-target="tab-safety"><span class="ico">🦺</span>Safety &amp; Permits</button>
+    <button class="tab-btn" data-target="tab-master"><span class="ico">🗂️</span>Master DB Report</button>
+
+    <div class="nav-group">Setup</div>
+    <button class="tab-btn" data-target="tab-entry"><span class="ico">🧰</span>DB Entry</button>
+    <button class="tab-btn" data-target="tab-transformer-entry"><span class="ico">🏭</span>Transformer Entry</button>
+    <button class="tab-btn" data-target="tab-questions"><span class="ico">❓</span>Form Questions</button>
+
+    <div class="sidebar-footer">
+      <button class="btn-kpi" onclick="openKpiWindow()">📈 KPI Dashboard</button>
     </div>
-    <div class="header-separator"></div>
-  </div>
-<button class="primary-btn" onclick="openKpiWindow()" style="margin-top:10px;">
-  📊 KPI Dashboard
-</button>
+  </aside>
 
-  <!-- TABS -->
-  <div class="tabs">
-    <button class="tab-btn active" data-target="tab-entry">DB Entry</button>
-    <button class="tab-btn" data-target="tab-transformer-entry">Transformer Entry</button>
-    <button class="tab-btn" data-target="tab-inspections">DB Inspection Reports</button>
-    <button class="tab-btn" data-target="tab-faults">Fault Reports</button>
-    <button class="tab-btn" data-target="tab-transformer-reports">Transformer Reports</button>
-    <button class="tab-btn" data-target="tab-lux-reports">LUX Reports</button>
-    <button class="tab-btn" data-target="tab-master">Master DB Report</button>
-    <button class="tab-btn" data-target="tab-questions">Form Questions</button>
-    <button class="tab-btn" data-target="tab-safety">Safety Records</button>
-
-    
-
-  </div>
+  <div class="main">
+  <header class="page-header">
+    <div>
+      <h1 id="pageTitle">Overview</h1>
+      <div class="crumb">Chenab Engineering Works · Electrical &amp; Transformer Management</div>
+    </div>
+    <div class="today" id="todayLabel"></div>
+  </header>
 
   <div class="tab-wrapper">
 
+    <!-- TAB 0: OVERVIEW -->
+    <div class="tab-content active" id="tab-overview">
+      <div class="kpi-tiles">
+        <div class="kpi-tile" onclick="goTab('tab-entry')">
+          <div class="kpi-label">DB Panels</div>
+          <div class="kpi-number" id="kpi_db">–</div>
+          <div class="kpi-hint">Registered distribution boards</div>
+        </div>
+        <div class="kpi-tile red" onclick="goTab('tab-entry')">
+          <div class="kpi-label">DBs Overdue</div>
+          <div class="kpi-number" id="kpi_overdue">–</div>
+          <div class="kpi-hint"><span id="kpi_dueSoon">–</span> due in next 5 days</div>
+        </div>
+        <div class="kpi-tile blue" onclick="goTab('tab-transformer-entry')">
+          <div class="kpi-label">Transformers</div>
+          <div class="kpi-number" id="kpi_tr">–</div>
+          <div class="kpi-hint"><span id="kpi_trOverdue">–</span> overdue inspection</div>
+        </div>
+        <div class="kpi-tile red" onclick="goTab('tab-faults')">
+          <div class="kpi-label">Faults This Year</div>
+          <div class="kpi-number" id="kpi_faults">–</div>
+          <div class="kpi-hint"><span id="kpi_downtime">–</span> hrs downtime</div>
+        </div>
+        <div class="kpi-tile green" onclick="goTab('tab-safety')">
+          <div class="kpi-label">Open Permits</div>
+          <div class="kpi-number" id="kpi_openPermits">–</div>
+          <div class="kpi-hint"><span id="kpi_permits">–</span> permits issued in total</div>
+        </div>
+        <div class="kpi-tile" onclick="goTab('tab-lux-reports')">
+          <div class="kpi-label">LUX Reports</div>
+          <div class="kpi-number" id="kpi_lux">–</div>
+          <div class="kpi-hint">Lighting surveys recorded</div>
+        </div>
+      </div>
+
+      <div class="overview-grid">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>DB Inspection Status</h2>
+              <div class="sub">Based on each DB's next inspection due date</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Latest Faults</h2>
+              <div class="sub">Most recent electrical faults</div>
+            </div>
+            <div class="actions"><button class="secondary-btn" onclick="goTab('tab-faults')">View all</button></div>
+          </div>
+          <ul class="mini-list" id="latestFaults"><li>Loading...</li></ul>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB 1: DB ENTRY -->
-    <div class="tab-content active" id="tab-entry">
+    <div class="tab-content" id="tab-entry">
       <div class="card">
-        <h2>DB Entry / Panel Data</h2>
+        <div class="card-head">
+          <div>
+            <h2>DB Entry / Panel Data</h2>
+            <div class="sub">Add a new distribution board or edit an existing one</div>
+          </div>
+        </div>
 
-        <label>DB Number</label>
-        <input id="db" type="text">
-
-        <label>Voltage Rating</label>
-        <input id="volt" type="text">
-
-        <label>Main Breaker Capacity</label>
-        <input id="breaker" type="text">
-
-        <label>Main Cable Size</label>
-        <input id="cable" type="text">
-
-        <label>Earth Status</label>
-        <input id="earth" type="text">
-
-        <label>Location</label>
-        <input id="location" type="text">
-
-        <label>Purpose</label>
-        <input id="purpose" type="text">
+        <div class="form-grid">
+          <div><label>DB Number</label><input id="db" type="text"></div>
+          <div><label>Voltage Rating</label><input id="volt" type="text"></div>
+          <div><label>Main Breaker Capacity</label><input id="breaker" type="text"></div>
+          <div><label>Main Cable Size</label><input id="cable" type="text"></div>
+          <div><label>Earth Status</label><input id="earth" type="text"></div>
+          <div><label>Location</label><input id="location" type="text"></div>
+          <div class="full"><label>Purpose</label><input id="purpose" type="text"></div>
+        </div>
 
         <label>Upload Panel Picture (Optional)</label>
         <input type="file" id="imageInput" accept="image/*" onchange="previewAndCompress(event)">
-        <br>
         <img id="previewImage" alt="Preview">
-        <br>
-        <button type="button" class="secondary-btn" onclick="removeImage()">Remove Picture</button>
+        <div class="btn-row">
+          <button type="button" class="secondary-btn" onclick="removeImage()">Remove Picture</button>
+        </div>
 
-        <h3 style="margin-top:20px;">Circuits (Name / Breaker / Load)</h3>
+        <h3>Circuits (Name / Breaker / Load)</h3>
         <div id="circuitsContainer"></div>
-        <button type="button" class="secondary-btn" onclick="addCircuitRow()">Add Circuit</button>
+        <div class="btn-row"><button type="button" class="secondary-btn" onclick="addCircuitRow()">+ Add Circuit</button></div>
 
         <!-- NEW: DISTRIBUTION BREAKERS -->
-        <h3 style="margin-top:20px;">Distribution Breakers (Detailed)</h3>
+        <h3>Distribution Breakers (Detailed)</h3>
         <div id="distBreakersContainer"></div>
-        <button type="button" class="secondary-btn" onclick="addDistBreakerRow()">Add Distribution Breaker</button>
+        <div class="btn-row"><button type="button" class="secondary-btn" onclick="addDistBreakerRow()">+ Add Distribution Breaker</button></div>
 
-        <h3 style="margin-top:20px;">Extra DB Questions</h3>
+        <h3>Extra DB Questions</h3>
         <div id="dbQuestionsContainer"></div>
 
-        <br><br>
-        <button class="primary-btn" onclick="savePanel()">Save DB Data</button>
-
-        <hr>
+        <div class="btn-row">
+          <button class="primary-btn" onclick="savePanel()">Save DB Data</button>
+        </div>
 
         <h3>Generate DB QR Code</h3>
         <button class="secondary-btn" onclick="generateQR()">Generate QR Code</button>
@@ -554,46 +264,43 @@
       </div>
 
       <div class="card">
-        <h2>All Panels (DBs)</h2>
-        <button class="secondary-btn" onclick="showPanels()">Refresh Panel List</button>
-        <div id="panelList" style="margin-top:10px;"></div>
+        <div class="card-head">
+          <div>
+            <h2>All Panels (DBs)</h2>
+            <div class="sub">Inspection status of every distribution board</div>
+          </div>
+          <div class="actions"><button class="secondary-btn" onclick="showPanels()">↻ Refresh</button></div>
+        </div>
+        <div id="panelList" class="table-wrap" style="margin-top:12px;"></div>
       </div>
     </div>
 
     <!-- TAB 2: TRANSFORMER ENTRY -->
     <div class="tab-content" id="tab-transformer-entry">
       <div class="card">
-        <h2>Transformer Entry</h2>
+        <div class="card-head">
+          <div>
+            <h2>Transformer Entry</h2>
+            <div class="sub">Add a new transformer or update its details</div>
+          </div>
+        </div>
 
-        <label>Transformer ID (e.g. TR-001)</label>
-        <input id="tr_id" type="text">
-
-        <label>Transformer Rating (kVA)</label>
-        <input id="tr_rating" type="text">
-
-        <label>Primary Voltage (V)</label>
-        <input id="tr_vin" type="text">
-
-        <label>Secondary Voltage (V)</label>
-        <input id="tr_vout" type="text">
-
-        <label>Location</label>
-        <input id="tr_location" type="text">
-
-        <label>Purpose / Feeder</label>
-        <input id="tr_purpose" type="text">
+        <div class="form-grid">
+          <div><label>Transformer ID (e.g. TR-001)</label><input id="tr_id" type="text"></div>
+          <div><label>Transformer Rating (kVA)</label><input id="tr_rating" type="text"></div>
+          <div><label>Primary Voltage (V)</label><input id="tr_vin" type="text"></div>
+          <div><label>Secondary Voltage (V)</label><input id="tr_vout" type="text"></div>
+          <div><label>Location</label><input id="tr_location" type="text"></div>
+          <div><label>Purpose / Feeder</label><input id="tr_purpose" type="text"></div>
+        </div>
 
         <label>Upload Transformer Picture (Optional)</label>
         <input type="file" id="tr_imageInput" accept="image/*" onchange="previewTransformerImage(event)">
-        <br>
         <img id="previewTransformerImage" alt="Transformer Preview">
-        <br>
-        <button type="button" class="secondary-btn" onclick="removeTransformerImage()">Remove Picture</button>
-
-        <br><br>
-        <button class="primary-btn" onclick="saveTransformerEntry()">Save Transformer</button>
-
-        <hr>
+        <div class="btn-row">
+          <button type="button" class="secondary-btn" onclick="removeTransformerImage()">Remove Picture</button>
+          <button class="primary-btn" onclick="saveTransformerEntry()">Save Transformer</button>
+        </div>
 
         <h3>Generate Transformer QR Code</h3>
         <button class="secondary-btn" onclick="generateTransformerQR()">Generate Transformer QR</button>
@@ -612,194 +319,241 @@
       </div>
 
       <div class="card">
-        <h2>All Transformers</h2>
-        <button class="secondary-btn" onclick="showTransformers()">Refresh Transformer List</button>
-        <div id="transformerList" style="margin-top:10px;"></div>
+        <div class="card-head">
+          <div>
+            <h2>All Transformers</h2>
+            <div class="sub">Inspection status of every transformer</div>
+          </div>
+          <div class="actions"><button class="secondary-btn" onclick="showTransformers()">↻ Refresh</button></div>
+        </div>
+        <div id="transformerList" class="table-wrap" style="margin-top:12px;"></div>
       </div>
     </div>
 
     <!-- TAB 3: DB INSPECTION REPORTS -->
     <div class="tab-content" id="tab-inspections">
       <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <h2 style="margin:0;">DB Inspection Reports</h2>
-          <button class="secondary-btn" onclick="exportInspectionsCSV()">Export CSV</button>
+        <div class="card-head">
+          <div>
+            <h2>DB Inspection Reports</h2>
+            <div class="sub">Monthly inspections of all distribution boards</div>
+          </div>
+          <div class="actions"><button class="secondary-btn" onclick="exportInspectionsCSV()">⬇ Export CSV</button></div>
         </div>
 
         <div id="insSummary" class="summary-row"></div>
 
         <div class="filterBox">
-          <input type="text" id="filterDB_i" placeholder="Filter by DB Number">
-          <input type="text" id="filterElec_i" placeholder="Filter by Electrician">
-          <label style="font-weight:normal;">From:
-            <input type="date" id="filterFrom_i">
+          <label class="f"><span>DB Number</span><input type="text" id="filterDB_i" placeholder="e.g. DB-06"></label>
+          <label class="f"><span>Electrician</span><input type="text" id="filterElec_i" placeholder="Name"></label>
+          <label class="f"><span>From</span><input type="date" id="filterFrom_i"></label>
+          <label class="f"><span>To</span><input type="date" id="filterTo_i"></label>
+          <label class="f sort"><span>Sort by date</span>
+            <select id="sort_i" onchange="applyInspectionFilters()">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
           </label>
-          <label style="font-weight:normal;">To:
-            <input type="date" id="filterTo_i">
-          </label>
-          <button class="secondary-btn" onclick="applyInspectionFilters()">Apply Filters</button>
+          <button class="primary-btn" onclick="applyInspectionFilters()">Apply Filters</button>
         </div>
 
-        <div id="inspectionTable"></div>
+        <div id="inspectionTable" class="table-wrap"></div>
       </div>
     </div>
 
     <!-- TAB 4: FAULT REPORTS -->
     <div class="tab-content" id="tab-faults">
       <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <h2 style="margin:0;">Fault Reports</h2>
-          <button class="secondary-btn" onclick="exportFaultsCSV()">Export CSV</button>
+        <div class="card-head">
+          <div>
+            <h2>Fault Reports</h2>
+            <div class="sub">Electrical breakdowns, downtime and production loss</div>
+          </div>
+          <div class="actions"><button class="secondary-btn" onclick="exportFaultsCSV()">⬇ Export CSV</button></div>
         </div>
 
         <div id="faultSummary" class="summary-row"></div>
 
         <div class="filterBox">
-          <input type="text" id="filterDB_f" placeholder="Filter by DB Number">
-          <input type="text" id="filterElec_f" placeholder="Filter by Electrician">
-          <label style="font-weight:normal;">From:
-            <input type="date" id="filterFrom_f">
+          <label class="f"><span>DB Number</span><input type="text" id="filterDB_f" placeholder="e.g. DB-04"></label>
+          <label class="f"><span>Electrician</span><input type="text" id="filterElec_f" placeholder="Name"></label>
+          <label class="f"><span>From</span><input type="date" id="filterFrom_f"></label>
+          <label class="f"><span>To</span><input type="date" id="filterTo_f"></label>
+          <label class="f"><span>Production Loss</span>
+            <select id="filterLoss_f">
+              <option value="">All</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
           </label>
-          <label style="font-weight:normal;">To:
-            <input type="date" id="filterTo_f">
+          <label class="f sort"><span>Sort by date</span>
+            <select id="sort_f" onchange="applyFaultFilters()">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
           </label>
-          <select id="filterLoss_f">
-            <option value="">Loss: All</option>
-            <option value="Yes">Loss: Yes</option>
-            <option value="No">Loss: No</option>
-          </select>
-          <button class="secondary-btn" onclick="applyFaultFilters()">Apply Filters</button>
+          <button class="primary-btn" onclick="applyFaultFilters()">Apply Filters</button>
         </div>
 
-        <div id="faultTable"></div>
+        <div id="faultTable" class="table-wrap"></div>
       </div>
     </div>
 
     <!-- TAB 5: TRANSFORMER REPORTS -->
     <div class="tab-content" id="tab-transformer-reports">
       <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <h2 style="margin:0;">Transformer Inspection Reports</h2>
-          <button class="secondary-btn" onclick="exportTransformersCSV()">Export CSV</button>
+        <div class="card-head">
+          <div>
+            <h2>Transformer Inspection Reports</h2>
+            <div class="sub">Oil, temperature, IR, earth resistance and load readings</div>
+          </div>
+          <div class="actions"><button class="secondary-btn" onclick="exportTransformersCSV()">⬇ Export CSV</button></div>
         </div>
 
         <div id="trSummary" class="summary-row"></div>
 
         <div class="filterBox">
-          <input type="text" id="filterTR_id" placeholder="Filter by Transformer ID">
-          <input type="text" id="filterTR_elec" placeholder="Filter by Electrician">
-          <label style="font-weight:normal;">From:
-            <input type="date" id="filterTR_from">
+          <label class="f"><span>Transformer ID</span><input type="text" id="filterTR_id" placeholder="e.g. TR-004"></label>
+          <label class="f"><span>Electrician</span><input type="text" id="filterTR_elec" placeholder="Name"></label>
+          <label class="f"><span>From</span><input type="date" id="filterTR_from"></label>
+          <label class="f"><span>To</span><input type="date" id="filterTR_to"></label>
+          <label class="f sort"><span>Sort by date</span>
+            <select id="sort_tr" onchange="applyTransformerFilters()">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
           </label>
-          <label style="font-weight:normal;">To:
-            <input type="date" id="filterTR_to">
-          </label>
-          <button class="secondary-btn" onclick="applyTransformerFilters()">Apply Filters</button>
+          <button class="primary-btn" onclick="applyTransformerFilters()">Apply Filters</button>
         </div>
 
-        <div id="transformerTable"></div>
+        <div id="transformerTable" class="table-wrap"></div>
       </div>
     </div>
 
     <!-- TAB 6: LUX REPORTS -->
     <div class="tab-content" id="tab-lux-reports">
       <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <h2 style="margin:0;">LUX Monitoring Reports</h2>
-          <button class="secondary-btn" onclick="exportLuxCSV()">Export CSV</button>
+        <div class="card-head">
+          <div>
+            <h2>LUX Monitoring Reports</h2>
+            <div class="sub">Monthly lighting surveys by area (form CEWF-ADM-FRM-002)</div>
+          </div>
+          <div class="actions"><button class="secondary-btn" onclick="exportLuxCSV()">⬇ Export CSV</button></div>
         </div>
 
         <div id="luxSummary" class="summary-row"></div>
 
         <div class="filterBox">
-          <input type="text" id="filterLX_dept" placeholder="Filter by Department">
-          <input type="text" id="filterLX_elec" placeholder="Filter by Electrician">
-          <label style="font-weight:normal;">From:
-            <input type="date" id="filterLX_from">
+          <label class="f"><span>Area / Department</span><input type="text" id="filterLX_dept" placeholder="e.g. 6 ton"></label>
+          <label class="f"><span>Electrician</span><input type="text" id="filterLX_elec" placeholder="Name"></label>
+          <label class="f"><span>From</span><input type="date" id="filterLX_from"></label>
+          <label class="f"><span>To</span><input type="date" id="filterLX_to"></label>
+          <label class="f sort"><span>Sort by date</span>
+            <select id="sort_lx" onchange="applyLuxFilters()">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
           </label>
-          <label style="font-weight:normal;">To:
-            <input type="date" id="filterLX_to">
-          </label>
-          <button class="secondary-btn" onclick="applyLuxFilters()">Apply Filters</button>
+          <button class="primary-btn" onclick="applyLuxFilters()">Apply Filters</button>
         </div>
 
-        <div id="luxTable"></div>
+        <div id="luxTable" class="table-wrap"></div>
       </div>
     </div>
 
     <!-- TAB 7: MASTER DB REPORT -->
     <div class="tab-content" id="tab-master">
       <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <h2 style="margin:0;">Master DB Report (All DBs & Circuits)</h2>
-          <button class="secondary-btn" onclick="exportMasterCSV()">Export CSV</button>
+        <div class="card-head">
+          <div>
+            <h2>Master DB Report</h2>
+            <div class="sub">All DBs with circuits and breakers – click a row for details</div>
+          </div>
+          <div class="actions">
+            <button class="secondary-btn" onclick="loadMasterReport()">↻ Reload</button>
+            <button class="secondary-btn" onclick="exportMasterCSV()">⬇ Export CSV</button>
+          </div>
         </div>
 
         <div id="masterSummary" class="summary-row"></div>
 
-        <button class="secondary-btn" onclick="loadMasterReport()">Reload Data</button>
-        <div id="masterContainer" style="margin-top:15px;"></div>
+        <div id="masterContainer" class="table-wrap"></div>
       </div>
     </div>
 
     <!-- TAB 8: FORM QUESTIONS -->
     <div class="tab-content" id="tab-questions">
       <div class="card">
-        <h2>Form Questions (Dynamic)</h2>
-        <p style="font-size:13px;">
-          Add or remove questions here. They will automatically appear in DB Entry,
-          Electrician Inspection and Fault forms depending on where you tick.
-        </p>
+        <div class="card-head">
+          <div>
+            <h2>Form Questions</h2>
+            <div class="sub">Extra questions that appear automatically in DB Entry, Inspection and Fault forms</div>
+          </div>
+        </div>
 
-        <h3 style="margin-top:20px;">Add New Question</h3>
-
-        <label>Question Text</label>
-        <input type="text" id="qText" style="width:100%;max-width:500px;">
-
-        <label>Answer Type</label>
-        <select id="qType">
-          <option value="text">Text</option>
-          <option value="number">Number</option>
-          <option value="yesno">Yes / No</option>
-          <option value="dropdown">Dropdown (custom options)</option>
-        </select>
-
-        <label>Options (for dropdown, comma separated)</label>
-        <input type="text" id="qOptions"
-               placeholder="Example: OK, Needs repair, Not accessible"
-               style="width:100%;max-width:500px;">
+        <div class="form-grid">
+          <div class="full"><label>Question Text</label><input type="text" id="qText"></div>
+          <div>
+            <label>Answer Type</label>
+            <select id="qType">
+              <option value="text">Text</option>
+              <option value="number">Number</option>
+              <option value="yesno">Yes / No</option>
+              <option value="dropdown">Dropdown (custom options)</option>
+            </select>
+          </div>
+          <div>
+            <label>Options (for dropdown, comma separated)</label>
+            <input type="text" id="qOptions" placeholder="Example: OK, Needs repair, Not accessible">
+          </div>
+        </div>
 
         <label>Applies To</label>
-        <label style="font-weight:normal;"><input type="checkbox" id="qApplyDb" checked> DB Entry</label>
-        <label style="font-weight:normal;"><input type="checkbox" id="qApplyInsp" checked> Inspection</label>
-        <label style="font-weight:normal;"><input type="checkbox" id="qApplyFault" checked> Fault</label>
+        <div class="btn-row" style="margin-top:4px;">
+          <label style="display:flex;gap:6px;align-items:center;margin:0;font-weight:500;"><input type="checkbox" id="qApplyDb" checked> DB Entry</label>
+          <label style="display:flex;gap:6px;align-items:center;margin:0;font-weight:500;"><input type="checkbox" id="qApplyInsp" checked> Inspection</label>
+          <label style="display:flex;gap:6px;align-items:center;margin:0;font-weight:500;"><input type="checkbox" id="qApplyFault" checked> Fault</label>
+        </div>
 
-        <br>
-        <button class="primary-btn" onclick="addQuestion()">Add Question</button>
-
-        <hr>
+        <div class="btn-row">
+          <button class="primary-btn" onclick="addQuestion()">+ Add Question</button>
+        </div>
 
         <h3>Existing Questions</h3>
         <div id="questionsList"></div>
       </div>
     </div>
 
- 
-<!-- TAB 9: SAFETY RECORDS -->
-<div class="tab-content" id="tab-safety">
-  <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-      <h2 style="margin:0;">Safety Declarations</h2>
-      <button class="secondary-btn" onclick="loadSafetyRecords()">Refresh</button>
+    <!-- TAB 9: SAFETY RECORDS -->
+    <div class="tab-content" id="tab-safety">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>Safety Declarations &amp; Permits to Work</h2>
+            <div class="sub">Permit to Work form CEWF-IMS-FRM-043 – one permit per fault job</div>
+          </div>
+          <div class="actions"><button class="secondary-btn" onclick="loadSafetyRecords()">↻ Refresh</button></div>
+        </div>
+
+        <div id="safetySummary" class="summary-row"></div>
+
+        <div class="filterBox">
+          <label class="f sort"><span>Sort by date</span>
+            <select id="sort_s" onchange="renderSafetyTable(safetyGlobal || [])">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="safetyTable" class="table-wrap"></div>
+      </div>
     </div>
 
-    <div id="safetySummary" class="summary-row"></div>
-
-    <div id="safetyTable" style="margin-top:15px;"></div>
-  </div>
-</div>
- </div>
-</div>
+  </div><!-- /.tab-wrapper -->
+  </div><!-- /.main -->
+</div><!-- /.app -->
+</div><!-- /#adminWrapper -->
 <script>
 /* ------------ LOGIN ------------ */
 const ADMIN_PASSWORD = "1234";
@@ -838,15 +592,17 @@ function afterLoginInit() {
   initTabs();
   renderCircuits(null);
   renderDistributionBreakers(null);   // NEW: start with empty distribution breaker row
+  // small data first: Firebase answers in request order, and DB inspections
+  // (with photos) are by far the largest download
+  loadDashboardAnalytics();
   showPanels();
-  loadReports();
-  loadMasterReport();
-  loadQuestions();
   showTransformers();
-  loadTransformerReports();
+  loadQuestions();
+  loadMasterReport();
   loadLuxReports();
+  loadTransformerReports();
   loadSafetyRecords();
-loadDashboardAnalytics();
+  loadReports();
 
 setInterval(() => {
   if (masterPanelsGlobal) {
@@ -888,9 +644,35 @@ function initTabs() {
 
       btn.classList.add("active");
       document.getElementById(targetId).classList.add("active");
+
+      // page header title = nav label without its icon
+      const label = btn.cloneNode(true);
+      label.querySelectorAll(".ico").forEach(i => i.remove());
+      document.getElementById("pageTitle").textContent = label.textContent.trim();
+      window.scrollTo(0, 0);
     });
   });
+
+  document.getElementById("todayLabel").textContent =
+    new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
+
+function goTab(id) {
+  const btn = document.querySelector(`.tab-btn[data-target="${id}"]`);
+  if (btn) btn.click();
+}
+
+/* Sort a report list by date using the tab's "Sort by date" dropdown (newest first by default) */
+function sortByDate(list, selectId, getDate) {
+  const sel = document.getElementById(selectId);
+  const dir = sel && sel.value === "oldest" ? 1 : -1;
+  return [...list].sort((a, b) => {
+    const da = getDate(a) || "", dbb = getDate(b) || "";
+    return da < dbb ? -dir : da > dbb ? dir : 0;
+  });
+}
+// all dates compared as "YYYY-MM-DDTHH:MM" so local and ISO values sort together
+const isoDay = ts => ts ? new Date(ts).toISOString().slice(0, 16) : "";
 
 /* ------------ IMAGE HANDLING (DB ENTRY) ------------ */
 let uploadedImage = null;
@@ -1649,6 +1431,7 @@ function deleteSafetyRecord(dbId, key) {
 /* RENDER INSPECTIONS TABLE (with delete + print) */
 function renderInspectionTable(list) {
   if (!document.getElementById("inspectionTable")) return;
+  list = sortByDate(list, "sort_i", r => isoDay(r.timestamp));
 
   let html = `
     <table>
@@ -1737,6 +1520,7 @@ function renderInspectionTable(list) {
 /* RENDER FAULTS TABLE (with delete + print) */
 function renderFaultTable(list) {
   if (!document.getElementById("faultTable")) return;
+  list = sortByDate(list, "sort_f", r => r.startTime || r.datetimeLocal || isoDay(r.timestamp));
 
   let html = `
     <table>
@@ -1796,8 +1580,8 @@ function renderFaultTable(list) {
         <td>${r.electricianName || ""}</td>
         <td>${r.faultType || ""}</td>
         <td>${descCell}</td>
-        <td>${r.startTime || ""}</td>
-        <td>${r.endTime || ""}</td>
+        <td style="white-space:nowrap;">${(r.startTime || "").replace("T", " ")}</td>
+        <td style="white-space:nowrap;">${(r.endTime || "").replace("T", " ")}</td>
         <td>${downtimeHtml}</td>
         <td>${lossHtml}<br>${r.productionLossDesc || ""}</td>
         <td>
@@ -2497,6 +2281,7 @@ function renderTransformerTable(list) {
     container.innerHTML = "<p>No transformer reports.</p>";
     return;
   }
+  list = sortByDate(list, "sort_tr", r => r.datetimeLocal || isoDay(r.timestamp));
 
   let html = `
     <table>
@@ -2677,6 +2462,8 @@ function renderLuxTable(list) {
     container.innerHTML = "<p>No LUX reports.</p>";
     return;
   }
+  list = sortByDate(list, "sort_lx", r =>
+    r.sampleDate ? r.sampleDate + "T" + (r.timeFrom || "00:00") : isoDay(r.timestamp));
 
   let html = `
     <table>
@@ -3056,16 +2843,20 @@ function renderSafetyTable(list) {
     container.innerHTML = "<p>No safety records found.</p>";
     return;
   }
+  list = sortByDate(list, "sort_s", r => isoDay(r.timestamp));
 
   let html = `
     <table>
       <tr>
         <th>Date Opened</th>
+        <th>Permit No</th>
         <th>DB</th>
-        <th>Electrician</th>
+        <th>Job</th>
+        <th>Received By</th>
+        <th>Issued By</th>
+        <th>Score</th>
         <th>Status</th>
         <th>Duration (hrs)</th>
-        <th>Alert</th>
         <th>Action</th>
       </tr>
   `;
@@ -3096,16 +2887,24 @@ function renderSafetyTable(list) {
       ? `<span class="badge badge-ok">CLOSED</span>`
       : `<span class="badge badge-bad">OPEN</span>`;
 
+    const ptw = r.ptw || {};
+    const job = (ptw.taskSpecification || "").split(":")[0];
+    const score = r.checklistScore != null
+      ? `<span class="badge ${r.checklistScore >= 5 ? "badge-ok" : r.checklistScore >= 3 ? "badge-warn" : "badge-bad"}">${r.checklistScore}/5</span>`
+      : "";
+
     html += `
       <tr>
-        <td>${openDate ? openDate.toLocaleString() : ""}</td>
+        <td style="white-space:nowrap;">${openDate ? openDate.toLocaleString() : ""}</td>
+        <td style="white-space:nowrap;"><strong>${r.permitNo || "-"}</strong></td>
         <td><span class="badge badge-info">${r.dbId}</span></td>
+        <td>${job}</td>
         <td>${r.electricianName || ""}</td>
-        <td>${statusBadge}</td>
+        <td>${ptw.permitIssuer || ""}</td>
+        <td>${score}</td>
+        <td>${statusBadge} ${alertBadge}</td>
         <td>${durationHours}</td>
-        <td>${alertBadge}</td>
-        <td>
-          ${r.permitNo ? `<small>${r.permitNo}</small><br>` : ""}
+        <td style="white-space:nowrap;">
           <button class="secondary-btn"
             onclick="window.open('safety_print.html?db=${encodeURIComponent(r.dbId)}&id=${encodeURIComponent(r.recordKey)}','_blank')">
             View / Print
@@ -3227,19 +3026,57 @@ function loadDashboardAnalytics() {
 
     document.getElementById("kpi_db").innerText = total;
     document.getElementById("kpi_overdue").innerText = overdue;
+    document.getElementById("kpi_dueSoon").innerText = dueSoon;
 
     renderStatusChart(ok, dueSoon, overdue);
 
   });
 
   firebase.database().ref("transformers").on("value", snap => {
-    document.getElementById("kpi_tr").innerText =
-      snap.val() ? Object.keys(snap.val()).length : 0;
+    const all = snap.val() || {};
+    const now = new Date();
+    document.getElementById("kpi_tr").innerText = Object.keys(all).length;
+    document.getElementById("kpi_trOverdue").innerText = Object.values(all)
+      .filter(t => !t.nextInspectionDue || new Date(t.nextInspectionDue) < now).length;
   });
 
   firebase.database().ref("luxReports").on("value", snap => {
     document.getElementById("kpi_lux").innerText =
       snap.val() ? Object.keys(snap.val()).length : 0;
+  });
+
+  // faults this year + latest faults list
+  firebase.database().ref("faults").on("value", snap => {
+    const list = [];
+    Object.entries(snap.val() || {}).forEach(([db, recs]) =>
+      Object.values(recs || {}).forEach(r => list.push({ dbId: db, ...r })));
+    const year = String(new Date().getFullYear());
+    const thisYear = list.filter(r => (r.startTime || r.timestamp || "").startsWith(year));
+    const mins = thisYear.reduce((s, r) => s + (Number(r.downtimeMinutes) || 0), 0);
+    document.getElementById("kpi_faults").innerText = thisYear.length;
+    document.getElementById("kpi_downtime").innerText = (mins / 60).toFixed(1);
+
+    const latest = list
+      .sort((a, b) => (b.startTime || b.timestamp || "").localeCompare(a.startTime || a.timestamp || ""))
+      .slice(0, 6);
+    document.getElementById("latestFaults").innerHTML = latest.length ? latest.map(r => `
+      <li>
+        <div>
+          <div class="what">${r.asset || r.faultType || "Fault"}</div>
+          <div class="meta"><span class="badge badge-info">${r.dbId}</span> ${r.faultType || ""} · ${r.downtimeMinutes || 0} min
+            ${r.productionLoss === "Yes" ? '<span class="badge badge-bad">Prod. loss</span>' : ""}</div>
+        </div>
+        <div class="when">${(r.startTime || "").replace("T", " ") || new Date(r.timestamp).toLocaleString()}</div>
+      </li>`).join("") : "<li>No faults recorded.</li>";
+  });
+
+  // permits to work
+  firebase.database().ref("safetyDeclarations").on("value", snap => {
+    let total = 0, open = 0;
+    Object.values(snap.val() || {}).forEach(recs =>
+      Object.values(recs || {}).forEach(r => { total++; if (r.status !== "CLOSED") open++; }));
+    document.getElementById("kpi_openPermits").innerText = open;
+    document.getElementById("kpi_permits").innerText = total;
   });
 
 }
@@ -3258,13 +3095,23 @@ function renderStatusChart(ok, dueSoon, overdue) {
       labels: ['OK', 'Due Soon', 'Overdue'],
       datasets: [{
         data: [ok, dueSoon, overdue],
-        backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+        backgroundColor: ['#12a150', '#f5b301', '#d92d20'],
+        borderColor: '#ffffff',
+        borderWidth: 3
       }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { position: 'right', labels: { font: { family: 'Inter', size: 13 }, usePointStyle: true, padding: 16 } }
+      }
     }
   });
 }
 function openKpiWindow(){
-  window.open("kpi.html","_blank","width=600,height=600");
+  window.open("kpi.html","_blank");
 }
 
 </script>
