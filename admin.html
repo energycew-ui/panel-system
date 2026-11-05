@@ -68,7 +68,7 @@
 
     /* MASTER DB TABLE */
     .master-main-row { cursor: pointer; }
-    .master-main-row:hover td { background: #fff8e6 !important; }
+    .master-main-row:hover td { background: #fff3f2 !important; }
     .master-details-row td { background: #fafbfc; }
     .master-details-wrapper { display: flex; flex-wrap: wrap; gap: 20px; }
     .master-details-left { flex: 1 1 60%; min-width: 250px; }
@@ -3095,7 +3095,7 @@ function renderStatusChart(ok, dueSoon, overdue) {
       labels: ['OK', 'Due Soon', 'Overdue'],
       datasets: [{
         data: [ok, dueSoon, overdue],
-        backgroundColor: ['#12a150', '#f5b301', '#d92d20'],
+        backgroundColor: ['#12a150', '#f0a800', '#fd0000'],
         borderColor: '#ffffff',
         borderWidth: 3
       }]
@@ -3105,7 +3105,7 @@ function renderStatusChart(ok, dueSoon, overdue) {
       maintainAspectRatio: false,
       cutout: '62%',
       plugins: {
-        legend: { position: 'right', labels: { font: { family: 'Inter', size: 13 }, usePointStyle: true, padding: 16 } }
+        legend: { position: 'right', labels: { font: { family: 'Mona Sans', size: 13 }, color: '#1a1410', usePointStyle: true, padding: 16 } }
       }
     }
   });
