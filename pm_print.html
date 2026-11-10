@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PM Work Order – Print</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+  <script src="pm-library.js"></script>
+  <style>
+    .head { text-align: center; }
+    .head img { width: 280px; max-width: 70%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    td, th { border: 1px solid #e3e6eb; padding: 7px 9px; text-align: left; vertical-align: top; }
+    .sign td { height: 46px; }
+    .noprint { text-align: center; margin: 16px 0; }
+    @media print { .noprint { display: none; } }
+  </style>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body class="doc">
+<div class="doc-sheet">
+  <div class="head">
+    <img src="logo.png" alt="Chenab Engineering">
+    <h1 style="margin:10px 0 2px;">Preventive Maintenance Work Order</h1>
+    <div style="color:#7a6f65;font-size:13px;">Electrical &amp; Mechanical Maintenance</div>
+  </div>
+  <div id="content">Loading…</div>
+  <div class="noprint"><button onclick="window.print()">Print / Save PDF</button></div>
+</div>
+<script>
+const qp = new URLSearchParams(location.search);
+db.ref(`pmRecords/${qp.get("asset")}/${qp.get("id")}`).once("value").then(s => {
+  const r = s.val();
+  if (!r) { document.getElementById("content").textContent = "Record not found."; return; }
+  const sf = r.safety || {};
+  document.getElementById("content").innerHTML = `
+    <h2>Work Order Details</h2>
+    <table>
+      <tr><td class="label">Machine</td><td>${esc(r.assetName)} (ID ${esc(r.assetId)})</td></tr>
+      <tr><td class="label">Area</td><td>${esc(r.area)}</td></tr>
+      <tr><td class="label">PM Level</td><td>${esc(PM_LEVELS[r.level]?.name || r.level)}</td></tr>
+      <tr><td class="label">Due date / Performed</td><td>${esc(r.dueDate || "–")} / ${esc(r.date)} (${esc(r.timeFrom)}–${esc(r.timeTo)})</td></tr>
+      <tr><td class="label">Technician / Helper</td><td>${esc(r.technician)} ${r.helper ? "/ " + esc(r.helper) : ""}</td></tr>
+      <tr><td class="label">Safety</td><td>LOTO: ${esc(sf.loto)} · PPE: ${esc(sf.ppe)} · Permit: ${esc(sf.ptwNo || "–")} · Handover: ${esc(sf.handover || "–")}</td></tr>
+      <tr><td class="label">Condition after PM</td><td><b>${esc(r.condition)}</b></td></tr>
+    </table>
+    <h2>Checklist</h2>
+    <table><tr><th>Lvl</th><th>Type</th><th>Task</th><th>Result</th><th>Note</th></tr>
+      ${(r.checklist || []).map(c => `<tr><td>${esc(c.lvl)}</td><td>${esc(c.d)}</td><td>${esc(c.task)}</td>
+        <td>${c.result === "Not OK" ? '<b style="color:#b42318;">Not OK</b>' : esc(c.result)}</td><td>${esc(c.note || "")}</td></tr>`).join("")}
+    </table>
+    ${r.cbm && Object.keys(r.cbm).length ? `<h2>Condition Readings</h2>
+    <table><tr><th>Parameter</th><th>Reading</th><th>Limits</th><th>Status</th></tr>
+      ${Object.entries(r.cbm).map(([k, v]) => `<tr><td>${esc(CBM_PARAMS[k]?.label || k)}</td><td>${esc(v)} ${esc(CBM_PARAMS[k]?.unit || "")}</td>
+        <td>${esc(cbmLimitText(k))}</td><td>${statusBadgeCbm(cbmStatus(k, v))}</td></tr>`).join("")}</table>` : ""}
+    <h2>Findings &amp; Actions</h2>
+    <table>
+      <tr><td class="label">Findings</td><td>${esc(r.findings || "–")}</td></tr>
+      <tr><td class="label">Corrective action</td><td>${esc(r.action || "–")}</td></tr>
+      <tr><td class="label">Spares used</td><td>${esc(r.spares || "–")}</td></tr>
+      <tr><td class="label">Follow-up</td><td>${r.followUp === "Yes" ? esc(r.followText) + " (" + esc(r.followStatus) + ")" : "None"}</td></tr>
+    </table>
+    <table class="sign"><tr><th>Technician</th><th>Supervisor Electrical / Mechanical</th><th>Production (machine handed back)</th></tr>
+      <tr><td></td><td></td><td></td></tr></table>`;
+});
+</script>
+</body>
+</html>

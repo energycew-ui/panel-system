@@ -11,6 +11,7 @@
 
   <!-- Your Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
   <script src="data.js"></script>
+  <script src="pm-library.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- QR Library -->
@@ -123,6 +124,12 @@
     <button class="tab-btn" data-target="tab-lux-reports"><span class="ico">💡</span>LUX Reports</button>
     <button class="tab-btn" data-target="tab-safety"><span class="ico">🦺</span>Safety &amp; Permits</button>
     <button class="tab-btn" data-target="tab-master"><span class="ico">🗂️</span>Master DB Report</button>
+
+    <div class="nav-group">Maintenance</div>
+    <button class="tab-btn" data-target="tab-pm"><span class="ico">🗓️</span>PM Schedule</button>
+    <button class="tab-btn" data-target="tab-pmrec"><span class="ico">🔧</span>PM Records</button>
+    <button class="tab-btn" data-target="tab-assets"><span class="ico">⚙️</span>Assets &amp; RCM</button>
+    <button class="tab-btn" data-target="tab-earthing"><span class="ico">🌍</span>Earthing</button>
 
     <div class="nav-group">Setup</div>
     <button class="tab-btn" data-target="tab-entry"><span class="ico">🧰</span>DB Entry</button>
@@ -550,6 +557,147 @@
       </div>
     </div>
 
+    <!-- ===================== MAINTENANCE: PM SCHEDULE ===================== -->
+    <div class="tab-content" id="tab-pm">
+      <div class="kpi-tiles" id="pmKpis"></div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>Preventive Maintenance Plan</h2>
+            <div class="sub">Weekly and longer PMs are planned on Sundays (production shutdown window). Click a job to open its work order.</div>
+          </div>
+          <div class="actions">
+            <button class="secondary-btn" onclick="window.open('qr_labels.html?type=assets','_blank')">🏷 Machine QR Labels</button>
+            <button class="secondary-btn" onclick="printPmPlan()">🖨 Print Plan</button>
+          </div>
+        </div>
+        <div class="filterBox">
+          <label class="f"><span>Show</span>
+            <select id="pmShow" onchange="renderPmPlan()">
+              <option value="week">Overdue + due next 7 days</option>
+              <option value="month">Overdue + due next 30 days</option>
+              <option value="overdue">Overdue only</option>
+              <option value="all">All scheduled</option>
+            </select></label>
+          <label class="f"><span>Area</span><select id="pmArea" onchange="renderPmPlan()"><option value="">All</option></select></label>
+          <label class="f"><span>Class</span>
+            <select id="pmClass" onchange="renderPmPlan()"><option value="">All</option><option>A</option><option>B</option><option>C</option></select></label>
+          <label class="f"><span>Level</span>
+            <select id="pmLevel" onchange="renderPmPlan()"><option value="">All</option>
+              <option value="W">Weekly</option><option value="M">Monthly</option><option value="Q">Quarterly</option>
+              <option value="H">Half-Yearly</option><option value="Y">Yearly</option></select></label>
+          <label class="f"><span>Search</span><input type="text" id="pmSearch" placeholder="Machine name / ID" oninput="renderPmPlan()"></label>
+        </div>
+        <div id="pmPlan" class="table-wrap"><p>Loading…</p></div>
+      </div>
+
+      <div class="overview-grid">
+        <div class="card">
+          <div class="card-head"><div><h2>Condition Alerts (CBM)</h2>
+            <div class="sub">Latest readings outside the limits – plan the repair before breakdown</div></div></div>
+          <div id="cbmAlerts" class="table-wrap"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2>Open Red Tags (TPM)</h2>
+            <div class="sub">Abnormalities raised by operators in daily checks</div></div></div>
+          <div id="redTags" class="table-wrap"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Open Follow-up Jobs</h2>
+          <div class="sub">Work found during PM that needs spares or the next shutdown</div></div></div>
+        <div id="followUps" class="table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- ===================== MAINTENANCE: PM RECORDS ===================== -->
+    <div class="tab-content" id="tab-pmrec">
+      <div class="card">
+        <div class="card-head">
+          <div><h2>PM Work Order Records</h2><div class="sub">Completed preventive maintenance with checklist results and condition readings</div></div>
+          <div class="actions"><button class="secondary-btn" onclick="exportPmCSV()">⬇ Export CSV</button></div>
+        </div>
+        <div id="pmRecSummary" class="summary-row"></div>
+        <div class="filterBox">
+          <label class="f"><span>Machine</span><input type="text" id="prAsset" placeholder="Name / ID"></label>
+          <label class="f"><span>Technician</span><input type="text" id="prTech" placeholder="Name"></label>
+          <label class="f"><span>From</span><input type="date" id="prFrom"></label>
+          <label class="f"><span>To</span><input type="date" id="prTo"></label>
+          <label class="f sort"><span>Sort by date</span>
+            <select id="sort_pr" onchange="renderPmRecords()"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label>
+          <button class="primary-btn" onclick="renderPmRecords()">Apply Filters</button>
+        </div>
+        <div id="pmRecTable" class="table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- ===================== MAINTENANCE: ASSETS & RCM ===================== -->
+    <div class="tab-content" id="tab-assets">
+      <div class="card">
+        <div class="card-head"><div><h2>Maintenance Strategy – RCM · TPM · CBM</h2>
+          <div class="sub">How each machine is maintained and why</div></div></div>
+        <div id="strategyInfo"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h2>Asset Register &amp; Criticality</h2>
+            <div class="sub">From IMS Master List of Machinery (Machine Shop #1/#2 excluded – maintained by another department)</div></div>
+          <div class="actions">
+            <button class="secondary-btn" onclick="window.open('qr_labels.html?type=assets','_blank')">🏷 Print QR Labels</button>
+            <button class="secondary-btn" onclick="exportAssetsCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div id="assetEdit" style="display:none;"></div>
+        <div class="filterBox">
+          <label class="f"><span>Area</span><select id="asArea" onchange="renderAssets()"><option value="">All</option></select></label>
+          <label class="f"><span>Class</span><select id="asClass" onchange="renderAssets()"><option value="">All</option><option>A</option><option>B</option><option>C</option></select></label>
+          <label class="f"><span>Strategy</span><select id="asStrat" onchange="renderAssets()"><option value="">All</option>
+            <option value="CBM+PM">Condition-Based + PM</option><option value="PM+CBM">PM + condition checks</option>
+            <option value="PM">Time-based PM</option><option value="RTF">Run-to-Failure</option><option value="OOS">Out of service</option></select></label>
+          <label class="f"><span>Search</span><input type="text" id="asSearch" placeholder="Name / ID" oninput="renderAssets()"></label>
+        </div>
+        <div id="assetTable" class="table-wrap"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><h2>RCM Failure Mode Analysis</h2>
+          <div class="sub">Failure modes, effects and the maintenance task chosen for each machine type (from RCA 2024-25 and 2026 fault data)</div></div></div>
+        <div id="rcmTables"></div>
+      </div>
+    </div>
+
+    <!-- ===================== MAINTENANCE: EARTHING ===================== -->
+    <div class="tab-content" id="tab-earthing">
+      <div class="kpi-tiles" id="earthKpis"></div>
+      <div class="card">
+        <div class="card-head">
+          <div><h2>Earth Pits</h2><div class="sub">Acceptance ≤ 5.0 Ω (IEC 60364-6 · IEC 61557-5 · IEEE 81) – monthly test</div></div>
+          <div class="actions">
+            <button class="secondary-btn" onclick="window.open('earthing.html','_blank')">＋ Enter Readings</button>
+            <button class="secondary-btn" onclick="window.open('qr_labels.html?type=pits','_blank')">🏷 Pit QR Labels</button>
+            <button class="secondary-btn" onclick="exportEarthCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div id="pitTable" class="table-wrap"></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div><h2>Earthing Inspection Register</h2><div class="sub">Resistance (Ω) per inspection round</div></div>
+          <div class="actions">
+            <select id="sort_er" onchange="renderEarthing()" style="padding:8px 10px;border-radius:8px;border:1px solid #d6cfc6;">
+              <option value="newest">Newest first</option><option value="oldest">Oldest first</option></select>
+          </div>
+        </div>
+        <div id="earthRegister" class="table-wrap"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h2>Corrective Action / Remarks</h2></div></div>
+        <div id="earthCA" class="table-wrap"></div>
+      </div>
+    </div>
+
   </div><!-- /.tab-wrapper -->
   </div><!-- /.main -->
 </div><!-- /.app -->
@@ -595,6 +743,7 @@ function afterLoginInit() {
   // small data first: Firebase answers in request order, and DB inspections
   // (with photos) are by far the largest download
   loadDashboardAnalytics();
+  loadMaintenance();          // admin-maintenance.js – small data, load early
   showPanels();
   showTransformers();
   loadQuestions();
@@ -3115,6 +3264,7 @@ function openKpiWindow(){
 }
 
 </script>
+<script src="admin-maintenance.js"></script>
 
 </body>
 </html>

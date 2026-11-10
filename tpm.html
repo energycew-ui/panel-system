@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Operator Daily Check</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+  <script src="pm-library.js"></script>
+  <style>
+    .card { max-width: 720px; margin: 16px auto; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .asset-title { font-size: 19px; font-weight: 800; margin: 0; }
+    .item { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 15px; }
+    .seg { display: inline-flex; border: 1px solid #d6cfc6; border-radius: 8px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0 !important; padding: 9px 14px; font-size: 14px; background: #fff; color: var(--text); margin: 0; }
+    .seg button + button { border-left: 1px solid #d6cfc6; }
+    .seg button.on.ok { background: #12a150; color: #fff; }
+    .seg button.on.nok { background: #fd0000; color: #fff; }
+    .tagbox { display: none; border: 2px solid #fd0000; border-radius: 12px; padding: 4px 14px 14px; margin-top: 14px; background: #fff6f5; }
+    .tagopt { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: 14px; }
+    .tagopt input { margin-top: 3px; }
+    #submitBtn { width: 100%; margin-top: 16px; padding: 14px; font-size: 16px; }
+  </style>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+
+<div class="topbar">
+  <img src="logo.png" alt="Chenab Engineering Works &amp; Foundries (Pvt) Ltd.">
+  <div class="title">Operator Daily Check (TPM)</div>
+</div>
+
+<div class="card" id="assetCard"><p class="muted">Loading machine…</p></div>
+
+<div class="card" id="checkCard" style="display:none;">
+  <h2>Before Starting the Shift</h2>
+  <p class="muted">Clean · Lubricate · Inspect · Tighten. Mark every item. Anything abnormal → raise a tag.</p>
+  <div id="items"></div>
+
+  <div class="tagbox" id="tagBox">
+    <h3 style="color:#b42318;">Abnormality found – raise a tag</h3>
+    <label class="tagopt"><input type="radio" name="tag" value="red" checked>
+      <span><b>🔴 Red tag</b> – maintenance needed (electrician / fitter must fix)</span></label>
+    <label class="tagopt"><input type="radio" name="tag" value="white">
+      <span><b>⚪ White tag</b> – minor, I fixed it myself (cleaning, tightening)</span></label>
+    <label>Describe the problem</label>
+    <textarea id="desc" placeholder="e.g. hydraulic hose weeping near jolt cylinder"></textarea>
+    <label>Can the machine run safely?</label>
+    <select id="runSafe"><option>Yes – running, fix at next stop</option><option>No – machine stopped</option></select>
+  </div>
+
+  <label>Operator name *</label>
+  <input type="text" id="op" placeholder="Your name">
+  <label>Shift</label>
+  <select id="shift"><option>A (Day)</option><option>B (Evening)</option><option>C (Night)</option></select>
+  <button class="btn btn-blue" id="submitBtn" onclick="submitCheck()">Submit Daily Check</button>
+</div>
+
+<script>
+const assetId = new URLSearchParams(location.search).get("id");
+let asset = null, items = [], ans = {};
+
+(async function () {
+  if (!assetId) { document.getElementById("assetCard").innerHTML = "<h2>No machine selected</h2><p class='muted'>Scan the machine QR label.</p>"; return; }
+  asset = (await db.ref("assets/" + assetId).once("value")).val();
+  if (!asset) { document.getElementById("assetCard").innerHTML = `<h2>Machine "${esc(assetId)}" not found</h2>`; return; }
+  const cat = CATEGORIES[asset.category];
+  document.getElementById("assetCard").innerHTML = `<p class="asset-title">${esc(asset.name)}</p>
+    <div class="muted">Machine ID <b>${esc(asset.id)}</b> · ${esc(asset.area)}</div>`;
+  items = tasksFor(asset.category, "D");
+  if (!items.length) {
+    // machines without operator TPM use their monthly safety items
+    items = tasksFor(asset.category, cat.levels.find(l => l !== "D")).filter(t => t.d === "S")
+      .map(t => ({ ...t, lvl: "D" }));
+  }
+  document.getElementById("items").innerHTML = items.map((t, i) => `
+    <div class="item" id="it${i}"><div>${esc(t.text)}</div>
+      <div class="seg"><button class="ok" onclick="mark(${i},'OK')">✓ OK</button><button class="nok" onclick="mark(${i},'Abnormal')">✗ Problem</button></div>
+    </div>`).join("");
+  document.getElementById("checkCard").style.display = "block";
+})();
+
+function mark(i, v) {
+  ans[i] = v;
+  const row = document.getElementById("it" + i);
+  row.querySelectorAll("button").forEach(b => b.classList.remove("on"));
+  row.querySelector(v === "OK" ? ".ok" : ".nok").classList.add("on");
+  document.getElementById("tagBox").style.display = Object.values(ans).includes("Abnormal") ? "block" : "none";
+}
+
+async function submitCheck() {
+  const op = document.getElementById("op").value.trim();
+  if (!op) return alert("Enter your name.");
+  if (Object.keys(ans).length < items.length) return alert("Please mark every item.");
+  const abnormal = items.map((t, i) => ans[i] === "Abnormal" ? t.text : null).filter(Boolean);
+  const tag = abnormal.length ? document.querySelector("input[name=tag]:checked").value : "";
+  if (abnormal.length && !document.getElementById("desc").value.trim()) return alert("Describe the problem for the tag.");
+  const now = new Date();
+  const rec = {
+    timestamp: now.toISOString(), date: ymd(now), operator: op, shift: document.getElementById("shift").value,
+    assetId: asset.id, assetName: asset.name,
+    items: items.map((t, i) => ({ item: t.text, result: ans[i] })),
+    abnormal, tag,
+    description: document.getElementById("desc").value.trim(),
+    runSafe: abnormal.length ? document.getElementById("runSafe").value : "",
+    tagStatus: tag === "red" ? "Open" : tag === "white" ? "Closed" : ""
+  };
+  document.getElementById("submitBtn").disabled = true;
+  await db.ref("tpmChecks/" + asset.id).push().set(rec);
+  await db.ref("assets/" + asset.id + "/pmStatus/D").update({ lastDone: rec.date, nextDue: addDays(rec.date, 1) });
+  alert(tag === "red" ? "Daily check saved. RED TAG raised – maintenance has been notified on the dashboard." : "Daily check saved. Thank you!");
+  location.href = "machine.html?id=" + encodeURIComponent(asset.id);
+}
+</script>
+</body>
+</html>

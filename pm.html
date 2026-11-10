@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PM Work Order</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+  <script src="pm-library.js"></script>
+  <style>
+    .card { max-width: 820px; margin: 16px auto; }
+    #formArea { display: none; }
+    .asset-title { font-size: 19px; font-weight: 800; margin: 0; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .levels { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .lvl {
+      border: 1px solid var(--border); background: #fff; border-radius: 10px;
+      padding: 9px 12px; text-align: left; font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer;
+    }
+    .lvl small { display: block; font-weight: 500; font-size: 11.5px; margin-top: 2px; }
+    .lvl.active { border-color: var(--brand); background: #fff3f2; box-shadow: inset 0 0 0 1px var(--brand); }
+    .task { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .task .txt { font-size: 14px; }
+    .tag { display: inline-block; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 6px; margin-right: 6px; }
+    .tag.E { background: #e8f0fe; color: #1849a9; } .tag.M { background: #f0ede8; color: #5c5047; } .tag.S { background: #fde8e7; color: #b42318; }
+    .tag.lv { background: #1a1410; color: #fff; }
+    .seg { display: inline-flex; border: 1px solid #d6cfc6; border-radius: 8px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0 !important; padding: 7px 10px; font-size: 12.5px; background: #fff; color: var(--text); margin: 0; }
+    .seg button + button { border-left: 1px solid #d6cfc6; }
+    .seg button.on.ok { background: #12a150; color: #fff; }
+    .seg button.on.nok { background: #fd0000; color: #fff; }
+    .seg button.on.na { background: #7a6f65; color: #fff; }
+    .task .note { grid-column: 1 / -1; display: none; }
+    .task.bad .note { display: block; }
+    .cbm { display: grid; grid-template-columns: 1fr 120px 90px; gap: 6px 10px; align-items: center;
+           padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .cbm .lim { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted); margin-top: -4px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+    @media (max-width: 560px) { .row2 { grid-template-columns: 1fr; } .cbm { grid-template-columns: 1fr 100px; } .cbm .st { grid-column: 1 / -1; } }
+    .summary-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    #submitBtn { width: 100%; margin-top: 18px; padding: 14px; font-size: 16px; }
+  </style>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+
+<div class="topbar">
+  <img src="logo.png" alt="Chenab Engineering Works &amp; Foundries (Pvt) Ltd.">
+  <div class="title">Preventive Maintenance Work Order</div>
+</div>
+
+<div class="card" id="loginCard">
+  <h2>Electrician / Technician Login</h2>
+  <input type="password" id="loginKey" placeholder="Enter password">
+  <button class="btn btn-red" onclick="doLogin()" style="width:100%;margin-top:12px;">Login</button>
+  <div id="loginError" style="color:#b42318;margin-top:10px;"></div>
+</div>
+
+<div id="formArea">
+  <div class="card" id="assetCard"><p class="muted">Loading machine…</p></div>
+
+  <div class="card">
+    <h2>1. PM Level</h2>
+    <p class="muted">Choose the level you are performing. A higher level includes all lower-level tasks.</p>
+    <div class="levels" id="levels"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Safety Before Work</h2>
+    <div class="row2">
+      <div><label>Machine isolated &amp; LOTO applied?</label>
+        <select id="loto"><option value="">Select</option><option>Yes</option><option>Not required (inspection only)</option></select></div>
+      <div><label>Permit to Work No. <span id="ptwReq"></span></label>
+        <input type="text" id="ptwNo" placeholder="e.g. PTW-2026-046"></div>
+    </div>
+    <div class="row2">
+      <div><label>PPE worn?</label><select id="ppe"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+      <div><label>Production informed / machine handed over?</label><select id="handover"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Checklist</h2>
+    <div class="summary-bar" id="taskSummary"></div>
+    <div id="tasks"></div>
+  </div>
+
+  <div class="card" id="cbmCard">
+    <h2>4. Condition Readings (CBM)</h2>
+    <p class="muted">Enter measured values. Status updates automatically against the limits.</p>
+    <div id="cbm"></div>
+  </div>
+
+  <div class="card">
+    <h2>5. Findings &amp; Close-out</h2>
+    <label>Findings / defects observed</label>
+    <textarea id="findings" placeholder="What did you find?"></textarea>
+    <label>Corrective action taken</label>
+    <textarea id="action" placeholder="What did you fix / replace?"></textarea>
+    <label>Spare parts used</label>
+    <input type="text" id="spares" placeholder="e.g. 1 × contactor 32A, 2 m pendant cable">
+    <div class="row2">
+      <div><label>Follow-up work required?</label>
+        <select id="followUp"><option>No</option><option>Yes</option></select></div>
+      <div><label>Machine condition after PM</label>
+        <select id="condition"><option>Good</option><option>Needs Attention</option><option>Critical</option></select></div>
+    </div>
+    <div id="followWrap" style="display:none;">
+      <label>Follow-up description (spares to order / next shutdown job)</label>
+      <input type="text" id="followText">
+    </div>
+    <div class="row2">
+      <div><label>Technician *</label><input type="text" id="tech" list="teamList" placeholder="Name"></div>
+      <div><label>Helper(s)</label><input type="text" id="helper" list="teamList"></div>
+    </div>
+    <datalist id="teamList"></datalist>
+    <div class="row2">
+      <div><label>Date</label><input type="date" id="pmDate"></div>
+      <div class="row2" style="gap:0 8px;">
+        <div><label>Start</label><input type="time" id="tStart"></div>
+        <div><label>End</label><input type="time" id="tEnd"></div>
+      </div>
+    </div>
+    <button class="btn btn-blue" id="submitBtn" onclick="submitPM()">Submit PM Work Order</button>
+  </div>
+</div>
+
+<script>
+const ELEC_KEY = "9999";
+const assetId = new URLSearchParams(location.search).get("id");
+const presetLevel = new URLSearchParams(location.search).get("level");
+let asset = null, level = null, answers = {};
+
+if (sessionStorage.getItem("electricianLogged") === "true") showForm();
+function doLogin() {
+  if (document.getElementById("loginKey").value.trim() === ELEC_KEY) {
+    sessionStorage.setItem("electricianLogged", "true");
+    showForm();
+  } else document.getElementById("loginError").innerText = "Incorrect password!";
+}
+
+function showForm() {
+  document.getElementById("loginCard").style.display = "none";
+  document.getElementById("formArea").style.display = "block";
+  document.getElementById("teamList").innerHTML = TEAM.map(t => `<option value="${esc(t[0])}">`).join("");
+  const now = new Date();
+  document.getElementById("pmDate").value = ymd(now);
+  document.getElementById("tStart").value = new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(11, 16);
+  document.getElementById("followUp").onchange = e =>
+    document.getElementById("followWrap").style.display = e.target.value === "Yes" ? "block" : "none";
+  loadAsset();
+}
+
+async function loadAsset() {
+  if (!assetId) { document.getElementById("assetCard").innerHTML = "<h2>No machine selected</h2><p class='muted'>Open this page by scanning the machine QR.</p>"; return; }
+  asset = (await db.ref("assets/" + assetId).once("value")).val();
+  if (!asset) { document.getElementById("assetCard").innerHTML = `<h2>Machine "${esc(assetId)}" not found</h2>`; return; }
+  const cat = CATEGORIES[asset.category];
+  document.getElementById("assetCard").innerHTML = `
+    <p class="asset-title">${esc(asset.name)}</p>
+    <div class="muted">Machine ID <b>${esc(asset.id)}</b> · ${esc(asset.area)} · ${esc(cat.name)}</div>
+    <div class="summary-bar" style="margin-top:8px;">${critBadge(asset)}<span class="badge badge-info">${esc(strategyFor(asset).name)}</span></div>`;
+  // permit required for crane work (work at height)
+  document.getElementById("ptwReq").textContent = ["OHC", "MRC"].includes(asset.category) ? "(required – work at height)" : "(if applicable)";
+
+  const st = asset.pmStatus || {};
+  const plan = activeLevels(asset).filter(l => l !== "D");
+  // default: highest level due within 7 days, else the lowest level
+  let def = plan[0];
+  plan.forEach(L => { if (st[L] && st[L].nextDue && daysUntil(st[L].nextDue) <= 7) def = L; });
+  if (presetLevel && plan.includes(presetLevel)) def = presetLevel;
+  document.getElementById("levels").innerHTML = plan.map(L => {
+    const b = dueBadge((st[L] || {}).nextDue);
+    return `<button class="lvl" data-l="${L}" onclick="selectLevel('${L}')">${PM_LEVELS[L].name}
+            <small><span class="badge ${b.cls}">${b.text}</span></small></button>`;
+  }).join("");
+  selectLevel(def);
+}
+
+function selectLevel(L) {
+  level = L;
+  answers = {};
+  document.querySelectorAll(".lvl").forEach(b => b.classList.toggle("active", b.dataset.l === L));
+  const tasks = tasksFor(asset.category, L);
+  document.getElementById("tasks").innerHTML = tasks.map((t, i) => `
+    <div class="task" id="task${i}">
+      <div class="txt"><span class="tag lv">${t.lvl}</span><span class="tag ${t.d}">${t.d === "E" ? "ELEC" : t.d === "M" ? "MECH" : "SAFETY"}</span>${esc(t.text)}</div>
+      <div class="seg">
+        <button class="ok" onclick="mark(${i},'OK')">OK</button>
+        <button class="nok" onclick="mark(${i},'Not OK')">Not OK</button>
+        <button class="na" onclick="mark(${i},'N/A')">N/A</button>
+      </div>
+      <input class="note" type="text" id="note${i}" placeholder="What is wrong? Action taken?">
+    </div>`).join("");
+  const keys = cbmFor(asset.category, L);
+  document.getElementById("cbmCard").style.display = keys.length ? "block" : "none";
+  document.getElementById("cbm").innerHTML = keys.map(k => `
+    <div class="cbm">
+      <div><b>${esc(CBM_PARAMS[k].label)}</b></div>
+      <input type="number" step="any" id="cbm_${k}" placeholder="${esc(CBM_PARAMS[k].unit)}" oninput="cbmLive('${k}')">
+      <div class="st" id="cbmst_${k}"></div>
+      <div class="lim">${esc(cbmLimitText(k))}${CBM_PARAMS[k].ref ? " · " + esc(CBM_PARAMS[k].ref) : ""}</div>
+    </div>`).join("");
+  updateSummary();
+}
+
+function mark(i, val) {
+  answers[i] = val;
+  const row = document.getElementById("task" + i);
+  row.querySelectorAll(".seg button").forEach(b => b.classList.remove("on"));
+  row.querySelector(val === "OK" ? ".ok" : val === "Not OK" ? ".nok" : ".na").classList.add("on");
+  row.classList.toggle("bad", val === "Not OK");
+  updateSummary();
+}
+
+function cbmLive(k) {
+  const st = cbmStatus(k, document.getElementById("cbm_" + k).value);
+  document.getElementById("cbmst_" + k).innerHTML = statusBadgeCbm(st);
+  updateSummary();
+}
+
+function updateSummary() {
+  const total = tasksFor(asset.category, level).length;
+  const done = Object.keys(answers).length;
+  const bad = Object.values(answers).filter(v => v === "Not OK").length;
+  const cbm = cbmFor(asset.category, level).map(k => cbmStatus(k, (document.getElementById("cbm_" + k) || {}).value));
+  const danger = cbm.filter(s => s === "danger").length, alert = cbm.filter(s => s === "alert").length;
+  document.getElementById("taskSummary").innerHTML =
+    `<span class="badge badge-info">${done}/${total} checked</span>` +
+    (bad ? `<span class="badge badge-bad">${bad} Not OK</span>` : "") +
+    (danger ? `<span class="badge badge-bad">${danger} CBM danger</span>` : "") +
+    (alert ? `<span class="badge badge-warn">${alert} CBM alert</span>` : "");
+  // suggest overall condition
+  document.getElementById("condition").value = danger ? "Critical" : (bad || alert) ? "Needs Attention" : "Good";
+}
+
+async function submitPM() {
+  const tasks = tasksFor(asset.category, level);
+  const tech = document.getElementById("tech").value.trim();
+  const loto = document.getElementById("loto").value;
+  const ptw = document.getElementById("ptwNo").value.trim();
+  if (!tech) return alert("Enter technician name.");
+  if (!loto || !document.getElementById("ppe").value) return alert("Complete the safety section (LOTO and PPE).");
+  if (["OHC", "MRC"].includes(asset.category) && !ptw) return alert("Permit to Work number is required for crane work (work at height).");
+  if (Object.keys(answers).length < tasks.length) return alert(`Please mark all checklist items (${Object.keys(answers).length}/${tasks.length} done).`);
+  const missingNote = tasks.findIndex((t, i) => answers[i] === "Not OK" && !document.getElementById("note" + i).value.trim());
+  if (missingNote >= 0) return alert("Write a note for every 'Not OK' item.");
+
+  const cbm = {};
+  cbmFor(asset.category, level).forEach(k => {
+    const v = document.getElementById("cbm_" + k).value;
+    if (v !== "") cbm[k] = Number(v);
+  });
+  const date = document.getElementById("pmDate").value;
+  const st = asset.pmStatus || {};
+  const now = new Date();
+  const rec = {
+    timestamp: now.toISOString(),
+    date, timeFrom: document.getElementById("tStart").value, timeTo: document.getElementById("tEnd").value
+      || new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(11, 16),
+    assetId: asset.id, assetName: asset.name, area: asset.area, category: asset.category,
+    level, dueDate: (st[level] || {}).nextDue || "",
+    safety: { loto, ptwNo: ptw, ppe: document.getElementById("ppe").value, handover: document.getElementById("handover").value },
+    checklist: tasks.map((t, i) => ({ lvl: t.lvl, d: t.d, task: t.text, result: answers[i],
+                                      note: document.getElementById("note" + i).value.trim() })),
+    notOk: Object.values(answers).filter(v => v === "Not OK").length,
+    cbm,
+    cbmAlerts: Object.entries(cbm).filter(([k, v]) => cbmStatus(k, v) !== "ok").map(([k]) => k),
+    findings: document.getElementById("findings").value.trim(),
+    action: document.getElementById("action").value.trim(),
+    spares: document.getElementById("spares").value.trim(),
+    followUp: document.getElementById("followUp").value,
+    followText: document.getElementById("followText").value.trim(),
+    followStatus: document.getElementById("followUp").value === "Yes" ? "Open" : "",
+    condition: document.getElementById("condition").value,
+    technician: tech, helper: document.getElementById("helper").value.trim()
+  };
+
+  // reschedule every level covered by this PM to the next Sunday window
+  const upd = {};
+  levelsToReschedule(asset, level).forEach(L => {
+    upd[`pmStatus/${L}/lastDone`] = date;
+    upd[`pmStatus/${L}/nextDue`] = toSunday(addDays(date, PM_LEVELS[L].days));
+  });
+  upd.lastPm = date;
+  upd.lastCondition = rec.condition;
+
+  document.getElementById("submitBtn").disabled = true;
+  try {
+    const ref = db.ref("pmRecords/" + asset.id).push();
+    await ref.set(rec);
+    await db.ref("assets/" + asset.id).update(upd);
+    alert("PM work order saved. Next " + PM_LEVELS[level].name + " PM due: " + upd[`pmStatus/${level}/nextDue`]);
+    location.href = "machine.html?id=" + encodeURIComponent(asset.id);
+  } catch (e) {
+    document.getElementById("submitBtn").disabled = false;
+    alert("Error saving: " + e.message);
+  }
+}
+</script>
+</body>
+</html>

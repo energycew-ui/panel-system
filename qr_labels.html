@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR Labels</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <script src="data.js"></script>
+  <script src="pm-library.js"></script>
+  <style>
+    body { background: #efebe5; margin: 0; }
+    .bar { max-width: 210mm; margin: 16px auto; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 0 12px; }
+    .bar select, .bar button { padding: 9px 12px; font-size: 14px; }
+    .sheet { width: 210mm; margin: 0 auto 24px; background: #fff; padding: 8mm; box-sizing: border-box;
+             display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; }
+    .label { border: 1.5px solid #1a1410; border-radius: 3mm; padding: 3mm; text-align: center; break-inside: avoid;
+             display: flex; flex-direction: column; align-items: center; gap: 1.5mm; }
+    .label .logo { width: 100%; max-width: 52mm; height: auto; }
+    .label .band { width: 100%; background: #fd0000; color: #fff; font-weight: 800; font-size: 8.5pt; padding: 1mm 0; border-radius: 1.5mm; letter-spacing: .3px; }
+    .label canvas { width: 34mm !important; height: 34mm !important; }
+    .label .id { font-weight: 800; font-size: 12pt; color: #1a1410; }
+    .label .nm { font-size: 8pt; line-height: 1.2; color: #1a1410; min-height: 2.4em; }
+    .label .hint { font-size: 6.5pt; color: #5c5047; }
+    @media print {
+      body { background: #fff; }
+      .bar { display: none; }
+      .sheet { margin: 0; padding: 6mm; }
+      @page { size: A4; margin: 6mm; }
+      .label .band { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="bar">
+  <select id="type" onchange="build()">
+    <option value="assets">Machines (PM / TPM)</option>
+    <option value="pits">Earth Pits</option>
+  </select>
+  <select id="area" onchange="build()"><option value="">All areas</option></select>
+  <button class="btn btn-blue" onclick="window.print()">🖨 Print Labels</button>
+  <span id="count" style="color:#5c5047;font-size:13px;"></span>
+</div>
+<div class="sheet" id="sheet"></div>
+
+<script>
+const qp = new URLSearchParams(location.search);
+let assets = {}, pits = {};
+
+function label(id, name, band, url, hint) {
+  return `<div class="label">
+    <img class="logo" src="logo.png" alt="Chenab Engineering">
+    <div class="band">${esc(band)}</div>
+    <canvas data-url="${esc(url)}"></canvas>
+    <div class="id">${esc(id)}</div>
+    <div class="nm">${esc(name)}</div>
+    <div class="hint">${esc(hint)}</div>
+  </div>`;
+}
+
+function build() {
+  const type = document.getElementById("type").value;
+  const area = document.getElementById("area").value;
+  document.getElementById("area").style.display = type === "assets" ? "" : "none";
+  let html = "", n = 0;
+  if (type === "assets") {
+    Object.values(assets)
+      .filter(a => a.status !== "Out of Service" && (!area || a.area === area) && (!qp.get("id") || a.id === qp.get("id")))
+      .sort((a, b) => a.area.localeCompare(b.area) || a.id.localeCompare(b.id))
+      .forEach(a => { n++; html += label(a.id, a.name, "MACHINE MAINTENANCE", SITE_URL + "machine.html?id=" + encodeURIComponent(a.id),
+                                         "Scan: daily check · PM · breakdown"); });
+  } else {
+    Object.values(pits).filter(p => !qp.get("id") || p.id === qp.get("id")).sort((a, b) => a.id.localeCompare(b.id))
+      .forEach(p => { n++; html += label(p.id, p.name, "EARTH PIT – LIMIT ≤ 5 Ω", SITE_URL + "earthing.html?id=" + encodeURIComponent(p.id),
+                                         "Scan to record earth resistance"); });
+  }
+  document.getElementById("sheet").innerHTML = html;
+  document.getElementById("count").textContent = n + " label(s)";
+  document.querySelectorAll("canvas[data-url]").forEach(c =>
+    new QRious({ element: c, value: c.dataset.url, size: 300, level: "M" }));
+}
+
+(async function () {
+  assets = (await db.ref("assets").once("value")).val() || {};
+  pits = (await db.ref("earthPits").once("value")).val() || {};
+  const areas = [...new Set(Object.values(assets).map(a => a.area))].sort();
+  document.getElementById("area").innerHTML += areas.map(a => `<option>${esc(a)}</option>`).join("");
+  if (qp.get("type")) document.getElementById("type").value = qp.get("type");
+  build();
+})();
+</script>
+</body>
+</html>
