@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manual Entry</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+  <script src="pm-library.js"></script>
+  <style>
+    .wrap { max-width: 900px; margin: 0 auto; padding: 0 12px 40px; }
+    .note { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+    .tabs { display: flex; gap: 6px; overflow-x: auto; margin: 14px 0 10px; padding-bottom: 4px; }
+    .tabs button { flex: 0 0 auto; padding: 10px 14px; font-size: 14px; font-weight: 700; background: #fff; color: var(--text);
+                   border: 1px solid var(--border) !important; }
+    .tabs button.on { background: var(--dark) !important; color: #fff !important; box-shadow: inset 0 -3px 0 var(--brand); }
+    .search { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .search input, .search select { flex: 1 1 180px; padding: 11px 12px; font: 15px var(--font); border: 1px solid #d6cfc6; border-radius: 8px; background: #fff; }
+    .item { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .item .t { font-weight: 800; font-size: 15px; }
+    .item .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+    .item .b { display: flex; gap: 6px; flex-wrap: wrap; }
+    .item .b a { text-decoration: none; padding: 9px 12px; border-radius: 8px; font-size: 13.5px; font-weight: 700;
+                 border: 1px solid #d6cfc6; color: var(--text); background: #fff; white-space: nowrap; }
+    .item .b a.p { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .item .b a:hover { border-color: var(--brand); }
+    .empty { color: var(--muted); padding: 20px; text-align: center; }
+    .bigbtn { display: block; text-align: center; text-decoration: none; background: var(--dark); color: #fff; font-weight: 800;
+              padding: 13px; border-radius: 10px; margin-bottom: 10px; }
+  </style>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+
+<div class="topbar">
+  <img src="logo.png" alt="Chenab Engineering Works &amp; Foundries (Pvt) Ltd.">
+  <div class="title">Manual Entry – All Forms</div>
+</div>
+
+<div class="wrap">
+  <p class="note">Use this page when a QR code is missing, damaged or cannot be scanned. Choose the item and open its form – it is saved exactly as if the QR was scanned.</p>
+
+  <div class="tabs" id="tabs">
+    <button data-t="db" class="on">⚡ DBs</button>
+    <button data-t="pm">🛠️ Machines (PM)</button>
+    <button data-t="earth">🌍 Earth Pits</button>
+    <button data-t="tr">🔌 Transformers</button>
+    <button data-t="lux">💡 LUX Areas</button>
+  </div>
+
+  <div class="search">
+    <input type="search" id="q" placeholder="Search by number, name or location…">
+    <select id="area" style="display:none;"><option value="">All areas</option></select>
+    <select id="due">
+      <option value="">All</option>
+      <option value="due">Overdue + due in 7 days</option>
+      <option value="overdue">Overdue only</option>
+    </select>
+  </div>
+
+  <div id="list"><p class="empty">Loading…</p></div>
+</div>
+
+<script>
+let tab = "db", data = { panels: {}, assets: {}, pits: {}, trs: {}, lux: null };
+
+function badge(dateStr) {
+  const b = dueBadge(dateStr);
+  return `<span class="badge ${b.cls}">${b.text}</span>`;
+}
+function dueFilter(dateStr) {
+  const f = document.getElementById("due").value;
+  if (!f) return true;
+  if (!dateStr) return true;
+  const n = daysUntil(dateStr);
+  return f === "overdue" ? n < 0 : n <= 7;
+}
+const match = (...s) => { const q = document.getElementById("q").value.trim().toLowerCase(); return !q || s.join(" ").toLowerCase().includes(q); };
+const link = (href, text, primary) => `<a href="${href}" class="${primary ? "p" : ""}">${text}</a>`;
+
+function render() {
+  const el = document.getElementById("list");
+  const area = document.getElementById("area");
+  area.style.display = tab === "pm" ? "" : "none";
+  let html = "", n = 0;
+
+  if (tab === "db") {
+    Object.entries(data.panels).sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true })).forEach(([id, p]) => {
+      const due = p.nextInspectionDue ? ymd(new Date(p.nextInspectionDue)) : "";
+      if (!match(id, p.location, p.purpose) || !dueFilter(due)) return;
+      n++;
+      const e = encodeURIComponent(id);
+      html += `<div class="item"><div><div class="t">${esc(id)} · ${esc((p.location || "").trim())}</div>
+        <div class="s">${esc(p.purpose || "")} · next inspection ${esc(due || "–")} ${badge(due)}</div></div>
+        <div class="b">${link("electrician.html?id=" + e, "📋 Inspection", true)}${link("safety.html?id=" + e, "⚡ Fault + Permit")}${link("panel.html?id=" + e, "DB page")}</div></div>`;
+    });
+  }
+
+  if (tab === "pm") {
+    Object.values(data.assets).filter(a => a.status !== "Out of Service" && CATEGORIES[a.category])
+      .sort((a, b) => a.area.localeCompare(b.area) || a.name.localeCompare(b.name, undefined, { numeric: true }))
+      .forEach(a => {
+        const lv = activeLevels(a).filter(l => l !== "D");
+        const next = lv.map(l => (a.pmStatus || {})[l]?.nextDue).filter(Boolean).sort()[0] || "";
+        if ((area.value && a.area !== area.value) || !match(a.id, a.name, a.area) || !dueFilter(next)) return;
+        n++;
+        const e = encodeURIComponent(a.id);
+        html += `<div class="item"><div><div class="t">${esc(a.name)}</div>
+          <div class="s">ID ${esc(a.id)} · ${esc(a.area)} · Class ${critClass(a.crit)} · ${pmWindow(a) === "SUN" ? "Sunday PM" : "Weekday PM"} · next PM ${esc(next || "–")} ${badge(next)}</div></div>
+          <div class="b">${link("pm.html?id=" + e, "🛠️ PM Work Order", true)}${link("tpm.html?id=" + e, "🧑‍🏭 Daily Check")}${link("machine.html?id=" + e, "Machine page")}</div></div>`;
+      });
+  }
+
+  if (tab === "earth") {
+    html += `<a class="bigbtn" href="earthing.html">🌍 Monthly round – all earth pits on one form</a>`;
+    Object.values(data.pits).sort((a, b) => a.id.localeCompare(b.id)).forEach(p => {
+      if (!match(p.id, p.name) || !dueFilter(p.nextDue)) return;
+      n++;
+      html += `<div class="item"><div><div class="t">${esc(p.id)} · ${esc(p.name)}</div>
+        <div class="s">Last ${esc(p.lastReading)} Ω on ${esc(p.lastDate)} · next test ${esc(p.nextDue)} ${badge(p.nextDue)}</div></div>
+        <div class="b">${link("earthing.html?id=" + encodeURIComponent(p.id), "Test this pit", true)}</div></div>`;
+    });
+  }
+
+  if (tab === "tr") {
+    Object.entries(data.trs).sort((a, b) => a[0].localeCompare(b[0])).forEach(([id, t]) => {
+      const due = t.nextInspectionDue ? ymd(new Date(t.nextInspectionDue)) : "";
+      if (!match(id, t.location, t.purpose, t.rating) || !dueFilter(due)) return;
+      n++;
+      html += `<div class="item"><div><div class="t">${esc(id)} · ${esc((t.location || "").trim())}</div>
+        <div class="s">${esc(t.rating || "")} · ${esc(t.purpose || "")} · next inspection ${esc(due || "–")} ${badge(due)}</div></div>
+        <div class="b">${link("transformer.html?id=" + encodeURIComponent(id), "🔌 Inspection", true)}</div></div>`;
+    });
+  }
+
+  if (tab === "lux") {
+    if (!data.lux) { el.innerHTML = '<p class="empty">Loading LUX areas…</p>'; loadLux(); return; }
+    html += `<a class="bigbtn" href="lux.html">💡 New LUX report – new / other area</a>`;
+    const latest = {};
+    data.lux.forEach(r => { const k = (r.samplingLocation || "").trim(); if (k && (!latest[k] || r.timestamp > latest[k].timestamp)) latest[k] = r; });
+    Object.entries(latest).sort((a, b) => a[0].localeCompare(b[0])).forEach(([areaName, r]) => {
+      const due = addDays(ymd(new Date(r.timestamp)), 30);
+      if (!match(areaName) || !dueFilter(due)) return;
+      n++;
+      html += `<div class="item"><div><div class="t">${esc(areaName)}</div>
+        <div class="s">Last survey ${esc(r.sampleDate)} by ${esc(r.collectedBy || "")} · next ${esc(due)} ${badge(due)}</div></div>
+        <div class="b">${link("lux.html?area=" + encodeURIComponent(areaName), "💡 LUX Survey", true)}</div></div>`;
+    });
+  }
+
+  el.innerHTML = html + (n ? "" : '<p class="empty">Nothing matches.</p>');
+}
+
+async function loadLux() {
+  data.lux = Object.values((await db.ref("luxReports").once("value")).val() || {});
+  render();
+}
+
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  tab = b.dataset.t;
+  render();
+});
+["q", "area", "due"].forEach(id => document.getElementById(id).addEventListener("input", render));
+
+(async function () {
+  const get = p => db.ref(p).once("value").then(s => s.val() || {});
+  [data.panels, data.assets, data.pits, data.trs] = await Promise.all([get("panels"), get("assets"), get("earthPits"), get("transformers")]);
+  const areas = [...new Set(Object.values(data.assets).map(a => a.area))].sort();
+  document.getElementById("area").innerHTML += areas.map(a => `<option>${esc(a)}</option>`).join("");
+  const t = new URLSearchParams(location.search).get("tab");
+  if (t) document.querySelector(`#tabs button[data-t="${t}"]`)?.click(); else render();
+})();
+</script>
+</body>
+</html>

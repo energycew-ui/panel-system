@@ -464,6 +464,22 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("equipmentUsed").value = "EQ-ELM-DLM-001 Digital Lux Meter (S/N MBHF002987)";
   document.getElementById("model").value = "MASTECH MS6612";
   document.getElementById("typeArea").checked = true;
+
+  // opened for a known area (manual-entry page): copy area, points and limits from its last survey
+  const area = new URLSearchParams(location.search).get("area");
+  if (area) {
+    document.getElementById("samplingLocation").value = area;
+    db.ref("luxReports").once("value").then(s => {
+      const last = Object.values(s.val() || {})
+        .filter(r => (r.samplingLocation || "").trim() === area.trim())
+        .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""))[0];
+      if (!last) return;
+      (last.measurements || []).slice(0, 4).forEach((m, i) => {
+        document.getElementById("point" + (i + 1)).value = m.point || "";
+        document.getElementById("limit" + (i + 1)).value = m.limitLux || "";
+      });
+    });
+  }
 });
 
 /* =================== IMAGE PREVIEW HELPERS =================== */
