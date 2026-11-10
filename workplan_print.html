@@ -63,11 +63,11 @@ const review = qp.get("review") === "1";
     return `<h2>${esc(WP_MODULES[m].name)} – ${ts.length} task(s) · Responsible: ${esc(wpResp(plan.dept, m))}</h2>
       <table><tr><th style="width:26px">#</th><th style="width:52px">Due</th><th style="width:18%">Item</th><th style="width:12%">Area / Location</th><th>Task / Checks to perform</th>
         ${review ? "<th style='width:90px'>Status</th>" : "<th style='width:90px'>Done by</th><th style='width:60px'>Date</th><th style='width:60px'>Sign</th>"}</tr>
-      ${ts.map((t, i) => `<tr class="${t.overdue && !t.doneOn ? "od" : ""}"><td>${i + 1}</td>
+      ${groupedRows(ts, review ? 6 : 8, (t, i) => `<tr class="${t.overdue && !t.doneOn ? "od" : ""}"><td>${i + 1}</td>
         <td>${esc(t.due.slice(8, 10) + "-" + t.due.slice(5, 7))}${t.overdue ? "<br><b style='color:#b42318'>OVERDUE</b>" : ""}</td>
         <td><b>${esc(t.name)}</b>${m === "pm" ? `<br>${esc(t.ref)}` : ""}</td><td>${esc(t.area)}</td><td>${taskCellHtml(t)}</td>
         ${review ? `<td>${t.doneOn ? `<span class="done">✓ Done ${esc(t.doneOn.slice(8, 10) + "-" + t.doneOn.slice(5, 7))}</span>` : `<span class="pend">✗ Pending</span>`}</td>`
-                 : "<td></td><td></td><td></td>"}</tr>`).join("")}
+                 : "<td></td><td></td><td></td>"}</tr>`)}
       </table>`;
   }).join("");
 

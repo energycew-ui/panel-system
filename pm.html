@@ -177,7 +177,7 @@ async function loadAsset() {
   if (presetLevel && plan.includes(presetLevel)) def = presetLevel;
   document.getElementById("levels").innerHTML = plan.map(L => {
     const b = dueBadge((st[L] || {}).nextDue);
-    return `<button class="lvl" data-l="${L}" onclick="selectLevel('${L}')">${PM_LEVELS[L].name}
+    return `<button class="lvl" data-l="${L}" onclick="selectLevel('${L}')">${levelName(asset, L)}
             <small><span class="badge ${b.cls}">${b.text}</span></small></button>`;
   }).join("");
   selectLevel(def);
@@ -295,7 +295,7 @@ async function submitPM() {
   const upd = {};
   levelsToReschedule(asset, level).forEach(L => {
     upd[`pmStatus/${L}/lastDone`] = date;
-    upd[`pmStatus/${L}/nextDue`] = toSunday(addDays(date, PM_LEVELS[L].days));
+    upd[`pmStatus/${L}/nextDue`] = nextPmDate(asset, date, L);
   });
   upd.lastPm = date;
   upd.lastCondition = rec.condition;
@@ -305,7 +305,7 @@ async function submitPM() {
     const ref = db.ref("pmRecords/" + asset.id).push();
     await ref.set(rec);
     await db.ref("assets/" + asset.id).update(upd);
-    alert("PM work order saved. Next " + PM_LEVELS[level].name + " PM due: " + upd[`pmStatus/${level}/nextDue`]);
+    alert("PM work order saved. Next " + levelName(asset, level) + " PM due: " + upd[`pmStatus/${level}/nextDue`]);
     location.href = "machine.html?id=" + encodeURIComponent(asset.id);
   } catch (e) {
     document.getElementById("submitBtn").disabled = false;

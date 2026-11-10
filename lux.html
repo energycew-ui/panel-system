@@ -458,6 +458,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const time = now.toTimeString().slice(0,5);
   document.getElementById("sampleDate").value = isoDate;
   document.getElementById("timeFrom").value = time;
+  // LUX monitoring is Mansab Ali's project; instrument from the equipment master list (EQ-ELM-DLM-001)
+  document.getElementById("collectedBy").value = "Mansab Ali";
+  document.getElementById("designation").value = "Asst. Supervisor Electrical";
+  document.getElementById("equipmentUsed").value = "EQ-ELM-DLM-001 Digital Lux Meter (S/N MBHF002987)";
+  document.getElementById("model").value = "MASTECH MS6612";
+  document.getElementById("typeArea").checked = true;
 });
 
 /* =================== IMAGE PREVIEW HELPERS =================== */

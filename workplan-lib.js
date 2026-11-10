@@ -8,7 +8,8 @@
 const WP_MODULES = {
   db:    { name: "DB Inspection",           days: 30, resp: "Fazal Maqsood (Supervisor Electrical)" },
   earth: { name: "Earthing Inspection",     days: 30, resp: "Fazal Maqsood (Supervisor Electrical)" },
-  lux:   { name: "LUX Monitoring",          days: 30, resp: "Mansab Ali (Asst. Supervisor Electrical)" },
+  lux:   { name: "LUX Monitoring",          days: 30, resp: "Mansab Ali (Asst. Supervisor Electrical) – LUX project owner",
+           owner: "Mansab Ali – Asst. Supervisor Electrical" },
   pm:    { name: "Preventive Maintenance",  days: 0,  resp: "Fazal Maqsood (Elec.) / Aziz Ur Rehman (Mech.)" },
   tr:    { name: "Transformer Inspection",  days: 60, resp: "Fazal Maqsood (Supervisor Electrical)" }
 };
@@ -25,7 +26,7 @@ function modsSuffix(dept, mods) {
 function modsTitle(mods) { return WP_ORDER.filter(m => (mods || []).includes(m)).map(m => WP_MODULES[m].name).join(" + "); }
 
 const WP_DEPTS = {
-  E: { name: "Electrical", suffix: "", defaultMods: ["pm", "db", "earth", "lux"],
+  E: { name: "Electrical", suffix: "", defaultMods: ["pm", "db", "earth"],   // LUX is Mansab Ali's own project
        hod: "Engr Touseef Ghalib – Deputy Manager Electrical (HOD)",
        to: "Fazal Maqsood – Supervisor Electrical",
        mods: ["pm", "db", "earth", "lux", "tr"], disc: "E",
@@ -102,20 +103,23 @@ async function loadWPData() {
 }
 
 /* repeat a due date through the period: overdue items appear once as carry-over */
-function occurrences(nextDue, days, from, to, sunday) {
+// align: optional function placing a projected date in its work window (e.g. toSunday, skipSunday)
+function occurrences(nextDue, days, from, to, align) {
   const out = [];
+  const fix = align || (x => x);
+  const today = ymd(new Date());
   if (!nextDue) return [{ due: from, overdue: true, never: true }];
-  let d = nextDue;
-  if (d < from) {
-    out.push({ due: d, overdue: d < ymd(new Date()) });
-    d = addDays(from, days);
-    if (sunday) d = toSunday(d);
+  let d = nextDue, guard = 0;
+  if (d < today) {
+    // overdue: carry it over once; the next cycle counts from when it is done (assume today)
+    out.push({ due: d, overdue: true });
+    d = fix(addDays(today, days));
   }
-  let guard = 0;
-  while (d <= to && guard++ < 60) {
-    if (d >= from) out.push({ due: d, overdue: d < ymd(new Date()) });
-    d = addDays(d, days);
-    if (sunday) d = toSunday(d);
+  // due before this period but not overdue → it belongs to the earlier plan; step to this period
+  while (d < from && guard++ < 400) d = fix(addDays(d, days));
+  while (d <= to && guard++ < 400) {
+    out.push({ due: d, overdue: false });
+    d = fix(addDays(d, days));
   }
   return out;
 }
@@ -134,7 +138,7 @@ function buildTasks(data, mods, from, to, dept) {
   const disc = WP_DEPTS[dept || "E"].disc;
   const tasks = [];
   if (mods.includes("db")) Object.entries(data.panels).forEach(([id, p]) => {
-    occurrences(p.nextInspectionDue ? p.nextInspectionDue.slice(0, 10) : "", 30, from, to)
+    occurrences(p.nextInspectionDue ? ymd(new Date(p.nextInspectionDue)) : "", 30, from, to, skipSunday)
       .forEach(o => tasks.push({ mod: "db", ref: id, name: id, area: (p.location || "").trim(), detail: "Monthly DB inspection", ...o }));
   });
   if (mods.includes("earth")) Object.values(data.pits).forEach(p => {
@@ -154,7 +158,7 @@ function buildTasks(data, mods, from, to, dept) {
     Object.values(data.assets).forEach(a => {
       if (a.status === "Out of Service" || !CATEGORIES[a.category]) return;
       activeLevels(a).filter(l => l !== "D").forEach(L => {
-        occurrences((a.pmStatus || {})[L]?.nextDue, PM_LEVELS[L].days, from, to, true)
+        occurrences((a.pmStatus || {})[L]?.nextDue, levelDays(a, L), from, to, pmWindow(a) === "SUN" ? toSunday : skipSunday)
           .forEach(o => pm.push({ mod: "pm", ref: a.id, name: a.name, area: a.area, level: L, cls: critClass(a.crit), ...o }));
       });
     });
@@ -169,7 +173,7 @@ function buildTasks(data, mods, from, to, dept) {
       const items = discTasks(a.category, t.level, disc);
       if (!items.length) return;   // nothing for this discipline on this work order
       tasks.push({ ...t, items,
-        detail: `${PM_LEVELS[t.level].name} PM · Class ${t.cls} – ${disc === "M" ? "mechanical" : "electrical"} checks (${items.length})` });
+        detail: `${levelName(a, t.level)} PM · Class ${t.cls} – ${disc === "M" ? "mechanical" : "electrical"} checks (${items.length})` });
     });
   }
   return tasks.sort((a, b) => (b.overdue - a.overdue) || a.due.localeCompare(b.due) || WP_ORDER.indexOf(a.mod) - WP_ORDER.indexOf(b.mod));
@@ -189,6 +193,27 @@ function taskDone(t, data, plan) {
   if (t.mod === "pm") date = data.pm.filter(r => r._parent === t.ref && inWin(r.date) &&
       LEVEL_ORDER.indexOf(r.level) >= LEVEL_ORDER.indexOf(t.level)).map(r => r.date).sort()[0] || "";
   return inWin(date) ? date : "";
+}
+
+// day heading row used to group a plan's tasks by the day they should be done
+function dayKey(t) { return t.overdue ? "0-overdue" : t.due; }
+function dayHeaderRow(t, count, cols) {
+  if (t.overdue) return `<tr><td colspan="${cols}" style="background:#fde8e7;color:#b42318;font-weight:800;">
+    ⚠ OVERDUE – do these first (${count})</td></tr>`;
+  const d = new Date(t.due + "T00:00:00");
+  const label = d.toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short" });
+  const sun = d.getDay() === 0;
+  return `<tr><td colspan="${cols}" style="background:#1a1410;color:#fff;font-weight:700;">
+    ${esc(label)}${sun ? " – Sunday shutdown window" : ""} · ${count} task(s)</td></tr>`;
+}
+function groupedRows(tasks, cols, rowFn) {
+  let html = "", lastKey = null;
+  tasks.forEach((t, i) => {
+    const k = dayKey(t);
+    if (k !== lastKey) { html += dayHeaderRow(t, tasks.filter(x => dayKey(x) === k).length, cols); lastKey = k; }
+    html += rowFn(t, i);
+  });
+  return html;
 }
 
 // task cell: description plus the numbered checks for PM work orders

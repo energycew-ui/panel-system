@@ -116,7 +116,8 @@ function renderPmPlan() {
         <td><span class="badge ${b.cls}">${b.text}</span></td>
         <td><b>${esc(j.asset.name)}</b></td><td>${esc(j.asset.id)}</td><td>${esc(j.asset.area)}</td>
         <td>${critBadge(j.asset)}</td>
-        <td>${esc(PM_LEVELS[j.level].name)}${j.covers.length ? `<br><small>includes ${j.covers.map(l => PM_LEVELS[l].short).join(", ")}</small>` : ""}</td>
+        <td>${esc(levelName(j.asset, j.level))}${j.covers.length ? `<br><small>includes ${j.covers.map(l => l === "W" ? levelName(j.asset, l) : PM_LEVELS[l].short).join(", ")}</small>` : ""}
+          <br><small style="color:var(--muted)">${pmWindow(j.asset) === "SUN" ? "Sunday shutdown" : "Weekday"}</small></td>
         <td>${tasksFor(j.asset.category, j.level).length}</td>
         <td><small>${esc(strategyFor(j.asset).code)}</small></td>
         <td>${esc(j.lastDone || "–")}</td>

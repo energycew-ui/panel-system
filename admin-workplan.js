@@ -6,8 +6,16 @@ let wpPlans = {}, wpData = null, wpCurrent = null;
 
 function loadWorkPlans() {
   db.ref("workPlans").on("value", s => { wpPlans = s.val() || {}; wpRefreshProgress(); });
-  // changing which reports are included rebuilds the plan straight away
-  document.querySelectorAll(".wpMod").forEach(c => c.addEventListener("change", () => { if (wpCurrent) wpGenerate(); }));
+  // changing which reports are included rebuilds the plan straight away;
+  // a LUX-only plan goes to its project owner (Mansab Ali)
+  document.querySelectorAll(".wpMod").forEach(c => c.addEventListener("change", () => {
+    const mods = [...document.querySelectorAll(".wpMod:checked")].map(x => x.value);
+    const to = document.getElementById("wpTo2");
+    const dept = WP_DEPTS[document.getElementById("wpDept").value];
+    if (mods.length === 1 && mods[0] === "lux") to.value = WP_MODULES.lux.owner;
+    else if (to.value === WP_MODULES.lux.owner) to.value = dept.to;
+    if (wpCurrent) wpGenerate();
+  }));
   document.getElementById("wpPeriod").addEventListener("change", () => { if (wpCurrent) wpGenerate(); });
 }
 
@@ -24,7 +32,7 @@ function wpDeptChanged() {
   document.querySelectorAll(".wpMod").forEach(c => {
     const ok = d.mods.includes(c.value);
     c.disabled = !ok;
-    c.checked = ok && (c.value !== "tr" || c.checked);
+    c.checked = ok && (d.defaultMods.includes(c.value) || c.checked);
     c.parentElement.style.opacity = ok ? "1" : ".4";
   });
   wpCurrent = null;
@@ -74,10 +82,10 @@ function wpRender(plan) {
       }).join("") + "</table><div style='height:14px'></div>";
   }
   html += `<table><tr><th>Due</th><th>Report</th><th>Item</th><th>Area / Location</th><th>Task</th><th>Responsible</th></tr>` +
-    tasks.slice(0, 1500).map(t => `<tr${t.overdue ? ' style="background:#fff3f2;"' : ""}>
+    groupedRows(tasks.slice(0, 1500), 6, t => `<tr${t.overdue ? ' style="background:#fff3f2;"' : ""}>
       <td style="white-space:nowrap;"><b>${esc(t.due)}</b>${t.overdue ? '<br><span class="badge badge-bad">Overdue</span>' : ""}</td>
       <td>${esc(WP_MODULES[t.mod].name)}</td><td><b>${esc(t.name)}</b>${t.mod === "pm" ? `<br><small>${esc(t.ref)}</small>` : ""}</td>
-      <td>${esc(t.area)}</td><td style="min-width:280px;">${taskCellHtml(t)}</td><td><small>${esc(wpResp(plan.dept, t.mod))}</small></td></tr>`).join("") + "</table>";
+      <td>${esc(t.area)}</td><td style="min-width:280px;">${taskCellHtml(t)}</td><td><small>${esc(wpResp(plan.dept, t.mod))}</small></td></tr>`) + "</table>";
   if (tasks.length > 1500) html += `<p>Showing first 1500 of ${tasks.length} tasks – the printed plan contains all.</p>`;
   document.getElementById("wpTable").innerHTML = html;
 }

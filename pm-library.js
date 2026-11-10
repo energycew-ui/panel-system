@@ -405,6 +405,31 @@ function activeLevels(asset) {
   });
 }
 
+/* PM window: production machines need the Sunday shutdown; the rest can be done on any weekday
+   (compressors have standby units, generator is standby, workshop machines are not production). */
+const WEEKDAY_CATS = ["CMP", "GEN", "WSH", "WTL"];
+function pmWindow(asset) { return WEEKDAY_CATS.includes(asset.category) ? "DAY" : "SUN"; }
+
+/* Interval per level. Class B (low-use) cranes: fortnightly instead of weekly –
+   the operator's daily pre-use check (TPM) covers their basic safety in between. */
+function levelDays(asset, L) {
+  if (L === "W" && ["OHC", "MRC"].includes(asset.category) && critClass(asset.crit) !== "A") return 14;
+  return PM_LEVELS[L].days;
+}
+function levelName(asset, L) {
+  return L === "W" && levelDays(asset, L) === 14 ? "Fortnightly" : PM_LEVELS[L].name;
+}
+function skipSunday(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+  return ymd(d);
+}
+// next due date after a PM done on `date`, placed in the machine's PM window
+function nextPmDate(asset, date, L) {
+  const d = addDays(date, levelDays(asset, L));
+  return pmWindow(asset) === "SUN" ? toSunday(d) : skipSunday(d);
+}
+
 /* ---------------- scheduling helpers ---------------- */
 function ymd(d) { const x = new Date(d); return new Date(x - x.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
 function addDays(dateStr, n) { const d = new Date(dateStr + "T00:00:00"); d.setDate(d.getDate() + n); return ymd(d); }

@@ -63,7 +63,7 @@ function render(a, records, tpm, faults) {
   const rows = activeLevels(a).map(L => {
     const s = st[L] || {};
     const b = dueBadge(s.nextDue);
-    return `<tr><td><b>${PM_LEVELS[L].name}</b></td><td style="white-space:nowrap;">${s.lastDone || "–"}</td><td style="white-space:nowrap;">${s.nextDue || "–"}</td>
+    return `<tr><td><b>${levelName(a, L)}</b></td><td style="white-space:nowrap;">${s.lastDone || "–"}</td><td style="white-space:nowrap;">${s.nextDue || "–"}</td>
             <td><span class="badge ${b.cls}">${b.text}</span></td></tr>`;
   }).join("");
 
@@ -118,7 +118,7 @@ function render(a, records, tpm, faults) {
     ${oos ? "" : `<div class="card">
       <h2>Maintenance Schedule</h2>
       <table class="simple"><tr><th>Level</th><th>Last done</th><th>Next due</th><th>Status</th></tr>${rows}</table>
-      <p class="muted">Weekly and longer PMs are planned on Sundays (production shutdown window).</p>
+      <p class="muted">${pmWindow(a) === "SUN" ? "PM is planned on Sundays (production shutdown window)." : "PM can be done on any weekday (not in the Sunday shutdown)."}</p>
     </div>`}
 
     <div class="card">
