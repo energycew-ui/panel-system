@@ -74,7 +74,7 @@ function wpRender(plan) {
     tasks.slice(0, 1500).map(t => `<tr${t.overdue ? ' style="background:#fff3f2;"' : ""}>
       <td style="white-space:nowrap;"><b>${esc(t.due)}</b>${t.overdue ? '<br><span class="badge badge-bad">Overdue</span>' : ""}</td>
       <td>${esc(WP_MODULES[t.mod].name)}</td><td><b>${esc(t.name)}</b>${t.mod === "pm" ? `<br><small>${esc(t.ref)}</small>` : ""}</td>
-      <td>${esc(t.area)}</td><td>${esc(t.detail)}</td><td><small>${esc(wpResp(plan.dept, t.mod))}</small></td></tr>`).join("") + "</table>";
+      <td>${esc(t.area)}</td><td style="min-width:280px;">${taskCellHtml(t)}</td><td><small>${esc(wpResp(plan.dept, t.mod))}</small></td></tr>`).join("") + "</table>";
   if (tasks.length > 1500) html += `<p>Showing first 1500 of ${tasks.length} tasks – the printed plan contains all.</p>`;
   document.getElementById("wpTable").innerHTML = html;
 }
@@ -89,7 +89,7 @@ async function wpIssue() {
     id: wpCurrent.id, dept: wpCurrent.dept, type: wpCurrent.type, label: wpCurrent.label, from: wpCurrent.from, to: wpCurrent.to,
     mods: wpCurrent.mods, issuedBy: by, issuedTo: to, issuedAt: new Date().toISOString(),
     tasks: wpCurrent.tasks.map(t => ({ mod: t.mod, ref: t.ref, name: t.name, area: t.area, detail: t.detail,
-                                        due: t.due, overdue: !!t.overdue, level: t.level || "" }))
+                                        due: t.due, overdue: !!t.overdue, level: t.level || "", items: t.items || [] }))
   };
   await db.ref("workPlans/" + plan.id).set(plan);
   window.open("workplan_print.html?id=" + encodeURIComponent(plan.id), "_blank");

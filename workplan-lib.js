@@ -28,9 +28,10 @@ const WP_DEPTS = {
        resp: { pm: "Aziz Ur Rehman (Mechanical Foreman) – mechanical items" } }
 };
 function wpResp(dept, mod) { return (WP_DEPTS[dept || "E"].resp || {})[mod] || WP_MODULES[mod].resp; }
-// number of PM checklist items for one discipline (E or M; safety items go with both)
-function discTaskCount(category, level, disc) {
-  return tasksFor(category, level).filter(t => t.d === disc || t.d === "S").length;
+// PM checklist items for one discipline (E or M); safety items go with both, marked "(Safety)"
+function discTasks(category, level, disc) {
+  return tasksFor(category, level).filter(t => t.d === disc || t.d === "S")
+    .map(t => (t.d === "S" ? "(Safety) " : "") + t.text);
 }
 
 /* ---------------- periods (weeks run Monday → Sunday) ---------------- */
@@ -156,9 +157,10 @@ function buildTasks(data, mods, from, to, dept) {
     });
     Object.values(merged).forEach(t => {
       const a = data.assets[t.ref];
-      const n = discTaskCount(a.category, t.level, disc);
-      if (!n) return;   // nothing for this discipline on this work order
-      tasks.push({ ...t, detail: `${PM_LEVELS[t.level].name} PM · Class ${t.cls} · ${n} ${disc === "M" ? "mechanical" : "electrical"} items` });
+      const items = discTasks(a.category, t.level, disc);
+      if (!items.length) return;   // nothing for this discipline on this work order
+      tasks.push({ ...t, items,
+        detail: `${PM_LEVELS[t.level].name} PM · Class ${t.cls} – ${disc === "M" ? "mechanical" : "electrical"} checks (${items.length})` });
     });
   }
   return tasks.sort((a, b) => (b.overdue - a.overdue) || a.due.localeCompare(b.due) || WP_ORDER.indexOf(a.mod) - WP_ORDER.indexOf(b.mod));
@@ -178,6 +180,14 @@ function taskDone(t, data, plan) {
   if (t.mod === "pm") date = data.pm.filter(r => r._parent === t.ref && inWin(r.date) &&
       LEVEL_ORDER.indexOf(r.level) >= LEVEL_ORDER.indexOf(t.level)).map(r => r.date).sort()[0] || "";
   return inWin(date) ? date : "";
+}
+
+// task cell: description plus the numbered checks for PM work orders
+function taskCellHtml(t) {
+  if (!t.items || !t.items.length) return esc(t.detail);
+  return `<b>${esc(t.detail)}:</b><ol style="margin:4px 0 0;padding-left:18px;">` +
+    t.items.map(i => i.startsWith("(Safety) ")
+      ? `<li><i style="color:#b42318">(Safety)</i> ${esc(i.slice(9))}</li>` : `<li>${esc(i)}</li>`).join("") + "</ol>";
 }
 
 function planProgress(plan, data) {
