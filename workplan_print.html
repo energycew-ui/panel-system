@@ -75,6 +75,7 @@ const review = qp.get("review") === "1";
     <div class="head">
       <img src="logo.png" alt="Chenab Engineering">
       <div><h1>${review ? "Work Plan – Completion Review" : (plan.type === "week" || plan.type === "nextweek" ? "Weekly Work Plan" : "Work Plan")}</h1>
+        <div class="no" style="font-size:15px;color:#1a1410;"><b>${esc(modsTitle(plan.mods))}</b></div>
         <div class="no">Plan No. <b>${esc(plan.id)}</b> · <b>${esc(WP_DEPTS[plan.dept || "E"].name)} Maintenance</b></div></div>
     </div>
     <table class="meta">

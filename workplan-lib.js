@@ -15,13 +15,22 @@ const WP_MODULES = {
 const WP_ORDER = ["pm", "db", "earth", "lux", "tr"];
 
 /* Each department issues its own plan: HOD → supervisor / foreman */
+const WP_MOD_CODE = { pm: "PM", db: "DB", earth: "EARTH", lux: "LUX", tr: "TR" };
+// plans for a single report (or a custom mix) get their own number, e.g. WP-2026-W46-TR
+function modsSuffix(dept, mods) {
+  const def = WP_DEPTS[dept || "E"].defaultMods;
+  const same = mods.length === def.length && def.every(m => mods.includes(m));
+  return same ? "" : "-" + WP_ORDER.filter(m => mods.includes(m)).map(m => WP_MOD_CODE[m]).join("-");
+}
+function modsTitle(mods) { return WP_ORDER.filter(m => (mods || []).includes(m)).map(m => WP_MODULES[m].name).join(" + "); }
+
 const WP_DEPTS = {
-  E: { name: "Electrical", suffix: "",
+  E: { name: "Electrical", suffix: "", defaultMods: ["pm", "db", "earth", "lux"],
        hod: "Engr Touseef Ghalib – Deputy Manager Electrical (HOD)",
        to: "Fazal Maqsood – Supervisor Electrical",
        mods: ["pm", "db", "earth", "lux", "tr"], disc: "E",
        resp: { pm: "Fazal Maqsood (Supervisor Electrical) – electrical items" } },
-  M: { name: "Mechanical", suffix: "-MECH",
+  M: { name: "Mechanical", suffix: "-MECH", defaultMods: ["pm"],
        hod: "Engr Ahtasham Khurshid – Deputy Manager Mechanical (HOD)",
        to: "Aziz Ur Rehman – Mechanical Foreman",
        mods: ["pm"], disc: "M",

@@ -6,6 +6,9 @@ let wpPlans = {}, wpData = null, wpCurrent = null;
 
 function loadWorkPlans() {
   db.ref("workPlans").on("value", s => { wpPlans = s.val() || {}; wpRefreshProgress(); });
+  // changing which reports are included rebuilds the plan straight away
+  document.querySelectorAll(".wpMod").forEach(c => c.addEventListener("change", () => { if (wpCurrent) wpGenerate(); }));
+  document.getElementById("wpPeriod").addEventListener("change", () => { if (wpCurrent) wpGenerate(); });
 }
 
 async function wpEnsureData(force) {
@@ -44,13 +47,13 @@ async function wpGenerate() {
   document.getElementById("wpTable").innerHTML = "<p>Building plan…</p>";
   const data = await wpEnsureData(true);
   const tasks = buildTasks(data, mods, p.from, p.to, dept);
-  wpCurrent = { ...p, dept, mods, tasks };
+  wpCurrent = { ...p, id: p.id + modsSuffix(dept, mods), dept, mods, tasks };
   wpRender(wpCurrent);
 }
 
 function wpRender(plan) {
   const tasks = plan.tasks;
-  document.getElementById("wpHead").innerHTML = `<p style="margin:6px 0 0;"><b>${esc(plan.id)}</b> · ${esc(WP_DEPTS[plan.dept || "E"].name)} · ${esc(plan.label)}
+  document.getElementById("wpHead").innerHTML = `<p style="margin:6px 0 0;"><b>${esc(plan.id)}</b> · ${esc(WP_DEPTS[plan.dept || "E"].name)} · <b>${esc(modsTitle(plan.mods))}</b> · ${esc(plan.label)}
     · ${tasks.length} tasks${tasks.filter(t => t.overdue).length ? ` · <span class="badge badge-bad">${tasks.filter(t => t.overdue).length} overdue carried over</span>` : ""}</p>`;
   document.getElementById("wpSummary").innerHTML = WP_ORDER.filter(m => plan.mods.includes(m)).map(m => {
     const ts = tasks.filter(t => t.mod === m);
@@ -80,8 +83,9 @@ function wpRender(plan) {
 }
 
 async function wpIssue() {
-  if (!wpCurrent) await wpGenerate();
-  if (!wpCurrent || !wpCurrent.tasks.length) return;
+  await wpGenerate();   // always issue exactly what is selected now
+  if (!wpCurrent) return;
+  if (!wpCurrent.tasks.length) return alert("Nothing is due for the selected report(s) in this period – no plan issued.");
   const by = document.getElementById("wpBy").value.trim(), to = document.getElementById("wpTo2").value.trim();
   if (!by || !to) return alert("Enter 'Issued by' and 'Issued to'.");
   if (wpPlans[wpCurrent.id] && !confirm(`Plan ${wpCurrent.id} was already issued on ${wpPlans[wpCurrent.id].issuedAt.slice(0, 10)}. Re-issue and replace it?`)) return;
@@ -101,12 +105,13 @@ async function wpRefreshProgress() {
   if (!plans.length) { el.innerHTML = "<p>No plan issued yet.</p>"; wpBanner([]); return; }
   const data = await wpEnsureData(true);
   const rows = plans.map(p => ({ p, pr: planProgress(p, data) }));
-  el.innerHTML = `<table><tr><th>Plan</th><th>Department</th><th>Period</th><th>Issued</th><th>Issued To</th><th>Received</th><th>Progress</th>
+  el.innerHTML = `<table><tr><th>Plan</th><th>Department</th><th>Reports</th><th>Period</th><th>Issued</th><th>Issued To</th><th>Received</th><th>Progress</th>
       <th>Pending</th><th>Action</th></tr>` +
     rows.map(({ p, pr }) => {
       const color = pr.pct >= 90 ? "#12a150" : pr.pct >= 60 ? "#f0a800" : "#fd0000";
       return `<tr><td style="white-space:nowrap;"><b>${esc(p.id)}</b></td>
-        <td><span class="badge ${p.dept === "M" ? "badge-warn" : "badge-info"}">${esc(WP_DEPTS[p.dept || "E"].name)}</span></td><td>${esc(p.label)}</td>
+        <td><span class="badge ${p.dept === "M" ? "badge-warn" : "badge-info"}">${esc(WP_DEPTS[p.dept || "E"].name)}</span></td>
+        <td><small>${esc(modsTitle(p.mods))}</small></td><td>${esc(p.label)}</td>
         <td style="white-space:nowrap;">${esc(p.issuedAt.slice(0, 10))}<br><small>${esc(p.issuedBy.split(" – ")[0])}</small></td>
         <td>${esc(p.issuedTo)}</td>
         <td>${p.ack ? `<span class="badge badge-ok">✓ ${esc(p.ack.by)}</span><br><small>${esc(p.ack.at.slice(0, 10))}</small>`
@@ -135,19 +140,28 @@ function wpBanner(rows) {
   if (!el) return;
   el.innerHTML = Object.entries(WP_DEPTS).map(([code, d]) => {
     const wk = periodRange("week", "", "", code);
-    const cur = rows.find(r => r.p.id === wk.id);
-    if (!cur) {
+    // all plans of this department for the current week (one per report or combined)
+    const week = rows.filter(r => (r.p.dept || "E") === code && r.p.from === wk.from && r.p.to === wk.to)
+      .sort((a, b) => a.p.issuedAt.localeCompare(b.p.issuedAt));
+    if (!week.length) {
       return `<div class="card" style="border-left:5px solid var(--brand);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
         <div><h2 style="margin:0;color:#b42318;">${esc(d.name)}: no work plan issued for this week</h2>
           <div style="color:var(--muted);font-size:13px;margin-top:4px;">${esc(wk.label)} – ${esc(d.hod.split(" – ")[0])} to issue the weekly plan to ${esc(d.to.split(" – ")[0])}.</div></div>
         <button class="primary-btn" style="background:var(--brand)!important;" onclick="wpOpenDept('${code}')">📝 Issue ${esc(d.name)} Plan</button></div>`;
     }
-    const { p: plan, pr } = cur;
+    const pr = week.reduce((s, r) => ({ total: s.total + r.pr.total, done: s.done + r.pr.done, overdue: s.overdue + r.pr.overdue }),
+                           { total: 0, done: 0, overdue: 0 });
+    pr.pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
     const color = pr.pct >= 90 ? "#12a150" : pr.pct >= 60 ? "#f0a800" : "#fd0000";
+    const day = iso => new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "2-digit" });
+    const list = week.map(r => `<span class="badge ${r.p.ack ? "badge-ok" : "badge-warn"}" title="${esc(r.p.id)}">
+        ${esc(modsTitle(r.p.mods))} · ${esc(day(r.p.issuedAt))} · ${r.pr.pct}%${r.p.ack ? " ✓" : ""}</span>`).join(" ");
+    const notAck = week.filter(r => !r.p.ack).length;
     return `<div class="card" style="border-left:5px solid ${color};display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
-      <div style="flex:1;min-width:240px;"><h2 style="margin:0;">${esc(d.name)} Work Plan · ${esc(plan.id)}</h2>
-        <div style="color:var(--muted);font-size:13px;margin:4px 0 8px;">${esc(plan.label)} · ${esc(plan.issuedBy.split(" – ")[0])} → ${esc(plan.issuedTo.split(" – ")[0])}
-          ${plan.ack ? " · received ✓" : ' · <b style="color:#b42318">not yet acknowledged</b>'}</div>
+      <div style="flex:1;min-width:240px;"><h2 style="margin:0;">${esc(d.name)} Work Plans · ${esc(wk.label)}</h2>
+        <div style="color:var(--muted);font-size:13px;margin:4px 0 6px;">${week.length} plan(s) issued by ${esc(d.hod.split(" – ")[0])}
+          ${notAck ? ` · <b style="color:#b42318">${notAck} not yet acknowledged</b>` : " · all received ✓"}</div>
+        <div style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;">${list}</div>
         <div style="background:#efebe5;border-radius:6px;height:12px;overflow:hidden;"><div style="width:${pr.pct}%;background:${color};height:100%;"></div></div></div>
       <div style="text-align:right;"><div style="font-size:30px;font-weight:800;">${pr.pct}%</div>
         <div style="font-size:12.5px;color:var(--muted);">${pr.done} of ${pr.total} done${pr.overdue ? ` · <b style="color:#b42318">${pr.overdue} late</b>` : ""}</div>
