@@ -464,6 +464,18 @@ const EARTH_CHECKS = [
   ["watered", "Pit watered / soil moisture maintained (where applicable)"],
   ["bonding", "Equipment body and panel earth bonding continuity checked"]
 ];
+/* Test & measuring equipment – IMS "Master List of Electrical Equipment" (Electrical Maintenance) */
+const EQUIPMENT = [
+  { code: "EQ-ELM-DM-001",  name: "Digital Multimeter",           make: "SANWA CD800a",            serial: "08105009214", use: ["volt", "earthcont"] },
+  { code: "EQ-ELM-DCM-002", name: "Digital Clamp Meter",          make: "UNI-T UT 203",            serial: "N/A",         use: ["amps"] },
+  { code: "EQ-ELM-DCM-003", name: "Digital Clamp Meter",          make: "KYORITSU KEW 2117R",      serial: "1712963",     use: ["amps"] },
+  { code: "EQ-ELM-DCM-004", name: "Digital Clamp Meter",          make: "INGCO DCM100014",         serial: "N/A",         use: ["amps"] },
+  { code: "EQ-ELM-IRT-005", name: "Insulation Resistance Tester", make: "KYORITSU 3005A",          serial: "E8476258",    use: ["ir"] },
+  { code: "EQ-ELM-ERT-006", name: "Earth Resistance Tester",      make: "KYORITSU KEW 4105A",      serial: "E8443183",    use: ["earth"] },
+  { code: "EQ-ELM-DT-001",  name: "Digital Tachometer",           make: "DT-2235B+ (contact/surface)", serial: "S5138637", use: ["rpm"] },
+  { code: "EQ-ELM-DLM-001", name: "Digital Lux Meter",            make: "MASTECH MS6612",          serial: "MBHF002987",  use: ["lux"] }
+];
+function equipLabel(e) { return `${e.code} – ${e.name}, ${e.make}${e.serial && e.serial !== "N/A" ? " (S/N " + e.serial + ")" : ""}`; }
 const EARTH_INSTRUMENT = { code: "EQ-ELM-ERT-006", make: "KYORITSU KEW 4105A", serial: "E8443183" };
 
 /* ---------------- small UI helpers ---------------- */

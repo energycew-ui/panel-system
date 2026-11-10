@@ -54,7 +54,8 @@ db.ref(`pmRecords/${qp.get("asset")}/${qp.get("id")}`).once("value").then(s => {
     ${r.cbm && Object.keys(r.cbm).length ? `<h2>Condition Readings</h2>
     <table><tr><th>Parameter</th><th>Reading</th><th>Limits</th><th>Status</th></tr>
       ${Object.entries(r.cbm).map(([k, v]) => `<tr><td>${esc(CBM_PARAMS[k]?.label || k)}</td><td>${esc(v)} ${esc(CBM_PARAMS[k]?.unit || "")}</td>
-        <td>${esc(cbmLimitText(k))}</td><td>${statusBadgeCbm(cbmStatus(k, v))}</td></tr>`).join("")}</table>` : ""}
+        <td>${esc(cbmLimitText(k))}</td><td>${statusBadgeCbm(cbmStatus(k, v))}</td></tr>`).join("")}</table>
+    ${(r.instruments || []).length ? `<p style="font-size:12.5px;margin-top:8px;"><b>Instruments used:</b> ${r.instruments.map(esc).join("; ")}</p>` : ""}` : ""}
     <h2>Findings &amp; Actions</h2>
     <table>
       <tr><td class="label">Findings</td><td>${esc(r.findings || "–")}</td></tr>

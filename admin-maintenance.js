@@ -384,16 +384,22 @@ function renderEarthing() {
           <button class="secondary-btn" onclick="window.open('qr_labels.html?type=pits&id=${p.id}','_blank')">QR</button></td></tr>`;
     }).join("") + "</table>";
 
-  // register matrix: one row per inspection date
-  const dates = [...new Set(mEarth.map(r => r.date))].sort();
-  if ((document.getElementById("sort_er") || {}).value !== "oldest") dates.reverse();
-  document.getElementById("earthRegister").innerHTML = `<table><tr><th>Inspection Date</th>${pits.map(p => `<th>${esc(p.name)}</th>`).join("")}<th>Tested By</th></tr>` +
-    dates.map(d => {
-      const rs = mEarth.filter(r => r.date === d);
-      return `<tr><td style="white-space:nowrap;"><b>${esc(d)}</b></td>${pits.map(p => {
+  // register matrix: one row per monthly inspection round (pits may be tested on different days)
+  const rounds = [...new Set(mEarth.map(r => r.date.slice(0, 7)))].sort();
+  if ((document.getElementById("sort_er") || {}).value !== "oldest") rounds.reverse();
+  const monthName = m => new Date(m + "-01T00:00:00").toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+  document.getElementById("earthRegister").innerHTML = `<table><tr><th>Round</th>${pits.map(p => `<th>${esc(p.name)}</th>`).join("")}
+      <th>Tested By</th><th>Instrument</th><th>Soil / Weather</th></tr>` +
+    rounds.map(m => {
+      const rs = mEarth.filter(r => r.date.startsWith(m));
+      const uniq = f => [...new Set(rs.map(f).filter(Boolean))];
+      return `<tr><td style="white-space:nowrap;"><b>${esc(monthName(m))}</b></td>${pits.map(p => {
         const r = rs.find(x => x.pitId === p.id);
-        return r ? `<td style="${r.result === "NS" ? "background:#fde8e7;color:#b42318;font-weight:800;" : ""}">${esc(r.resistance)} Ω</td>` : "<td>–</td>";
-      }).join("")}<td>${esc((rs[0] || {}).testedBy || "")}</td></tr>`;
+        return r ? `<td style="white-space:nowrap;${r.result === "NS" ? "background:#fde8e7;color:#b42318;font-weight:800;" : ""}">
+            <b>${esc(r.resistance)} Ω</b><br><small>${esc(r.date.slice(8, 10) + "-" + r.date.slice(5, 7))} ${esc(r.timeFrom || "")}</small></td>` : "<td>–</td>";
+      }).join("")}<td>${esc(uniq(r => r.testedBy).join(", "))}</td>
+        <td><small>${esc(uniq(r => (r.instrument || "").split(" – ")[0]).join(", "))}</small></td>
+        <td><small>${esc(uniq(r => r.soil).join(", "))}</small></td></tr>`;
     }).join("") + "</table>";
 
   const ca = mEarth.filter(r => r.observation || r.correctiveAction || r.result === "NS" || r.caStatus)

@@ -91,6 +91,8 @@
     <h2>4. Condition Readings (CBM)</h2>
     <p class="muted">Enter measured values. Status updates automatically against the limits.</p>
     <div id="cbm"></div>
+    <label style="margin-top:16px;">Instruments used (equipment master list)</label>
+    <div id="instruments"></div>
   </div>
 
   <div class="card">
@@ -203,6 +205,14 @@ function selectLevel(L) {
       <div class="st" id="cbmst_${k}"></div>
       <div class="lim">${esc(cbmLimitText(k))}${CBM_PARAMS[k].ref ? " · " + esc(CBM_PARAMS[k].ref) : ""}</div>
     </div>`).join("");
+  // instruments: tick the ones that match the readings on this PM (clamp meter for current, IR tester for IR …)
+  const need = new Set(keys);
+  document.getElementById("instruments").innerHTML = EQUIPMENT.filter(e => !e.use.includes("lux") && !e.use.includes("earth"))
+    .map(e => {
+      const suggested = e.use.some(u => need.has(u)) && !(e.use.includes("amps") && e.code !== "EQ-ELM-DCM-003");
+      return `<label style="display:flex;gap:8px;align-items:center;font-weight:500;margin:6px 0;">
+        <input type="checkbox" name="instr" value="${e.code}" ${suggested ? "checked" : ""}> ${esc(equipLabel(e))}</label>`;
+    }).join("");
   updateSummary();
 }
 
@@ -267,6 +277,7 @@ async function submitPM() {
                                       note: document.getElementById("note" + i).value.trim() })),
     notOk: Object.values(answers).filter(v => v === "Not OK").length,
     cbm,
+    instruments: [...document.querySelectorAll("input[name=instr]:checked")].map(c => equipLabel(EQUIPMENT.find(e => e.code === c.value))),
     cbmAlerts: Object.entries(cbm).filter(([k, v]) => cbmStatus(k, v) !== "ok").map(([k]) => k),
     findings: document.getElementById("findings").value.trim(),
     action: document.getElementById("action").value.trim(),

@@ -61,8 +61,8 @@
     </div>
     <datalist id="teamList"></datalist>
     <div class="row2">
-      <div><label>Earth tester make / model</label><input type="text" id="instr"></div>
-      <div><label>Serial No.</label><input type="text" id="serial"></div>
+      <div><label>Earth tester (from equipment master list)</label><select id="instr"></select></div>
+      <div><label>Serial No.</label><input type="text" id="serial" readonly></div>
     </div>
     <div class="row2">
       <div><label>Calibration cert. No.</label><input type="text" id="calNo"></div>
@@ -118,8 +118,14 @@ async function showForm() {
   const now = new Date();
   document.getElementById("eDate").value = ymd(now);
   document.getElementById("eFrom").value = new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(11, 16);
-  document.getElementById("instr").value = EARTH_INSTRUMENT.code + " " + EARTH_INSTRUMENT.make;
-  document.getElementById("serial").value = EARTH_INSTRUMENT.serial;
+  // earth testers first, then other equipment (e.g. multimeter for continuity)
+  const instr = document.getElementById("instr");
+  instr.innerHTML = [...EQUIPMENT].sort((a, b) => (b.use.includes("earth") - a.use.includes("earth")))
+    .map(e => `<option value="${e.code}">${esc(e.code + " – " + e.name + ", " + e.make)}</option>`).join("");
+  instr.value = EARTH_INSTRUMENT.code;
+  const setSerial = () => document.getElementById("serial").value = EQUIPMENT.find(e => e.code === instr.value).serial;
+  instr.onchange = setSerial;
+  setSerial();
 
   const all = (await db.ref("earthPits").once("value")).val() || {};
   pits = Object.values(all).sort((a, b) => a.id.localeCompare(b.id));
@@ -175,7 +181,8 @@ async function submitEarth() {
     timeFrom: document.getElementById("eFrom").value,
     timeTo: document.getElementById("eTo").value || new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(11, 16),
     testedBy: tester, designation: document.getElementById("desig").value.trim(),
-    instrument: document.getElementById("instr").value.trim() + " (S/N " + document.getElementById("serial").value.trim() + ")",
+    instrument: equipLabel(EQUIPMENT.find(e => e.code === document.getElementById("instr").value)),
+    instrumentCode: document.getElementById("instr").value,
     calibrationNo: document.getElementById("calNo").value.trim(), calibrationDue: document.getElementById("calDue").value,
     method: document.querySelector("input[name=method]:checked").value,
     soil: document.querySelector("input[name=soil]:checked").value + (document.getElementById("rain").checked ? ", rain in last 48 h" : ""),
