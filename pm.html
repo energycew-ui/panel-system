@@ -83,6 +83,8 @@
 
   <div class="card">
     <h2>3. Checklist</h2>
+    <p class="muted"><b>OK</b> = checked and in good condition · <b>Not OK</b> = defect found – write what was wrong and what you did ·
+      <b>N/A</b> = does not apply to this machine</p>
     <div class="summary-bar" id="taskSummary"></div>
     <div id="tasks"></div>
   </div>
@@ -239,7 +241,7 @@ function updateSummary() {
   const danger = cbm.filter(s => s === "danger").length, alert = cbm.filter(s => s === "alert").length;
   document.getElementById("taskSummary").innerHTML =
     `<span class="badge badge-info">${done}/${total} checked</span>` +
-    (bad ? `<span class="badge badge-bad">${bad} Not OK</span>` : "") +
+    (bad ? `<span class="badge badge-bad">${bad} defect(s) found</span>` : "") +
     (danger ? `<span class="badge badge-bad">${danger} CBM danger</span>` : "") +
     (alert ? `<span class="badge badge-warn">${alert} CBM alert</span>` : "");
   // suggest overall condition

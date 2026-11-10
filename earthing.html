@@ -66,8 +66,9 @@
     </div>
     <div class="row2">
       <div><label>Calibration cert. No.</label><input type="text" id="calNo"></div>
-      <div><label>Calibration due date</label><input type="date" id="calDue"></div>
+      <div><label>Recalibration due date</label><input type="date" id="calDue"></div>
     </div>
+    <div id="calWarn" style="margin-top:8px;"></div>
     <label>Test method</label>
     <div class="checks">
       <label class="inl"><input type="radio" name="method" value="3-Point (Fall of Potential)" checked> 3-Point (Fall of Potential)</label>
@@ -123,7 +124,19 @@ async function showForm() {
   instr.innerHTML = [...EQUIPMENT].sort((a, b) => (b.use.includes("earth") - a.use.includes("earth")))
     .map(e => `<option value="${e.code}">${esc(e.code + " – " + e.name + ", " + e.make)}</option>`).join("");
   instr.value = EARTH_INSTRUMENT.code;
-  const setSerial = () => document.getElementById("serial").value = EQUIPMENT.find(e => e.code === instr.value).serial;
+  // serial + calibration certificate fill automatically from the equipment master list
+  const setSerial = () => {
+    const e = EQUIPMENT.find(x => x.code === instr.value);
+    document.getElementById("serial").value = e.serial;
+    document.getElementById("calNo").value = e.calCert || "";
+    document.getElementById("calDue").value = e.calDue || "";
+    const warn = document.getElementById("calWarn");
+    const n = e.calDue ? daysUntil(e.calDue) : null;
+    warn.innerHTML = n === null ? '<span class="badge badge-warn">No calibration record for this instrument</span>'
+      : n < 0 ? `<span class="badge badge-bad">Calibration expired ${-n} days ago – do not use for official readings</span>`
+      : n <= 30 ? `<span class="badge badge-warn">Recalibration due in ${n} days</span>`
+      : `<span class="badge badge-ok">Calibration valid until ${e.calDue}</span>`;
+  };
   instr.onchange = setSerial;
   setSerial();
 

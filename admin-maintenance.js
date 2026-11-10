@@ -210,8 +210,10 @@ function renderPmRecords() {
     <div class="summary-card"><div class="summary-title">PM Hours</div><div class="summary-value">${(list.reduce((s, r) => s + mins(r), 0) / 60).toFixed(1)}</div></div>`;
   const el = document.getElementById("pmRecTable");
   if (!list.length) { el.innerHTML = "<p>No PM work orders recorded yet. They appear here when technicians submit PM from the machine QR.</p>"; return; }
-  el.innerHTML = `<table><tr><th>Date</th><th>Machine</th><th>Level</th><th>Technician</th><th>Not OK</th><th>CBM Alerts</th>
-      <th>Condition</th><th>On Time</th><th>Action</th></tr>` +
+  el.innerHTML = `<table><tr><th>Date</th><th>Machine</th><th>Level</th><th>Technician</th>
+      <th title="Number of checklist items the technician marked 'Not OK' – a defect found during this PM">Defects Found</th>
+      <th title="Condition readings outside their limits">CBM Alerts</th>
+      <th>Condition</th><th title="Performed on or before the due date">On Time</th><th>Action</th></tr>` +
     list.map(r => {
       const onTime = !r.dueDate || r.date <= addDays(r.dueDate, 1);
       const cond = r.condition === "Good" ? "badge-ok" : r.condition === "Critical" ? "badge-bad" : "badge-warn";
@@ -222,7 +224,7 @@ function renderPmRecords() {
         <td>${(r.cbmAlerts || []).length ? `<span class="badge badge-warn">${r.cbmAlerts.length}</span>` : "–"}</td>
         <td><span class="badge ${cond}">${esc(r.condition)}</span></td>
         <td>${onTime ? '<span class="badge badge-ok">Yes</span>' : '<span class="badge badge-bad">Late</span>'}</td>
-        <td><button class="secondary-btn" onclick="window.open('pm_print.html?asset=${encodeURIComponent(r.assetId)}&id=${r.key}','_blank')">View / Print</button></td></tr>`;
+        <td style="white-space:nowrap;"><button class="secondary-btn" style="white-space:nowrap;" onclick="window.open('pm_print.html?asset=${encodeURIComponent(r.assetId)}&id=${r.key}','_blank')">View / Print</button></td></tr>`;
     }).join("") + "</table>";
 }
 
