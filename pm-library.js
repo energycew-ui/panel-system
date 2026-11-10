@@ -23,10 +23,11 @@ const PM_LEVELS = {
 const LEVEL_ORDER = ["W", "M", "Q", "H", "Y"];   // maintenance levels (D is operator TPM)
 
 const TEAM = [
-  ["Engr Touseef", "Electrical Engineer"], ["Fazal Maqsood", "Electrical Supervisor"],
+  ["Engr Touseef", "Deputy Manager Electrical (HOD)"], ["Engr Ahtasham Khurshid", "Deputy Manager Mechanical (HOD)"],
+  ["Fazal Maqsood", "Electrical Supervisor"],
   ["Mansab Ali", "Asst. Supervisor"], ["Suleman Akram", "Electrician"], ["Zubair Arshad", "Electrician"],
   ["Arslan", "Electrician"], ["M.Nawaz", "Electrician"], ["Zeeshan Ashraf", "Electrician"],
-  ["M. Saddique", "Electrician"], ["Aziz Ur Rehman", "Foreman Mechanical"],
+  ["M. Saddique", "Electrician"], ["Aziz Ur Rehman", "Mechanical Foreman"],
   ["Safdar Shahzad", "Asst. Supervisor Mechanical"], ["Sohail Ahmad", "Asst. Supervisor Mechanical"]
 ];
 

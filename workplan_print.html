@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Work Plan</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+  <script src="pm-library.js"></script>
+  <script src="workplan-lib.js"></script>
+  <style>
+    .head { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 3px solid #fd0000; padding-bottom: 10px; }
+    .head img { width: 240px; }
+    .head h1 { margin: 0; font-size: 22px; text-align: right; }
+    .head .no { text-align: right; font-size: 13px; color: #5c5047; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+    td, th { border: 1px solid #d6cfc6; padding: 5px 6px; text-align: left; vertical-align: top; }
+    .meta td { font-size: 12.5px; }
+    .sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 12px 0; }
+    .sum div { border: 1px solid #d6cfc6; border-radius: 6px; padding: 6px 8px; font-size: 11px; }
+    .sum b { display: block; font-size: 18px; }
+    .od { background: #fff3f2; }
+    .done { color: #067a35; font-weight: 700; }
+    .pend { color: #b42318; font-weight: 700; }
+    .sign td { height: 52px; width: 33%; }
+    .noprint { text-align: center; margin: 14px 0; }
+    .instr { font-size: 12px; background: #faf8f5; border: 1px solid #e8e4de; border-radius: 6px; padding: 8px 10px; margin-top: 10px; }
+    @media print {
+      .noprint { display: none; }
+      @page { size: A4; margin: 10mm; }
+      tr { break-inside: avoid; }
+      .od { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body class="doc">
+<div class="doc-sheet">
+  <div id="content">Loading plan…</div>
+  <div class="noprint"><button onclick="window.print()">🖨 Print / Save PDF</button></div>
+</div>
+<script>
+const qp = new URLSearchParams(location.search);
+const review = qp.get("review") === "1";
+
+(async function () {
+  const plan = (await db.ref("workPlans/" + qp.get("id")).once("value")).val();
+  if (!plan) { document.getElementById("content").textContent = "Plan not found."; return; }
+  let pr = null;
+  if (review) pr = planProgress(plan, await loadWPData());
+  const tasks = (plan.tasks || []).map((t, i) => ({ ...t, doneOn: pr ? pr.status[i] : "" }));
+  const mods = WP_ORDER.filter(m => (plan.mods || []).includes(m));
+  const sumHtml = mods.map(m => {
+    const ts = tasks.filter(t => t.mod === m);
+    const extra = review ? ` · ${ts.filter(t => t.doneOn).length} done` : ` · ${ts.filter(t => t.overdue).length} overdue`;
+    return `<div>${esc(WP_MODULES[m].name)}<b>${ts.length}</b>${extra}</div>`;
+  }).join("") + (review ? `<div>Completion<b style="color:${pr.pct >= 90 ? "#067a35" : pr.pct >= 60 ? "#a15c00" : "#b42318"}">${pr.pct}%</b>${pr.done}/${pr.total} done</div>` : "");
+
+  const sections = mods.map(m => {
+    const ts = tasks.filter(t => t.mod === m);
+    if (!ts.length) return "";
+    return `<h2>${esc(WP_MODULES[m].name)} – ${ts.length} task(s) · Responsible: ${esc(wpResp(plan.dept, m))}</h2>
+      <table><tr><th style="width:26px">#</th><th style="width:70px">Due</th><th>Item</th><th>Area / Location</th><th>Task</th>
+        ${review ? "<th style='width:90px'>Status</th>" : "<th style='width:90px'>Done by</th><th style='width:60px'>Date</th><th style='width:60px'>Sign</th>"}</tr>
+      ${ts.map((t, i) => `<tr class="${t.overdue && !t.doneOn ? "od" : ""}"><td>${i + 1}</td>
+        <td>${esc(t.due.slice(8, 10) + "-" + t.due.slice(5, 7))}${t.overdue ? "<br><b style='color:#b42318'>OVERDUE</b>" : ""}</td>
+        <td><b>${esc(t.name)}</b>${m === "pm" ? `<br>${esc(t.ref)}` : ""}</td><td>${esc(t.area)}</td><td>${esc(t.detail)}</td>
+        ${review ? `<td>${t.doneOn ? `<span class="done">✓ Done ${esc(t.doneOn.slice(8, 10) + "-" + t.doneOn.slice(5, 7))}</span>` : `<span class="pend">✗ Pending</span>`}</td>`
+                 : "<td></td><td></td><td></td>"}</tr>`).join("")}
+      </table>`;
+  }).join("");
+
+  document.getElementById("content").innerHTML = `
+    <div class="head">
+      <img src="logo.png" alt="Chenab Engineering">
+      <div><h1>${review ? "Work Plan – Completion Review" : (plan.type === "week" || plan.type === "nextweek" ? "Weekly Work Plan" : "Work Plan")}</h1>
+        <div class="no">Plan No. <b>${esc(plan.id)}</b> · <b>${esc(WP_DEPTS[plan.dept || "E"].name)} Maintenance</b></div></div>
+    </div>
+    <table class="meta">
+      <tr><td><b>Period</b></td><td>${esc(plan.label)}</td><td><b>Issued on</b></td><td>${esc(plan.issuedAt.slice(0, 10))}</td></tr>
+      <tr><td><b>Issued by (HOD)</b></td><td>${esc(plan.issuedBy)}</td><td><b>Issued to</b></td><td>${esc(plan.issuedTo)}</td></tr>
+      ${review ? `<tr><td><b>Review date</b></td><td>${ymd(new Date())}</td><td><b>Received by</b></td><td>${plan.ack ? esc(plan.ack.by) + " on " + esc(plan.ack.at.slice(0, 10)) : "Not acknowledged"}</td></tr>` : ""}
+    </table>
+    <div class="sum">${sumHtml}</div>
+    ${review ? "" : `<div class="instr"><b>Instructions:</b> Complete every task by scanning the QR code on the DB / machine / earth pit and submitting the form –
+      the system marks the task done automatically. Overdue items (shaded) are carried over from earlier and have priority.
+      Weekly and longer PMs are done in the Sunday shutdown window. Write name, date and sign against each task and return this plan to the HOD at the end of the week.</div>`}
+    ${sections}
+    <h2>Sign-off</h2>
+    <table class="sign">
+      <tr><th>Issued by – HOD</th><th>Received by – ${plan.dept === "M" ? "Foreman" : "Supervisor"}</th><th>${review ? "Reviewed by – HOD / Management" : "Completed &amp; returned – Supervisor"}</th></tr>
+      <tr><td>${esc(plan.issuedBy.split(" – ")[0])}<br><br>Sign / Date: ____________</td>
+          <td>${esc(plan.issuedTo.split(" – ")[0])}<br><br>Sign / Date: ____________</td>
+          <td>${review ? `Completion: ${pr.pct}%<br><br>` : "<br><br>"}Sign / Date: ____________</td></tr>
+    </table>`;
+  document.title = plan.id + (review ? " – Review" : "");
+})();
+</script>
+</body>
+</html>

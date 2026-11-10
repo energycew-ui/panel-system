@@ -12,6 +12,7 @@
   <!-- Your Firebase helper (firebaseConfig + savePanelToFirebase + loadPanelFromFirebase + loadAllPanels etc.) -->
   <script src="data.js"></script>
   <script src="pm-library.js"></script>
+  <script src="workplan-lib.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- QR Library -->
@@ -116,6 +117,7 @@
 
     <div class="nav-group">Dashboard</div>
     <button class="tab-btn active" data-target="tab-overview"><span class="ico">📊</span>Overview</button>
+    <button class="tab-btn" data-target="tab-workplan"><span class="ico">📝</span>Work Plan</button>
 
     <div class="nav-group">Reports</div>
     <button class="tab-btn" data-target="tab-inspections"><span class="ico">📋</span>DB Inspections</button>
@@ -155,6 +157,7 @@
 
     <!-- TAB 0: OVERVIEW -->
     <div class="tab-content active" id="tab-overview">
+      <div id="wpBanner"></div>
       <div class="kpi-tiles">
         <div class="kpi-tile" onclick="goTab('tab-entry')">
           <div class="kpi-label">DB Panels</div>
@@ -557,6 +560,69 @@
       </div>
     </div>
 
+    <!-- ===================== WORK PLAN (HOD → Supervisor) ===================== -->
+    <div class="tab-content" id="tab-workplan">
+      <div class="card">
+        <div class="card-head">
+          <div><h2>Work Plan – Issue to Supervisor</h2>
+            <div class="sub">HOD runs this on Monday / Tuesday: all DB inspection, earthing, LUX and PM tasks due in the period, printed and handed over for completion.</div></div>
+        </div>
+        <div class="filterBox">
+          <label class="f"><span>Department</span>
+            <select id="wpDept" onchange="wpDeptChanged()">
+              <option value="E">Electrical – Engr Touseef → Fazal Maqsood</option>
+              <option value="M">Mechanical – Engr Ahtasham Khurshid → Aziz Ur Rehman</option>
+            </select></label>
+          <label class="f"><span>Period</span>
+            <select id="wpPeriod" onchange="wpPeriodChanged()">
+              <option value="week">This week (Mon–Sun)</option>
+              <option value="nextweek">Next week</option>
+              <option value="month">This month</option>
+              <option value="nextmonth">Next month</option>
+              <option value="year">Annual plan (next 12 months)</option>
+              <option value="custom">Custom dates</option>
+            </select></label>
+          <label class="f wp-custom" style="display:none;"><span>From</span><input type="date" id="wpFrom"></label>
+          <label class="f wp-custom" style="display:none;"><span>To</span><input type="date" id="wpTo"></label>
+          <label class="f"><span>Issued by (HOD)</span><input type="text" id="wpBy" list="wpHodList" value="Engr Touseef Ghalib – Deputy Manager Electrical (HOD)"></label>
+          <label class="f"><span>Issued to (Supervisor / Foreman)</span><input type="text" id="wpTo2" list="wpSupList" value="Fazal Maqsood – Supervisor Electrical"></label>
+          <datalist id="wpHodList">
+            <option value="Engr Touseef Ghalib – Deputy Manager Electrical (HOD)">
+            <option value="Engr Ahtasham Khurshid – Deputy Manager Mechanical (HOD)">
+          </datalist>
+          <datalist id="wpSupList">
+            <option value="Fazal Maqsood – Supervisor Electrical">
+            <option value="Mansab Ali – Asst. Supervisor Electrical">
+            <option value="Aziz Ur Rehman – Mechanical Foreman">
+            <option value="Safdar Shahzad – Asst. Supervisor Mechanical">
+            <option value="Sohail Ahmad – Asst. Supervisor Mechanical">
+          </datalist>
+          <div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;">
+            <b style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;width:100%;">Include</b>
+            <label style="display:flex;gap:6px;align-items:center;margin:0;"><input type="checkbox" class="wpMod" value="pm" checked> Preventive Maintenance</label>
+            <label style="display:flex;gap:6px;align-items:center;margin:0;"><input type="checkbox" class="wpMod" value="db" checked> DB Inspection</label>
+            <label style="display:flex;gap:6px;align-items:center;margin:0;"><input type="checkbox" class="wpMod" value="earth" checked> Earthing</label>
+            <label style="display:flex;gap:6px;align-items:center;margin:0;"><input type="checkbox" class="wpMod" value="lux" checked> LUX Monitoring</label>
+            <label style="display:flex;gap:6px;align-items:center;margin:0;"><input type="checkbox" class="wpMod" value="tr"> Transformer Inspection</label>
+          </div>
+          <button class="primary-btn" onclick="wpGenerate()">Generate Plan</button>
+          <button class="primary-btn" style="background:var(--brand)!important;" onclick="wpIssue()">📤 Issue &amp; Print</button>
+        </div>
+        <div id="wpHead"></div>
+        <div id="wpSummary" class="summary-row"></div>
+        <div id="wpTable" class="table-wrap"><p>Choose a period and press Generate Plan.</p></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h2>Issued Plans – Follow-up</h2>
+            <div class="sub">Completion is tracked automatically from the forms submitted by the team. Review pending tasks in the weekly meeting.</div></div>
+          <div class="actions"><button class="secondary-btn" onclick="wpRefreshProgress()">↻ Refresh progress</button></div>
+        </div>
+        <div id="wpIssued" class="table-wrap"><p>Loading…</p></div>
+      </div>
+    </div>
+
     <!-- ===================== MAINTENANCE: PM SCHEDULE ===================== -->
     <div class="tab-content" id="tab-pm">
       <div class="kpi-tiles" id="pmKpis"></div>
@@ -746,6 +812,7 @@ function afterLoginInit() {
   // (with photos) are by far the largest download
   loadDashboardAnalytics();
   loadMaintenance();          // admin-maintenance.js – small data, load early
+  loadWorkPlans();            // admin-workplan.js
   showPanels();
   showTransformers();
   loadQuestions();
@@ -3267,6 +3334,7 @@ function openKpiWindow(){
 
 </script>
 <script src="admin-maintenance.js"></script>
+<script src="admin-workplan.js"></script>
 
 </body>
 </html>
