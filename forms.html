@@ -42,6 +42,7 @@
 <div class="wrap">
   <p class="note">Use this page when a QR code is missing, damaged or cannot be scanned. Choose the item and open its form – it is saved exactly as if the QR was scanned.</p>
 
+  <a class="bigbtn" href="gemba.html" style="margin-top:12px;background:var(--brand);">👣 Gemba Walk – Sand Plant</a>
   <div class="tabs" id="tabs">
     <button data-t="db" class="on">⚡ DBs</button>
     <button data-t="pm">🛠️ Machines (PM)</button>
@@ -108,7 +109,7 @@ function render() {
         n++;
         const e = encodeURIComponent(a.id);
         html += `<div class="item"><div><div class="t">${esc(a.name)}</div>
-          <div class="s">ID ${esc(a.id)} · ${esc(a.area)} · Class ${critClass(a.crit)} · ${pmWindow(a) === "SUN" ? "Sunday PM" : "Weekday PM"} · next PM ${esc(next || "–")} ${badge(next)}</div></div>
+          <div class="s">ID ${esc(a.id)} · ${esc(a.area)} · Class ${critClass(a.crit)} · ${esc(routineText(a))} · next PM ${esc(next || "–")} ${badge(next)}</div></div>
           <div class="b">${link("pm.html?id=" + e, "🛠️ PM Work Order", true)}${link("tpm.html?id=" + e, "🧑‍🏭 Daily Check")}${link("machine.html?id=" + e, "Machine page")}</div></div>`;
       });
   }

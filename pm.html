@@ -170,13 +170,13 @@ async function loadAsset() {
   document.getElementById("ptwReq").textContent = ["OHC", "MRC"].includes(asset.category) ? "(required – work at height)" : "(if applicable)";
 
   const st = asset.pmStatus || {};
-  const plan = activeLevels(asset).filter(l => l !== "D");
+  const plan = formLevels(asset).filter(l => l !== "D");
   // default: highest level due within 7 days, else the lowest level
   let def = plan[0];
   plan.forEach(L => { if (st[L] && st[L].nextDue && daysUntil(st[L].nextDue) <= 7) def = L; });
   if (presetLevel && plan.includes(presetLevel)) def = presetLevel;
   document.getElementById("levels").innerHTML = plan.map(L => {
-    const b = dueBadge((st[L] || {}).nextDue);
+    const b = onDemand(asset) ? { cls: "badge-info", text: "On demand" } : dueBadge((st[L] || {}).nextDue);
     return `<button class="lvl" data-l="${L}" onclick="selectLevel('${L}')">${levelName(asset, L)}
             <small><span class="badge ${b.cls}">${b.text}</span></small></button>`;
   }).join("");

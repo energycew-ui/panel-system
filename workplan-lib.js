@@ -11,17 +11,20 @@ const WP_MODULES = {
   lux:   { name: "LUX Monitoring",          days: 30, resp: "Mansab Ali (Asst. Supervisor Electrical) – LUX project owner",
            owner: "Mansab Ali – Asst. Supervisor Electrical" },
   pm:    { name: "Preventive Maintenance",  days: 0,  resp: "Fazal Maqsood (Elec.) / Aziz Ur Rehman (Mech.)" },
-  tr:    { name: "Transformer Inspection",  days: 60, resp: "Fazal Maqsood (Supervisor Electrical)" }
+  tr:    { name: "Transformer Inspection",  days: 60, resp: "Fazal Maqsood (Supervisor Electrical)" },
+  gemba: { name: "Gemba Walk – Sand Plant", days: 0,  resp: "Mechanical team + one electrical person" },
+  hod:   { name: "HOD Added Tasks",         days: 0,  resp: "As assigned by HOD" }
 };
-const WP_ORDER = ["pm", "db", "earth", "lux", "tr"];
+const WP_ORDER = ["hod", "pm", "gemba", "db", "earth", "lux", "tr"];
 
 /* Each department issues its own plan: HOD → supervisor / foreman */
-const WP_MOD_CODE = { pm: "PM", db: "DB", earth: "EARTH", lux: "LUX", tr: "TR" };
+const WP_MOD_CODE = { pm: "PM", db: "DB", earth: "EARTH", lux: "LUX", tr: "TR", gemba: "GEMBA" };
 // plans for a single report (or a custom mix) get their own number, e.g. WP-2026-W46-TR
 function modsSuffix(dept, mods) {
+  mods = mods.filter(m => m !== "hod");
   const def = WP_DEPTS[dept || "E"].defaultMods;
   const same = mods.length === def.length && def.every(m => mods.includes(m));
-  return same ? "" : "-" + WP_ORDER.filter(m => mods.includes(m)).map(m => WP_MOD_CODE[m]).join("-");
+  return same || !mods.length ? "" : "-" + WP_ORDER.filter(m => mods.includes(m)).map(m => WP_MOD_CODE[m]).join("-");
 }
 function modsTitle(mods) { return WP_ORDER.filter(m => (mods || []).includes(m)).map(m => WP_MODULES[m].name).join(" + "); }
 
@@ -31,10 +34,10 @@ const WP_DEPTS = {
        to: "Fazal Maqsood – Supervisor Electrical",
        mods: ["pm", "db", "earth", "lux", "tr"], disc: "E",
        resp: { pm: "Fazal Maqsood (Supervisor Electrical) – electrical items" } },
-  M: { name: "Mechanical", suffix: "-MECH", defaultMods: ["pm"],
+  M: { name: "Mechanical", suffix: "-MECH", defaultMods: ["pm", "gemba"],
        hod: "Engr Ahtasham Khurshid – Deputy Manager Mechanical (HOD)",
        to: "Aziz Ur Rehman – Mechanical Foreman",
-       mods: ["pm"], disc: "M",
+       mods: ["pm", "gemba"], disc: "M",
        resp: { pm: "Aziz Ur Rehman (Mechanical Foreman) – mechanical items" } }
 };
 function wpResp(dept, mod) { return (WP_DEPTS[dept || "E"].resp || {})[mod] || WP_MODULES[mod].resp; }
@@ -96,10 +99,10 @@ function periodRangeBase(type, cFrom, cTo) {
 /* ---------------- data ---------------- */
 async function loadWPData() {
   const get = p => db.ref(p).once("value").then(s => s.val() || {});
-  const [panels, pits, earthR, luxR, assets, pmR, trs] = await Promise.all([
-    get("panels"), get("earthPits"), get("earthingReports"), get("luxReports"), get("assets"), get("pmRecords"), get("transformers")]);
+  const [panels, pits, earthR, luxR, assets, pmR, trs, gemba] = await Promise.all([
+    get("panels"), get("earthPits"), get("earthingReports"), get("luxReports"), get("assets"), get("pmRecords"), get("transformers"), get("gembaWalks")]);
   const flat = obj => { const out = []; Object.entries(obj).forEach(([k, recs]) => Object.values(recs || {}).forEach(r => out.push({ _parent: k, ...r }))); return out; };
-  return { panels, pits, earth: flat(earthR), lux: Object.values(luxR), assets, pm: flat(pmR), trs };
+  return { panels, pits, earth: flat(earthR), lux: Object.values(luxR), assets, pm: flat(pmR), trs, gemba: Object.values(gemba) };
 }
 
 /* repeat a due date through the period: overdue items appear once as carry-over */
@@ -134,7 +137,22 @@ function luxAreas(lux) {
   return latest;
 }
 
-function buildTasks(data, mods, from, to, dept) {
+// two Gemba walks a week: HOD picks the days for a weekly plan, longer plans default to Tue & Thu
+function gembaTasks(from, to, picked) {
+  const dates = [];
+  if (picked && picked.filter(Boolean).length) picked.filter(Boolean).forEach(d => dates.push(d));
+  else {
+    let mon = mondayOf(from);
+    while (mon <= to) {
+      [addDays(mon, 1), addDays(mon, 3)].forEach(d => { if (d >= from && d <= to) dates.push(d); });
+      mon = addDays(mon, 7);
+    }
+  }
+  return dates.sort().map((d, i) => ({ mod: "gemba", ref: "SAND-PLANT", name: "Gemba walk – Sand Plant", area: "Sand Plant",
+    detail: "Walk the sand plant, record abnormalities and actions (mechanical team + one electrical person)", due: d, overdue: false }));
+}
+
+function buildTasks(data, mods, from, to, dept, opts) {
   const disc = WP_DEPTS[dept || "E"].disc;
   const tasks = [];
   if (mods.includes("db")) Object.entries(data.panels).forEach(([id, p]) => {
@@ -158,7 +176,7 @@ function buildTasks(data, mods, from, to, dept) {
     Object.values(data.assets).forEach(a => {
       if (a.status === "Out of Service" || !CATEGORIES[a.category]) return;
       activeLevels(a).filter(l => l !== "D").forEach(L => {
-        occurrences((a.pmStatus || {})[L]?.nextDue, levelDays(a, L), from, to, pmWindow(a) === "SUN" ? toSunday : skipSunday)
+        occurrences((a.pmStatus || {})[L]?.nextDue, levelDays(a, L), from, to, d => alignToRoutine(a, d))
           .forEach(o => pm.push({ mod: "pm", ref: a.id, name: a.name, area: a.area, level: L, cls: critClass(a.crit), ...o }));
       });
     });
@@ -176,7 +194,26 @@ function buildTasks(data, mods, from, to, dept) {
         detail: `${levelName(a, t.level)} PM · Class ${t.cls} – ${disc === "M" ? "mechanical" : "electrical"} checks (${items.length})` });
     });
   }
-  return tasks.sort((a, b) => (b.overdue - a.overdue) || a.due.localeCompare(b.due) || WP_ORDER.indexOf(a.mod) - WP_ORDER.indexOf(b.mod));
+  if (mods.includes("gemba")) gembaTasks(from, to, (opts || {}).gembaDates).forEach(t => tasks.push(t));
+  return sortTasks(tasks);
+}
+function sortTasks(tasks) {
+  return tasks.sort((a, b) => (b.overdue - a.overdue) || (!!b.urgent - !!a.urgent) || a.due.localeCompare(b.due) ||
+                              WP_ORDER.indexOf(a.mod) - WP_ORDER.indexOf(b.mod));
+}
+
+// HOD-added task: a machine PM (any machine, incl. on-demand ones) or a free task
+function hodTask(opt, data, dept) {
+  if (opt.kind === "machine") {
+    const a = data.assets[opt.ref];
+    const disc = WP_DEPTS[dept || "E"].disc;
+    const items = discTasks(a.category, opt.level, disc);
+    return { mod: "hod", kind: "machine", ref: a.id, name: a.name, area: a.area, level: opt.level, due: opt.due,
+             urgent: !!opt.urgent, overdue: false, items,
+             detail: `${opt.urgent ? "URGENT · " : ""}${levelName(a, opt.level)} PM added by HOD – ${disc === "M" ? "mechanical" : "electrical"} checks (${items.length})` };
+  }
+  return { mod: "hod", kind: "free", ref: "", name: opt.text, area: opt.area || "", due: opt.due, urgent: !!opt.urgent,
+           overdue: false, detail: `${opt.urgent ? "URGENT · " : ""}${opt.note || "Task added by HOD"}` };
 }
 
 /* ---------------- completion: was the task done in its window? ---------------- */
@@ -190,7 +227,7 @@ function taskDone(t, data, plan) {
   if (t.mod === "tr") { const x = data.trs[t.ref]; date = x && x.lastInspection ? ymd(new Date(x.lastInspection)) : ""; }
   if (t.mod === "earth") date = data.earth.filter(r => r.pitId === t.ref && inWin(r.date)).map(r => r.date).sort()[0] || "";
   if (t.mod === "lux") date = data.lux.filter(r => (r.samplingLocation || "").trim() === t.ref && inWin(r.sampleDate)).map(r => r.sampleDate).sort()[0] || "";
-  if (t.mod === "pm") date = data.pm.filter(r => r._parent === t.ref && inWin(r.date) &&
+  if (t.mod === "pm" || (t.mod === "hod" && t.kind === "machine")) date = data.pm.filter(r => r._parent === t.ref && inWin(r.date) &&
       LEVEL_ORDER.indexOf(r.level) >= LEVEL_ORDER.indexOf(t.level)).map(r => r.date).sort()[0] || "";
   return inWin(date) ? date : "";
 }
@@ -228,8 +265,14 @@ function planProgress(plan, data) {
   const tasks = plan.tasks || [];
   const today = ymd(new Date());
   let done = 0, overdue = 0;
-  const status = tasks.map(t => {
-    const d = taskDone(t, data, plan);
+  // Gemba: the walks recorded in the plan period tick off the gemba tasks in date order
+  const walks = (data.gemba || []).map(g => g.date).filter(d => d >= plan.from && d <= addDays(plan.to, 2)).sort();
+  let gi = 0;
+  const status = tasks.map((t, i) => {
+    let d = "";
+    if (t.mod === "gemba") d = walks[gi++] || "";
+    else if (t.mod === "hod" && t.kind === "free") d = (plan.manualDone || {})[i] || "";
+    else d = taskDone(t, data, plan);
     if (d) done++; else if (t.due < today) overdue++;
     return d;
   });

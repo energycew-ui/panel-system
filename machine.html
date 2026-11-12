@@ -117,8 +117,9 @@ function render(a, records, tpm, faults) {
 
     ${oos ? "" : `<div class="card">
       <h2>Maintenance Schedule</h2>
-      <table class="simple"><tr><th>Level</th><th>Last done</th><th>Next due</th><th>Status</th></tr>${rows}</table>
-      <p class="muted">${pmWindow(a) === "SUN" ? "PM is planned on Sundays (production shutdown window)." : "PM can be done on any weekday (not in the Sunday shutdown)."}</p>
+      ${rows ? `<table class="simple"><tr><th>Level</th><th>Last done</th><th>Next due</th><th>Status</th></tr>${rows}</table>`
+             : `<p class="muted">No fixed routine for this machine – the HOD adds its PM to the weekly work plan when needed.</p>`}
+      <p class="muted"><b>Routine:</b> ${esc(routineText(a))}</p>
     </div>`}
 
     <div class="card">

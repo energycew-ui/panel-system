@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gemba Walk</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="data.js"></script>
+  <script src="pm-library.js"></script>
+  <style>
+    .card { max-width: 720px; margin: 14px auto; }
+    #formArea { display: none; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .team { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 6px; }
+    @media (max-width: 520px) { .team { grid-template-columns: 1fr; } }
+    .team label { display: flex; gap: 8px; align-items: center; font-weight: 500; margin: 0; padding: 8px 10px;
+                  border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+    .team label.el { border-left: 4px solid #1f6feb; }
+    .obs { border: 1px solid var(--border); border-radius: 12px; padding: 4px 12px 12px; margin-top: 12px; background: var(--surface-2); position: relative; }
+    .obs .del { position: absolute; top: 8px; right: 10px; color: #b42318; cursor: pointer; font-weight: 800; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+    @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+    #addObs { width: 100%; margin-top: 12px; padding: 12px; }
+    #submitBtn { width: 100%; margin-top: 16px; padding: 14px; font-size: 16px; }
+  </style>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+
+<div class="topbar">
+  <img src="logo.png" alt="Chenab Engineering Works &amp; Foundries (Pvt) Ltd.">
+  <div class="title">Gemba Walk – Sand Plant</div>
+</div>
+
+<div class="card" id="loginCard">
+  <h2>Login</h2>
+  <input type="password" id="loginKey" placeholder="Enter password">
+  <button class="btn btn-red" onclick="doLogin()" style="width:100%;margin-top:12px;">Login</button>
+  <div id="loginError" style="color:#b42318;margin-top:10px;"></div>
+</div>
+
+<div id="formArea">
+  <div class="card">
+    <h2>1. Walk Details</h2>
+    <div class="row2">
+      <div><label>Date</label><input type="date" id="gDate"></div>
+      <div><label>Area</label>
+        <select id="gArea"><option>Sand Plant</option><option>Green Sand Molding</option><option>Core &amp; CO2 Section</option>
+          <option>Furnaces</option><option>Compressor House</option><option>Other</option></select></div>
+    </div>
+    <div class="row2">
+      <div><label>Start time</label><input type="time" id="gFrom"></div>
+      <div><label>End time</label><input type="time" id="gTo"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. Team</h2>
+    <p class="muted">Tick everyone on the walk – at least 2 people, including <b style="color:#1f6feb">one electrical person</b> (blue).</p>
+    <div class="team" id="team"></div>
+    <label style="margin-top:10px;">Others (names)</label>
+    <input type="text" id="others" placeholder="e.g. production supervisor">
+  </div>
+
+  <div class="card">
+    <h2>3. What Did You Find?</h2>
+    <p class="muted">One line per observation. Nothing found? Leave it empty and write "No abnormality" in remarks.</p>
+    <div id="obsList"></div>
+    <button class="btn btn-dark" id="addObs" onclick="addObs()">＋ Add observation</button>
+    <label style="margin-top:14px;">Remarks</label>
+    <textarea id="remarks" placeholder="General remarks"></textarea>
+    <button class="btn btn-blue" id="submitBtn" onclick="submitGemba()">Submit Gemba Walk</button>
+  </div>
+</div>
+
+<script>
+const KEY = "9999";
+const electrical = t => /electric/i.test(t[1]) && !/mechanical/i.test(t[1]);
+let sandAssets = [];
+
+if (sessionStorage.getItem("electricianLogged") === "true") showForm();
+function doLogin() {
+  if (document.getElementById("loginKey").value.trim() === KEY) { sessionStorage.setItem("electricianLogged", "true"); showForm(); }
+  else document.getElementById("loginError").innerText = "Incorrect password!";
+}
+
+async function showForm() {
+  document.getElementById("loginCard").style.display = "none";
+  document.getElementById("formArea").style.display = "block";
+  const now = new Date();
+  document.getElementById("gDate").value = ymd(now);
+  document.getElementById("gFrom").value = new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(11, 16);
+  document.getElementById("team").innerHTML = TEAM.map((t, i) => `
+    <label class="${electrical(t) ? "el" : ""}"><input type="checkbox" class="tm" value="${i}"> ${esc(t[0])}
+      <small style="color:var(--muted)">${esc(t[1])}</small></label>`).join("");
+  const assets = (await db.ref("assets").once("value")).val() || {};
+  sandAssets = Object.values(assets).filter(a => a.area === "Sand Plant" && a.status !== "Out of Service")
+    .sort((a, b) => a.name.localeCompare(b.name));
+  addObs();
+}
+
+function addObs() {
+  const n = document.querySelectorAll(".obs").length + 1;
+  const div = document.createElement("div");
+  div.className = "obs";
+  div.innerHTML = `<span class="del" onclick="this.parentElement.remove()">✕</span>
+    <label>Observation ${n}</label>
+    <input type="text" class="o-text" placeholder="What did you see? e.g. grease leaking from shakeout bearing">
+    <div class="row2">
+      <div><label>Type</label><select class="o-type">
+        <option>Abnormality</option><option>Safety hazard</option><option>Oil / air leak</option>
+        <option>5S / housekeeping</option><option>Improvement idea</option></select></div>
+      <div><label>Equipment</label><select class="o-eq"><option value="">General / other</option>
+        ${sandAssets.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join("")}</select></div>
+    </div>
+    <label>Action required</label>
+    <input type="text" class="o-act" placeholder="What must be done?">
+    <div class="row2">
+      <div><label>Responsible</label><select class="o-resp">${TEAM.map(t => `<option>${esc(t[0])}</option>`).join("")}</select></div>
+      <div><label>Target date</label><input type="date" class="o-date" value="${addDays(ymd(new Date()), 7)}"></div>
+    </div>`;
+  document.getElementById("obsList").appendChild(div);
+  div.querySelector(".o-resp").value = "Aziz Ur Rehman";   // mechanical foreman by default
+}
+
+async function submitGemba() {
+  const team = [...document.querySelectorAll(".tm:checked")].map(c => TEAM[+c.value]);
+  const others = document.getElementById("others").value.trim();
+  if (team.length + (others ? 1 : 0) < 2) return alert("A Gemba walk needs at least 2 people.");
+  if (!team.some(electrical)) return alert("Add at least one electrical person to the team.");
+  const obs = [...document.querySelectorAll(".obs")].map(o => ({
+    text: o.querySelector(".o-text").value.trim(), type: o.querySelector(".o-type").value,
+    equipment: o.querySelector(".o-eq").value, equipmentName: o.querySelector(".o-eq").selectedOptions[0].text,
+    action: o.querySelector(".o-act").value.trim(), responsible: o.querySelector(".o-resp").value,
+    target: o.querySelector(".o-date").value, status: "Open"
+  })).filter(o => o.text);
+  if (obs.some(o => !o.action)) return alert("Write the action required for every observation.");
+  const remarks = document.getElementById("remarks").value.trim();
+  if (!obs.length && !remarks) return alert("Add an observation or write a remark (e.g. 'No abnormality found').");
+  const now = new Date();
+  const rec = {
+    timestamp: now.toISOString(), date: document.getElementById("gDate").value, area: document.getElementById("gArea").value,
+    timeFrom: document.getElementById("gFrom").value,
+    timeTo: document.getElementById("gTo").value || new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(11, 16),
+    team: team.map(t => ({ name: t[0], role: t[1] })), others, observations: obs, remarks
+  };
+  document.getElementById("submitBtn").disabled = true;
+  await db.ref("gembaWalks").push().set(rec);
+  alert(`Gemba walk saved – ${obs.length} observation(s) sent to the maintenance dashboard.`);
+  location.reload();
+}
+</script>
+</body>
+</html>

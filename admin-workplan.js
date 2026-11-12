@@ -2,10 +2,14 @@
    ADMIN – WORK PLAN TAB  (HOD issues plan → supervisor executes → review)
    Uses workplan-lib.js, pm-library.js.
    ===================================================================== */
-let wpPlans = {}, wpData = null, wpCurrent = null;
+let wpPlans = {}, wpData = null, wpCurrent = null, wpManual = [];
 
 function loadWorkPlans() {
-  db.ref("workPlans").on("value", s => { wpPlans = s.val() || {}; wpRefreshProgress(); });
+  db.ref("workPlans").on("value", s => { wpPlans = s.val() || {}; wpRefreshProgress(); wpFillTargets(); });
+  wpFillAddForm();
+  wpDeptChanged();   // apply department defaults (Gemba is a mechanical-plan item)
+  document.querySelector('.wpMod[value="gemba"]').addEventListener("change", wpGembaToggle);
+  ["gembaD1", "gembaD2"].forEach(id => document.getElementById(id).addEventListener("change", () => { if (wpCurrent) wpGenerate(); }));
   // changing which reports are included rebuilds the plan straight away;
   // a LUX-only plan goes to its project owner (Mansab Ali)
   document.querySelectorAll(".wpMod").forEach(c => c.addEventListener("change", () => {
@@ -36,6 +40,9 @@ function wpDeptChanged() {
     c.parentElement.style.opacity = ok ? "1" : ".4";
   });
   wpCurrent = null;
+  wpManual = [];
+  wpRenderManual();
+  wpGembaToggle();
   document.getElementById("wpHead").innerHTML = "";
   document.getElementById("wpSummary").innerHTML = "";
   document.getElementById("wpTable").innerHTML = "<p>Choose a period and press Generate Plan.</p>";
@@ -54,9 +61,108 @@ async function wpGenerate() {
                         document.getElementById("wpFrom").value, document.getElementById("wpTo").value, dept);
   document.getElementById("wpTable").innerHTML = "<p>Building plan…</p>";
   const data = await wpEnsureData(true);
-  const tasks = buildTasks(data, mods, p.from, p.to, dept);
-  wpCurrent = { ...p, id: p.id + modsSuffix(dept, mods), dept, mods, tasks };
+  const gembaDates = ["week", "nextweek", "custom"].includes(p.type)
+    ? [document.getElementById("gembaD1").value, document.getElementById("gembaD2").value].filter(d => d && d >= p.from && d <= p.to)
+    : [];
+  const tasks = buildTasks(data, mods, p.from, p.to, dept, { gembaDates });
+  // HOD-added tasks stay in the plan when it is regenerated
+  wpManual.forEach(m => tasks.push(hodTask(m, data, dept)));
+  const allMods = wpManual.length ? [...mods, "hod"] : mods;
+  wpCurrent = { ...p, id: p.id + modsSuffix(dept, mods), dept, mods: allMods, tasks: sortTasks(tasks) };
   wpRender(wpCurrent);
+}
+
+/* ---------------- Gemba walk days (HOD picks each week) ---------------- */
+function wpGembaToggle() {
+  const on = document.querySelector('.wpMod[value="gemba"]').checked && !document.querySelector('.wpMod[value="gemba"]').disabled;
+  const box = document.getElementById("gembaDays");
+  box.style.display = on ? "flex" : "none";
+  if (on && !document.getElementById("gembaD1").value) {
+    const p = periodRange(document.getElementById("wpPeriod").value === "nextweek" ? "nextweek" : "week");
+    document.getElementById("gembaD1").value = addDays(p.from, 1);   // Tuesday
+    document.getElementById("gembaD2").value = addDays(p.from, 3);   // Thursday
+  }
+}
+
+/* ---------------- HOD add-task ---------------- */
+async function wpFillAddForm() {
+  const assets = (await db.ref("assets").once("value")).val() || {};
+  const byArea = {};
+  Object.values(assets).filter(a => a.status !== "Out of Service" && CATEGORIES[a.category])
+    .forEach(a => (byArea[a.area] = byArea[a.area] || []).push(a));
+  document.getElementById("addAsset").innerHTML = Object.keys(byArea).sort().map(area =>
+    `<optgroup label="${esc(area)}">` + byArea[area].sort((x, y) => x.name.localeCompare(y.name, undefined, { numeric: true }))
+      .map(a => `<option value="${esc(a.id)}">${esc(a.name)} (${esc(a.id)})${onDemand(a) ? " · on demand" : ""}</option>`).join("") + "</optgroup>").join("");
+  window._wpAssets = assets;
+  wpAddAssetChanged();
+  document.getElementById("addDate").value = ymd(new Date());
+}
+function wpAddKindChanged() {
+  const m = document.getElementById("addKind").value === "machine";
+  document.querySelectorAll(".add-machine").forEach(e => e.style.display = m ? "" : "none");
+  document.querySelectorAll(".add-free").forEach(e => e.style.display = m ? "none" : "");
+}
+function wpAddAssetChanged() {
+  const a = (window._wpAssets || {})[document.getElementById("addAsset").value];
+  if (!a) return;
+  document.getElementById("addLevel").innerHTML = formLevels(a).filter(l => l !== "D")
+    .map(l => `<option value="${l}">${esc(levelName(a, l))}</option>`).join("");
+}
+function wpFillTargets() {
+  const sel = document.getElementById("addTarget");
+  const cur = sel.value;
+  const recent = Object.values(wpPlans).filter(p => p.to >= ymd(new Date()))
+    .sort((a, b) => (b.issuedAt || "").localeCompare(a.issuedAt || ""));
+  sel.innerHTML = `<option value="">Plan being prepared (above)</option>` +
+    recent.map(p => `<option value="${esc(p.id)}">Issued: ${esc(p.id)}</option>`).join("");
+  sel.value = cur;
+}
+async function wpAddTask() {
+  const kind = document.getElementById("addKind").value;
+  const opt = {
+    kind, due: document.getElementById("addDate").value, urgent: document.getElementById("addUrgent").checked,
+    ref: document.getElementById("addAsset").value, level: document.getElementById("addLevel").value,
+    text: document.getElementById("addText").value.trim(), area: document.getElementById("addArea").value.trim()
+  };
+  if (!opt.due) return alert("Choose the date.");
+  if (kind === "free" && !opt.text) return alert("Describe the task.");
+  const target = document.getElementById("addTarget").value;
+  const data = await wpEnsureData(false);
+  if (!target) {
+    wpManual.push(opt);
+    wpRenderManual();
+    if (wpCurrent) await wpGenerate();
+  } else {
+    // add straight into an issued plan (urgent job mid-week)
+    const plan = wpPlans[target];
+    const t = hodTask(opt, data, plan.dept);
+    const tasks = [...(plan.tasks || []), { ...t, items: t.items || [] }];
+    const mods = [...new Set([...(plan.mods || []), "hod"])];
+    await db.ref("workPlans/" + target).update({ tasks, mods });
+    alert(`Task added to ${target}. Re-print the plan for the supervisor.`);
+  }
+  document.getElementById("addText").value = "";
+  document.getElementById("addUrgent").checked = false;
+}
+function wpRenderManual() {
+  document.getElementById("wpManualList").innerHTML = wpManual.length
+    ? "<b>Added by HOD:</b> " + wpManual.map((m, i) => `<span class="badge ${m.urgent ? "badge-bad" : "badge-info"}" style="margin:3px;">
+        ${esc(m.kind === "machine" ? (window._wpAssets[m.ref] || {}).name + " – " + PM_LEVELS[m.level].short + " PM" : m.text)} · ${esc(m.due.slice(8, 10) + "-" + m.due.slice(5, 7))}
+        <a href="#" onclick="wpManual.splice(${i},1);wpRenderManual();if(wpCurrent)wpGenerate();return false;" style="color:inherit;margin-left:4px;">✕</a></span>`).join("")
+    : "";
+}
+
+/* close free (non-form) tasks of an issued plan */
+function wpCloseTasks(id) {
+  const plan = wpPlans[id];
+  const open = (plan.tasks || []).map((t, i) => ({ t, i })).filter(x => x.t.mod === "hod" && x.t.kind === "free" && !(plan.manualDone || {})[x.i]);
+  if (!open.length) return alert("No open HOD tasks to close in this plan.");
+  const ans = prompt("Which tasks are completed? Enter numbers separated by commas:\n\n" +
+    open.map((x, n) => `${n + 1}. ${x.t.name} (${x.t.due})`).join("\n"));
+  if (!ans) return;
+  const upd = {};
+  ans.split(",").map(s => parseInt(s.trim(), 10) - 1).filter(n => open[n]).forEach(n => upd[open[n].i] = ymd(new Date()));
+  db.ref(`workPlans/${id}/manualDone`).update(upd);
 }
 
 function wpRender(plan) {
@@ -84,7 +190,8 @@ function wpRender(plan) {
   html += `<table><tr><th>Due</th><th>Report</th><th>Item</th><th>Area / Location</th><th>Task</th><th>Responsible</th></tr>` +
     groupedRows(tasks.slice(0, 1500), 6, t => `<tr${t.overdue ? ' style="background:#fff3f2;"' : ""}>
       <td style="white-space:nowrap;"><b>${esc(t.due)}</b>${t.overdue ? '<br><span class="badge badge-bad">Overdue</span>' : ""}</td>
-      <td>${esc(WP_MODULES[t.mod].name)}</td><td><b>${esc(t.name)}</b>${t.mod === "pm" ? `<br><small>${esc(t.ref)}</small>` : ""}</td>
+      <td>${esc(WP_MODULES[t.mod].name)}${t.urgent ? '<br><span class="badge badge-bad">URGENT</span>' : ""}</td>
+      <td><b>${esc(t.name)}</b>${t.mod === "pm" || t.kind === "machine" ? `<br><small>${esc(t.ref)}</small>` : ""}</td>
       <td>${esc(t.area)}</td><td style="min-width:280px;">${taskCellHtml(t)}</td><td><small>${esc(wpResp(plan.dept, t.mod))}</small></td></tr>`) + "</table>";
   if (tasks.length > 1500) html += `<p>Showing first 1500 of ${tasks.length} tasks – the printed plan contains all.</p>`;
   document.getElementById("wpTable").innerHTML = html;
@@ -101,7 +208,8 @@ async function wpIssue() {
     id: wpCurrent.id, dept: wpCurrent.dept, type: wpCurrent.type, label: wpCurrent.label, from: wpCurrent.from, to: wpCurrent.to,
     mods: wpCurrent.mods, issuedBy: by, issuedTo: to, issuedAt: new Date().toISOString(),
     tasks: wpCurrent.tasks.map(t => ({ mod: t.mod, ref: t.ref, name: t.name, area: t.area, detail: t.detail,
-                                        due: t.due, overdue: !!t.overdue, level: t.level || "", items: t.items || [] }))
+                                        due: t.due, overdue: !!t.overdue, level: t.level || "", items: t.items || [],
+                                        kind: t.kind || "", urgent: !!t.urgent }))
   };
   await db.ref("workPlans/" + plan.id).set(plan);
   window.open("workplan_print.html?id=" + encodeURIComponent(plan.id), "_blank");
@@ -131,6 +239,7 @@ async function wpRefreshProgress() {
         <td style="white-space:nowrap;">
           <button class="secondary-btn" onclick="window.open('workplan_print.html?id=${encodeURIComponent(p.id)}','_blank')">Print Plan</button>
           <button class="secondary-btn" onclick="window.open('workplan_print.html?id=${encodeURIComponent(p.id)}&review=1','_blank')">Review</button>
+          ${(p.tasks || []).some(t => t.mod === "hod" && t.kind === "free") ? `<button class="secondary-btn" onclick="wpCloseTasks('${esc(p.id)}')">Close tasks</button>` : ""}
         </td></tr>`;
     }).join("") + "</table>";
   wpBanner(rows);

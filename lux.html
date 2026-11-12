@@ -3,593 +3,219 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LUX Monitoring Report</title>
-
-  <!-- Firebase -->
+  <title>LUX Survey</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="data.js"></script>
-
+  <script src="pm-library.js"></script>
   <style>
-    body {
-      font-family: "Times New Roman", serif;
-      margin: 0;
-      background: #f4f4f4;
-    }
-
-    /* Premium Header (same style family as your other pages) */
-    .topbar {
-      background: #0c0c0c;
-      padding: 18px 0 22px 0;
-      text-align: center;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.4);
-    }
-    .topbar img {
-      width: 120px;
-      filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5));
-    }
-    .title {
-      margin-top: 10px;
-      font-size: 26px;
-      font-weight: bold;
-      background: linear-gradient(90deg,#ffd65a,#ffb300);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 8px rgba(0,0,0,0.4);
-    }
-
-    /* LOGIN CARD (same pattern as your other electrician pages) */
-    .card {
-      background: #fff;
-      padding: 20px;
-      max-width: 800px;
-      margin: 20px auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    }
-    .btn {
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      border: none;
-      width: 100%;
-      cursor: pointer;
-      margin-top: 12px;
-      color: #fff;
-    }
-    .btn-red { background:#c40000; }
-
-    /* WORD-STYLE PAGE */
-    #formArea { display:none; }
-
-    .page {
-      width: 210mm;
-      min-height: 297mm;
-      padding: 20mm;
-      margin: 20px auto 40px auto;
-      border: 1px solid #000;
-      box-sizing: border-box;
-      background: #fff;
-    }
-
-    h1 {
-      text-align: center;
-      font-size: 20px;
-      text-decoration: underline;
-      margin-top: 0;
-      margin-bottom: 15px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    td, th {
-      border: 1px solid #000;
-      padding: 4px 6px;
-      vertical-align: top;
-    }
-
-    .no-border td,
-    .no-border th {
-      border: none;
-      padding: 2px 4px;
-    }
-
-    .label {
-      font-weight: bold;
-    }
-
-    input[type="text"],
-    input[type="date"],
-    input[type="time"],
-    textarea,
-    select {
-      width: 100%;
-      box-sizing: border-box;
-      border: none;
-      border-bottom: 1px solid #000;
-      font-family: inherit;
-      font-size: 14px;
-      padding: 2px;
-      background: transparent;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 40px;
-    }
-
-    .checkbox-group {
-      display: flex;
-      gap: 15px;
-      align-items: center;
-    }
-
-    .checkbox-group input[type="checkbox"] {
-      width: auto;
-      margin-right: 4px;
-      border: initial;
-    }
-
-    .sn-cell {
-      width: 30px;
-      text-align: center;
-    }
-
-    .picture-cell {
-      width: 110px;
-      text-align: center;
-    }
-
-    .picture-preview {
-      width: 90px;
-      height: 90px;
-      border: 1px solid #000;
-      object-fit: contain;
-      display: block;
-      margin: 0 auto 4px;
-      background: #fafafa;
-    }
-
-    .sign-line {
-      border-bottom: 1px solid #000;
-      height: 28px;
-    }
-
-    .footer {
-      margin-top: 40px;
-      font-size: 10px;
-      text-align: center;
-    }
-
-    .footer span {
-      white-space: nowrap;
-    }
-
-    .actions {
-      margin-top: 15px;
-      display: flex;
-      gap: 10px;
-    }
-
-    button[type="submit"],
-    .small-btn {
-      padding: 6px 14px;
-      font-size: 14px;
-      cursor: pointer;
-      border-radius: 4px;
-      border: 1px solid #000;
-      background: #eee;
-    }
-
-    .section-title {
-      font-weight: bold;
-      margin-top: 10px;
-      margin-bottom: 4px;
-      text-decoration: underline;
-    }
-
-    .small {
-      font-size: 12px;
-    }
-
-    /* Hide non-print controls when printing */
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-      body {
-        margin: 0;
-        background: #fff;
-      }
-      .page {
-        border: none;
-        margin: 0;
-        padding: 10mm 15mm;
-      }
-    }
+    .card { max-width: 640px; margin: 14px auto; }
+    #formArea { display: none; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .pt { border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin-top: 12px; background: #fff; }
+    .pt-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .pt-name { font-weight: 800; font-size: 15px; }
+    .pt-lim { font-size: 12.5px; color: var(--muted); }
+    .reading { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+    .reading input { font-size: 26px !important; font-weight: 800; text-align: center; padding: 10px !important; flex: 1; }
+    .reading .unit { font-weight: 700; color: var(--muted); }
+    .res { margin-top: 8px; min-height: 22px; }
+    .photo-btn2 { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; font-weight: 700;
+                  border: 1px dashed #d6cfc6; border-radius: 8px; padding: 7px 10px; cursor: pointer; background: var(--surface-2); }
+    .photo-btn2 input { display: none; }
+    .thumb { max-width: 90px; max-height: 90px; border-radius: 8px; margin-top: 8px; display: none; border: 1px solid var(--border); }
+    details.edit { margin-top: 8px; font-size: 13px; }
+    details.edit summary { cursor: pointer; color: var(--muted); }
+    .row2 { display: grid; grid-template-columns: 2fr 1fr; gap: 0 10px; }
+    #submitBtn { width: 100%; margin-top: 16px; padding: 15px; font-size: 17px; }
+    .summary { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
   </style>
   <link rel="stylesheet" href="theme.css">
 </head>
 <body>
 
 <div class="topbar">
-  <img src="logo.png">
-  <div class="title">LUX Monitoring Report – Electrician</div>
+  <img src="logo.png" alt="Chenab Engineering Works &amp; Foundries (Pvt) Ltd.">
+  <div class="title">LUX Survey</div>
 </div>
 
-<!-- LOGIN -->
 <div class="card" id="loginCard">
-  <h2>LUX Monitoring – Login</h2>
-  <input type="password" id="loginKey" placeholder="Enter Electrician Password">
-  <button class="btn btn-red" onclick="doLogin()">Login</button>
-  <div id="loginError" style="color:red;margin-top:10px;"></div>
+  <h2>Login</h2>
+  <input type="password" id="loginKey" placeholder="Enter password">
+  <button class="btn btn-red" onclick="doLogin()" style="width:100%;margin-top:12px;">Login</button>
+  <div id="loginError" style="color:#b42318;margin-top:10px;"></div>
 </div>
 
-<!-- WORD-STYLE FORM PAGE -->
 <div id="formArea">
-  <div class="page">
-    <form id="luxForm">
-      <h1>LUX MONITORING REPORT</h1>
+  <div class="card">
+    <h2>1. Area</h2>
+    <select id="areaSel" onchange="areaChanged()"></select>
+    <input type="text" id="areaNew" placeholder="Type the new area name" style="display:none;margin-top:8px;">
+    <p class="muted" id="areaInfo"></p>
+  </div>
 
-      <!-- Top meta info table -->
-      <table class="no-border small">
-        <tr>
-          <td class="label" style="width:20%;">Form Code:</td>
-          <td style="width:30%;">CEWF-ADM-FRM-002</td>
-          <td class="label" style="width:20%;">Effective Date:</td>
-          <td style="width:30%;">20-11-2025</td>
-        </tr>
-        <tr>
-          <td class="label">Issue No.:</td>
-          <td>01</td>
-          <td class="label">Revision No.:</td>
-          <td>00</td>
-        </tr>
-      </table>
+  <div class="card">
+    <h2>2. Readings</h2>
+    <p class="muted">Hold the meter at the working height (about 0.85 m / at the tool) and type the reading.</p>
+    <div id="points"></div>
+    <button class="btn btn-dark" style="width:100%;margin-top:12px;padding:11px;" onclick="addPoint()">＋ Add another point</button>
+    <div class="summary" id="summary"></div>
+  </div>
 
-      <br>
-
-      <!-- Type of monitoring -->
-      <table>
-        <tr>
-          <td style="width:30%;" class="label">Type of monitoring:</td>
-          <td>
-            <div class="checkbox-group">
-              <label>
-                <input type="checkbox" name="typeSpot" id="typeSpot" value="Spot Sample">
-                Spot Sample
-              </label>
-              <label>
-                <input type="checkbox" name="typeArea" id="typeArea" value="Area Survey">
-                Area Survey
-              </label>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Sampling Location / Department:</td>
-          <td>
-            <input type="text" name="samplingLocation" id="samplingLocation">
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Date of Sample Collection:</td>
-          <td>
-            <input type="date" name="sampleDate" id="sampleDate">
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Time of Sample Collection:</td>
-          <td>
-            From
-            <input type="time" name="timeFrom" id="timeFrom" style="width:30%; display:inline-block;">
-            &nbsp;To
-            <input type="time" name="timeTo" id="timeTo" style="width:30%; display:inline-block;">
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Sample Collected By:</td>
-          <td>
-            <input type="text" name="collectedBy" id="collectedBy">
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Designation:</td>
-          <td>
-            <input type="text" name="designation" id="designation">
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Equipment Used:</td>
-          <td>
-            <input type="text" name="equipmentUsed" id="equipmentUsed">
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Model:</td>
-          <td>
-            <input type="text" name="model" id="model">
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Calibration Certificate No.:</td>
-          <td>
-            <input type="text" name="calibrationNo" id="calibrationNo">
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Calibration Date:</td>
-          <td>
-            <input type="date" name="calibrationDate" id="calibrationDate">
-          </td>
-        </tr>
-      </table>
-
-      <br>
-
-      <!-- Measurement table -->
-      <table>
-        <tr>
-          <th class="sn-cell">S.N</th>
-          <th>Measurement Point / Area</th>
-          <th style="width:100px;">Limit Values (EPA) Lux</th>
-          <th style="width:110px;">Measured Lux Level</th>
-          <th>Remarks</th>
-          <th class="picture-cell">Picture of Meter</th>
-        </tr>
-
-        <!-- Row template repeated 4 times -->
-        <tr>
-          <td class="sn-cell">1</td>
-          <td><input type="text" id="point1"></td>
-          <td><input type="text" id="limit1"></td>
-          <td><input type="text" id="measured1"></td>
-          <td><input type="text" id="remarks1"></td>
-          <td class="picture-cell">
-            <img id="preview1" class="picture-preview" alt="Meter picture 1">
-            <input class="no-print" type="file" accept="image/*" id="file1">
-          </td>
-        </tr>
-
-        <tr>
-          <td class="sn-cell">2</td>
-          <td><input type="text" id="point2"></td>
-          <td><input type="text" id="limit2"></td>
-          <td><input type="text" id="measured2"></td>
-          <td><input type="text" id="remarks2"></td>
-          <td class="picture-cell">
-            <img id="preview2" class="picture-preview" alt="Meter picture 2">
-            <input class="no-print" type="file" accept="image/*" id="file2">
-          </td>
-        </tr>
-
-        <tr>
-          <td class="sn-cell">3</td>
-          <td><input type="text" id="point3"></td>
-          <td><input type="text" id="limit3"></td>
-          <td><input type="text" id="measured3"></td>
-          <td><input type="text" id="remarks3"></td>
-          <td class="picture-cell">
-            <img id="preview3" class="picture-preview" alt="Meter picture 3">
-            <input class="no-print" type="file" accept="image/*" id="file3">
-          </td>
-        </tr>
-
-        <tr>
-          <td class="sn-cell">4</td>
-          <td><input type="text" id="point4"></td>
-          <td><input type="text" id="limit4"></td>
-          <td><input type="text" id="measured4"></td>
-          <td><input type="text" id="remarks4"></td>
-          <td class="picture-cell">
-            <img id="preview4" class="picture-preview" alt="Meter picture 4">
-            <input class="no-print" type="file" accept="image/*" id="file4">
-          </td>
-        </tr>
-      </table>
-
-      <br>
-
-      <!-- Signatures -->
-      <table class="no-border">
-        <tr>
-          <td style="width:50%;">
-            Signature of Area I/C:
-            <div class="sign-line"></div>
-          </td>
-          <td style="width:50%;">
-            Signature of Admin Manager:
-            <div class="sign-line"></div>
-          </td>
-        </tr>
-      </table>
-
-      <!-- Buttons -->
-      <div class="actions no-print">
-        <button type="submit">Submit LUX Report</button>
-        <button type="button" class="small-btn" onclick="document.getElementById('luxForm').reset();clearPreviews();">
-          Clear Form
-        </button>
-      </div>
-
-      <div class="footer">
-        <span>CONTROLLED DOCUMENT | DON’T COPY WITHOUT PERMISSION</span>
-        &nbsp;&nbsp;&nbsp;
-        <span>Page 1 of 1</span>
-      </div>
-    </form>
+  <div class="card">
+    <h2>3. Done by</h2>
+    <div class="row2">
+      <div><label>Name</label><input type="text" id="by" list="teamList"></div>
+      <div><label>Date</label><input type="date" id="sDate"></div>
+    </div>
+    <datalist id="teamList"></datalist>
+    <p class="muted" id="instrInfo"></p>
+    <button class="btn btn-blue" id="submitBtn" onclick="submitLux()">Submit LUX Survey</button>
   </div>
 </div>
 
 <script>
-/* =================== LOGIN (same pattern as old lux.html) =================== */
+const KEY = "9999";
+const METER = EQUIPMENT.find(e => e.code === "EQ-ELM-DLM-001");
+const startTime = (() => { const n = new Date(); return new Date(n - n.getTimezoneOffset() * 60000).toISOString().slice(11, 16); })();
+let lastByArea = {}, photos = {}, pointSeq = 0;
 
-const ELECTRICIAN_KEY = "9999"; // same key as other electrician pages :contentReference[oaicite:1]{index=1}
-
-if (sessionStorage.getItem("electricianLogged") === "true") {
-  showForm();
-}
-
+if (sessionStorage.getItem("electricianLogged") === "true") showForm();
 function doLogin() {
-  let key = document.getElementById("loginKey").value.trim();
-
-  if (key === ELECTRICIAN_KEY) {
-    sessionStorage.setItem("electricianLogged", "true");
-    showForm();
-  } else {
-    document.getElementById("loginError").innerText = "Incorrect password!";
-  }
+  if (document.getElementById("loginKey").value.trim() === KEY) { sessionStorage.setItem("electricianLogged", "true"); showForm(); }
+  else document.getElementById("loginError").innerText = "Incorrect password!";
 }
 
-function showForm() {
+async function showForm() {
   document.getElementById("loginCard").style.display = "none";
   document.getElementById("formArea").style.display = "block";
-}
-
-/* =================== DEFAULT DATE & TIME =================== */
-document.addEventListener("DOMContentLoaded", () => {
-  const now = new Date();
-  const isoDate = new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(0,10); // local date
-  const time = now.toTimeString().slice(0,5);
-  document.getElementById("sampleDate").value = isoDate;
-  document.getElementById("timeFrom").value = time;
-  // LUX monitoring is Mansab Ali's project; instrument from the equipment master list (EQ-ELM-DLM-001)
-  document.getElementById("collectedBy").value = "Mansab Ali";
-  document.getElementById("designation").value = "Asst. Supervisor Electrical";
-  document.getElementById("equipmentUsed").value = "EQ-ELM-DLM-001 Digital Lux Meter (S/N MBHF002987)";
-  document.getElementById("model").value = "MASTECH MS6612";
-  document.getElementById("typeArea").checked = true;
-
-  // opened for a known area (manual-entry page): copy area, points and limits from its last survey
-  const area = new URLSearchParams(location.search).get("area");
-  if (area) {
-    document.getElementById("samplingLocation").value = area;
-    db.ref("luxReports").once("value").then(s => {
-      const last = Object.values(s.val() || {})
-        .filter(r => (r.samplingLocation || "").trim() === area.trim())
-        .sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""))[0];
-      if (!last) return;
-      (last.measurements || []).slice(0, 4).forEach((m, i) => {
-        document.getElementById("point" + (i + 1)).value = m.point || "";
-        document.getElementById("limit" + (i + 1)).value = m.limitLux || "";
-      });
-    });
-  }
-});
-
-/* =================== IMAGE PREVIEW HELPERS =================== */
-
-function wirePreview(fileId, imgId) {
-  const fileInput = document.getElementById(fileId);
-  const img = document.getElementById(imgId);
-  fileInput.addEventListener("change", () => {
-    const file = fileInput.files[0];
-    if (!file) {
-      img.src = "";
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = e => {
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+  document.getElementById("by").value = "Mansab Ali";                      // LUX project owner
+  document.getElementById("sDate").value = ymd(new Date());
+  document.getElementById("teamList").innerHTML = TEAM.map(t => `<option value="${esc(t[0])}">`).join("");
+  document.getElementById("instrInfo").textContent = `Instrument: ${equipLabel(METER)}`;
+  const all = Object.values((await db.ref("luxReports").once("value")).val() || {});
+  all.forEach(r => {
+    const k = (r.samplingLocation || "").trim();
+    if (k && (!lastByArea[k] || (r.timestamp || "") > (lastByArea[k].timestamp || ""))) lastByArea[k] = r;
   });
-}
-["1","2","3","4"].forEach(i => wirePreview("file"+i, "preview"+i));
-
-function clearPreviews() {
-  ["1","2","3","4"].forEach(i => {
-    document.getElementById("preview"+i).src = "";
-    document.getElementById("file"+i).value = "";
-  });
+  const areas = Object.keys(lastByArea).sort();
+  document.getElementById("areaSel").innerHTML = `<option value="">– Choose area –</option>` +
+    areas.map(a => `<option>${esc(a)}</option>`).join("") + `<option value="__new">＋ New area…</option>`;
+  const pre = new URLSearchParams(location.search).get("area");
+  if (pre && lastByArea[pre.trim()]) document.getElementById("areaSel").value = pre.trim();
+  areaChanged();
 }
 
-/* convert file -> base64 (Promise) */
-function fileToBase64(inputId) {
-  return new Promise(resolve => {
-    const inp = document.getElementById(inputId);
-    const file = inp.files[0];
-    if (!file) { resolve(null); return; }
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
-    reader.readAsDataURL(file);
-  });
+function areaChanged() {
+  const v = document.getElementById("areaSel").value;
+  document.getElementById("areaNew").style.display = v === "__new" ? "" : "none";
+  document.getElementById("points").innerHTML = "";
+  photos = {}; pointSeq = 0;
+  const last = lastByArea[v];
+  if (last) {
+    document.getElementById("areaInfo").textContent = `Last survey: ${last.sampleDate} by ${last.collectedBy || "–"}. Points loaded from it.`;
+    (last.measurements || []).filter(Boolean).forEach(m => addPoint(m.point, m.limitLux));
+  } else {
+    document.getElementById("areaInfo").textContent = v === "__new" ? "New area – add the measuring points." : "";
+    if (v) { addPoint("", ""); addPoint("", ""); addPoint("", ""); }
+  }
+  updateSummary();
 }
 
-/* =================== SUBMIT TO FIREBASE (new structure) =================== */
-/* =================== SUBMIT TO FIREBASE =================== */
+function addPoint(name, limit) {
+  const id = ++pointSeq;
+  const div = document.createElement("div");
+  div.className = "pt";
+  div.id = "pt" + id;
+  div.innerHTML = `
+    <div class="pt-head"><div><div class="pt-name" id="pn${id}">${esc(name || "Point " + id)}</div>
+      <div class="pt-lim">Limit: <b id="pl${id}">${esc(limit || "–")}</b> lux</div></div>
+      <span style="color:#b42318;cursor:pointer;font-weight:800;" onclick="document.getElementById('pt${id}').remove();delete photos[${id}];updateSummary();">✕</span></div>
+    <div class="reading"><input type="number" inputmode="decimal" step="0.1" id="pv${id}" placeholder="0" oninput="updateSummary()">
+      <span class="unit">lux</span></div>
+    <div class="res" id="pr${id}"></div>
+    <label class="photo-btn2">📷 Meter photo (optional)<input type="file" accept="image/*" capture="environment" onchange="takePhoto(event, ${id})"></label>
+    <img class="thumb" id="pi${id}">
+    <details class="edit" ${name ? "" : "open"}><summary>Edit point name / limit</summary>
+      <div class="row2"><input type="text" id="pnIn${id}" value="${esc(name || "")}" placeholder="Point name, e.g. Lathe machine"
+          oninput="document.getElementById('pn${id}').textContent=this.value||'Point ${id}'">
+        <input type="number" id="plIn${id}" value="${esc(limit || "")}" placeholder="Limit lux"
+          oninput="document.getElementById('pl${id}').textContent=this.value||'–';updateSummary()"></div>
+    </details>`;
+  document.getElementById("points").appendChild(div);
+}
 
-document.getElementById("luxForm").addEventListener("submit", async function(e){
-  e.preventDefault();
-
-  const samplingLocation = document.getElementById("samplingLocation").value.trim();
-  const collectedBy = document.getElementById("collectedBy").value.trim();
-
-  if (!samplingLocation || !collectedBy) {
-    alert("Please fill Sampling Location / Department and Sample Collected By.");
-    return;
-  }
-
-  const measurements = [];
-
-  for (let i = 1; i <= 4; i++) {
-    const point    = document.getElementById("point"+i).value.trim();
-    const limitLux = document.getElementById("limit"+i).value.trim();
-    const measured = document.getElementById("measured"+i).value.trim();
-    const remarks  = document.getElementById("remarks"+i).value.trim();
-    const imgData  = await fileToBase64("file"+i);
-
-    if (point || limitLux || measured || remarks || imgData) {
-      measurements.push({
-        sn: i,
-        point,
-        limitLux,
-        measuredLux: measured,
-        remarks,
-        image: imgData || null
-      });
-    }
-  }
-
-  if (!measurements.length) {
-    alert("Please enter at least one measurement row.");
-    return;
-  }
-
-  const data = {
-    timestamp: new Date().toISOString(),
-    samplingLocation,
-    sampleDate: document.getElementById("sampleDate").value,
-    timeFrom : document.getElementById("timeFrom").value,
-    timeTo   : document.getElementById("timeTo").value,
-    collectedBy,
-    designation: document.getElementById("designation").value.trim(),
-    equipmentUsed: document.getElementById("equipmentUsed").value.trim(),
-    model: document.getElementById("model").value.trim(),
-    calibrationNo: document.getElementById("calibrationNo").value.trim(),
-    calibrationDate: document.getElementById("calibrationDate").value,
-    formCode: "CEWF-ADM-FRM-002",
-    effectiveDate: "20-11-2025",
-    issueNo: "01",
-    revisionNo: "00",
-    typeSpot: document.getElementById("typeSpot").checked ? "Spot Sample" : "",
-    typeArea: document.getElementById("typeArea").checked ? "Area Survey" : "",
-    measurements
+// shrink photos to max 1000 px JPEG so the database stays fast
+function takePhoto(e, id) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const s = Math.min(1, 1000 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    photos[id] = c.toDataURL("image/jpeg", 0.7);
+    const t = document.getElementById("pi" + id);
+    t.src = photos[id]; t.style.display = "block";
   };
+  img.src = URL.createObjectURL(file);
+}
 
-  saveLuxReport(data, function() {
-      alert("LUX Report submitted successfully.");
-      window.location.reload();
+function pointData() {
+  return [...document.querySelectorAll(".pt")].map(div => {
+    const id = div.id.slice(2);
+    return { id, point: document.getElementById("pnIn" + id).value.trim(), limit: document.getElementById("plIn" + id).value.trim(),
+             value: document.getElementById("pv" + id).value.trim() };
   });
+}
+function updateSummary() {
+  let good = 0, low = 0;
+  pointData().forEach(p => {
+    const el = document.getElementById("pr" + p.id);
+    if (p.value === "" || p.limit === "") { el.innerHTML = ""; return; }
+    const ok = Number(p.value) >= Number(p.limit);
+    ok ? good++ : low++;
+    el.innerHTML = ok ? '<span class="badge badge-ok">GOOD – meets the limit</span>'
+                      : `<span class="badge badge-bad">BELOW LIMIT – ${Math.round(Number(p.limit) - Number(p.value))} lux short</span>`;
+  });
+  document.getElementById("summary").innerHTML = (good ? `<span class="badge badge-ok">${good} good</span>` : "") +
+    (low ? `<span class="badge badge-bad">${low} below limit</span>` : "");
+}
 
-});
-
+function submitLux() {
+  const sel = document.getElementById("areaSel").value;
+  const area = sel === "__new" ? document.getElementById("areaNew").value.trim() : sel;
+  if (!area) return alert("Choose the area.");
+  const pts = pointData();
+  if (!pts.length) return alert("Add at least one point.");
+  if (pts.some(p => !p.point || p.limit === "")) return alert("Every point needs a name and a limit (open 'Edit point name / limit').");
+  if (pts.some(p => p.value === "")) return alert("Type the reading for every point.");
+  const by = document.getElementById("by").value.trim();
+  if (!by) return alert("Enter your name.");
+  const now = new Date();
+  const person = TEAM.find(t => t[0] === by);
+  const data = {
+    samplingLocation: area, sampleDate: document.getElementById("sDate").value,
+    timeFrom: startTime, timeTo: new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(11, 16),
+    collectedBy: by, designation: person ? person[1] : "",
+    equipmentUsed: `${METER.code} ${METER.name} (S/N ${METER.serial})`, model: METER.make,
+    calibrationNo: METER.calCert || "", calibrationDate: METER.calDue || "",
+    formCode: "CEWF-ADM-FRM-002", effectiveDate: "20-11-2025", issueNo: "01", revisionNo: "00",
+    typeArea: "Area Survey", typeSpot: "",
+    measurements: pts.map((p, i) => ({
+      sn: i + 1, point: p.point, limitLux: p.limit, measuredLux: p.value,
+      remarks: Number(p.value) >= Number(p.limit) ? "Good" : "Below limit – improve lighting",
+      image: photos[p.id] || null
+    }))
+  };
+  document.getElementById("submitBtn").disabled = true;
+  saveLuxReport(data, () => {
+    const low = data.measurements.filter(m => m.remarks !== "Good").length;
+    alert(low ? `LUX survey saved. ${low} point(s) below limit – report to the supervisor.` : "LUX survey saved. All points good.");
+    location.href = "forms.html?tab=lux";
+  });
+}
 </script>
-
 </body>
 </html>

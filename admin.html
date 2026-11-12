@@ -606,9 +606,32 @@
             <label style="display:flex;gap:6px;align-items:center;margin:0;"><input type="checkbox" class="wpMod" value="earth" checked> Earthing</label>
             <label style="display:flex;gap:6px;align-items:center;margin:0;"><input type="checkbox" class="wpMod" value="lux"> LUX Monitoring <small style="color:var(--muted)">(Mansab Ali's project)</small></label>
             <label style="display:flex;gap:6px;align-items:center;margin:0;"><input type="checkbox" class="wpMod" value="tr"> Transformer Inspection</label>
+            <label style="display:flex;gap:6px;align-items:center;margin:0;"><input type="checkbox" class="wpMod" value="gemba"> Gemba Walk – Sand Plant (2 / week)</label>
+          </div>
+          <div id="gembaDays" style="display:none;flex-basis:100%;gap:10px;flex-wrap:wrap;">
+            <label class="f"><span>Gemba walk 1 – date</span><input type="date" id="gembaD1"></label>
+            <label class="f"><span>Gemba walk 2 – date</span><input type="date" id="gembaD2"></label>
           </div>
           <button class="primary-btn" onclick="wpGenerate()">Generate Plan</button>
           <button class="primary-btn" style="background:var(--brand)!important;" onclick="wpIssue()">📤 Issue &amp; Print</button>
+        </div>
+        <div class="filterBox" style="background:#fff6f5;border-color:#f3c1bd;">
+          <div style="flex-basis:100%;font-weight:800;">➕ HOD – add a task to the week
+            <small style="font-weight:500;color:var(--muted);">(core &amp; CO₂ section, workshop, urgent preventive job or anything else)</small></div>
+          <label class="f"><span>Type</span>
+            <select id="addKind" onchange="wpAddKindChanged()">
+              <option value="machine">Machine PM</option>
+              <option value="free">Other task</option>
+            </select></label>
+          <label class="f add-machine" style="flex:2 1 260px;"><span>Machine</span><select id="addAsset" onchange="wpAddAssetChanged()"></select></label>
+          <label class="f add-machine"><span>PM level</span><select id="addLevel"></select></label>
+          <label class="f add-free" style="display:none;flex:2 1 260px;"><span>Task</span><input type="text" id="addText" placeholder="e.g. Replace conveyor belt at core section"></label>
+          <label class="f add-free" style="display:none;"><span>Area</span><input type="text" id="addArea" placeholder="e.g. Core Section"></label>
+          <label class="f"><span>Date</span><input type="date" id="addDate"></label>
+          <label class="f" style="flex:0 0 auto;"><span>Urgent</span><input type="checkbox" id="addUrgent" style="width:20px;height:20px;margin-top:8px!important;"></label>
+          <label class="f"><span>Add to</span><select id="addTarget"></select></label>
+          <button class="primary-btn" onclick="wpAddTask()">➕ Add Task</button>
+          <div id="wpManualList" style="flex-basis:100%;font-size:13.5px;"></div>
         </div>
         <div id="wpHead"></div>
         <div id="wpSummary" class="summary-row"></div>
@@ -671,6 +694,15 @@
             <div class="sub">Abnormalities raised by operators in daily checks</div></div></div>
           <div id="redTags" class="table-wrap"></div>
         </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div><h2>Gemba Walks – Sand Plant</h2>
+            <div class="sub">Two walks a week (mechanical team + one electrical person). Observations stay open until the action is done.</div></div>
+          <div class="actions"><button class="secondary-btn" onclick="window.open('gemba.html','_blank')">＋ New Gemba Walk</button></div>
+        </div>
+        <div id="gembaSummary" class="summary-row"></div>
+        <div id="gembaTable" class="table-wrap"></div>
       </div>
       <div class="card">
         <div class="card-head"><div><h2>Open Follow-up Jobs</h2>

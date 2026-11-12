@@ -25,7 +25,7 @@ const LEVEL_ORDER = ["W", "M", "Q", "H", "Y"];   // maintenance levels (D is ope
 const TEAM = [
   ["Engr Touseef", "Deputy Manager Electrical (HOD)"], ["Engr Ahtasham Khurshid", "Deputy Manager Mechanical (HOD)"],
   ["Fazal Maqsood", "Electrical Supervisor"],
-  ["Mansab Ali", "Asst. Supervisor"], ["Suleman Akram", "Electrician"], ["Zubair Arshad", "Electrician"],
+  ["Mansab Ali", "Asst. Supervisor Electrical"], ["Suleman Akram", "Electrician"], ["Zubair Arshad", "Electrician"],
   ["Arslan", "Electrician"], ["M.Nawaz", "Electrician"], ["Zeeshan Ashraf", "Electrician"],
   ["M. Saddique", "Electrician"], ["Aziz Ur Rehman", "Mechanical Foreman"],
   ["Safdar Shahzad", "Asst. Supervisor Mechanical"], ["Sohail Ahmad", "Asst. Supervisor Mechanical"]
@@ -198,12 +198,17 @@ const CATEGORIES = {
           ["E", "Vibration motors running, no abnormal noise"],
           ["S", "Conveyor / elevator guards and pull-cords in place"],
           ["M", "Dust collector running, no leaks"]],
-      W: [["E", "Check vibration motor cables, terminal box and bolts"],
+      // Weekly = Friday greasing & oiling routine (mechanical)
+      W: [["S", "Plant stopped and locked out before greasing; guards refitted after"],
+          ["M", "Grease all bearings as per lubrication chart (shakeout, conveyors, elevators, mixers)"],
+          ["M", "Grease vibration motor bearings and check mounting bolts"],
+          ["M", "Oil chains, sprockets, rollers and pivot joints"],
+          ["M", "Check gearbox oil levels and top up"],
+          ["M", "Lubricate mixer ploughs / scraper pivots"],
+          ["M", "Check belt tension and scrapers"]],
+      M: [["E", "Check vibration motor cables, terminal box and bolts"],
           ["E", "Check MCC indicators, interlocks and emergency pull-cords"],
-          ["M", "Tighten vibration motor mounting bolts"],
-          ["M", "Check belt tension and scrapers"],
-          ["M", "Grease bearings as per lubrication chart"]],
-      M: [["E", "Measure vibration and bearing temperature of motors / gearboxes"],
+          ["E", "Measure vibration and bearing temperature of motors / gearboxes"],
           ["E", "Measure motor currents"],
           ["E", "Clean and tighten MCC panel terminals"],
           ["M", "Check gearbox oil level and leaks"],
@@ -271,28 +276,29 @@ const CATEGORIES = {
   },
   CMP: {
     name: "Air Compressor",
-    levels: ["D", "W", "M", "Q", "H", "Y"],
-    cbm: { D: ["disctemp", "discpress"], M: ["amps", "vib", "btemp", "hours"], Q: ["thermo", "ir"] },
+    // W = rotation service: one compressor every 2 weeks, so each unit every 10 weeks
+    levels: ["D", "W", "H", "Y"],
+    cbm: { D: ["disctemp", "discpress"], W: ["amps", "vib", "btemp", "hours"], H: ["thermo", "ir"] },
     tasks: {
       D: [["M", "Record discharge pressure and temperature"],
           ["M", "Oil level visible in sight glass"],
           ["M", "Condensate drains working / receiver drained"],
           ["M", "No air leaks or abnormal noise"],
           ["E", "No alarm / warning on controller"]],
-      W: [["M", "Blow out intake air filter"],
+      W: [["S", "Standby compressor running before this unit is stopped"],
+          ["M", "Blow out / replace intake air filter element"],
           ["M", "Clean cooler fins"],
-          ["E", "Check panel / VSD cooling fans and filters"],
-          ["E", "Check auto-drain valve operation"]],
-      M: [["E", "Measure motor current, vibration and bearing temperature"],
-          ["E", "Tighten power terminals, clean VSD heat sink"],
           ["M", "Check belt tension (if belt driven)"],
           ["M", "Air leak survey of main lines (energy objective)"],
-          ["S", "Test safety valve with manual lever"]],
-      Q: [["E", "Thermography of compressor panel and VSD"],
+          ["S", "Test safety valve with manual lever"],
+          ["E", "Check panel / VSD cooling fans and filters, clean heat sink"],
+          ["E", "Check auto-drain valve operation"],
+          ["E", "Measure motor current, vibration and bearing temperature"],
+          ["E", "Tighten power terminals"]],
+      H: [["E", "Thermography of compressor panel and VSD"],
           ["E", "IR test of main motor"],
-          ["M", "Replace air filter element"],
-          ["M", "Replace oil filter / separator as per running hours"]],
-      H: [["M", "Oil change as per hours / oil analysis"],
+          ["M", "Replace oil filter / separator as per running hours"],
+          ["M", "Oil change as per hours / oil analysis"],
           ["M", "Check minimum pressure valve"]],
       Y: [["E", "Motor bearing greasing / replacement"],
           ["M", "Full service kit (2000 / 4000 h)"],
@@ -389,45 +395,62 @@ function strategyFor(asset) {
   return { code: "PM", name: "Time-based Preventive" };
 }
 
-/* Frequency follows criticality (RCM): weekly PM only where the risk justifies it.
-   Class A and all cranes (lifting safety, RCA #2) → full plan incl. Weekly.
-   Class B → starts at Monthly (weekly tasks are folded into the monthly checklist).
-   Class C → Monthly / Quarterly / Yearly only. */
+/* FIXED WEEKLY ROUTINES (set by the maintenance HODs, Nov 2026)
+   Each machine group has its own day; deeper Monthly / Quarterly / Yearly checks are added
+   to that same routine day when they fall due.  Groups with no routine are "on demand":
+   the HOD adds them to the week's work plan when needed (core & CO2 section, workshop, others). */
+const ROUTINES = {
+  SND: { dow: 5, label: "Every Friday – greasing & oiling" },
+  MLD: { dow: 6, label: "Every Saturday night" },
+  OHC: { dow: 0, label: "Every Sunday" },
+  MRC: { dow: 0, label: "Every Sunday" },
+  CMP: { dow: 1, label: "One compressor every 2 weeks (Monday) – each unit every 10 weeks", rotation: 70 },
+  GEN: { dow: 4, label: "Every Thursday – test run (electrical)" }
+};
+const DOW_NAME = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+function routine(asset) { return ROUTINES[asset.category] || null; }
+function onDemand(asset) { return !routine(asset); }
+function routineText(asset) { return routine(asset) ? routine(asset).label : "On demand – HOD adds to the weekly plan"; }
+
+// levels the system schedules automatically (none for on-demand machines)
 function activeLevels(asset) {
-  const lv = CATEGORIES[asset.category].levels;
-  if (asset.status === "Out of Service") return [];
-  const cls = critClass(asset.crit);
-  const crane = ["OHC", "MRC"].includes(asset.category);
-  return lv.filter(l => {
-    if (l === "W") return cls === "A" || crane || asset.category === "GEN";   // generator weekly test = failure-finding
-    if (l === "H") return cls !== "C";
-    return true;
-  });
+  if (asset.status === "Out of Service" || onDemand(asset)) return [];
+  return CATEGORIES[asset.category].levels;
 }
+// levels a technician may choose on the PM form (all levels of the machine type)
+function formLevels(asset) {
+  return asset.status === "Out of Service" ? [] : CATEGORIES[asset.category].levels;
+}
+function pmWindow(asset) { const r = routine(asset); return r && r.dow === 0 ? "SUN" : "DAY"; }
 
-/* PM window: production machines need the Sunday shutdown; the rest can be done on any weekday
-   (compressors have standby units, generator is standby, workshop machines are not production). */
-const WEEKDAY_CATS = ["CMP", "GEN", "WSH", "WTL"];
-function pmWindow(asset) { return WEEKDAY_CATS.includes(asset.category) ? "DAY" : "SUN"; }
-
-/* Interval per level. Class B (low-use) cranes: fortnightly instead of weekly –
-   the operator's daily pre-use check (TPM) covers their basic safety in between. */
 function levelDays(asset, L) {
-  if (L === "W" && ["OHC", "MRC"].includes(asset.category) && critClass(asset.crit) !== "A") return 14;
+  const r = routine(asset);
+  if (L === "W" && r && r.rotation) return r.rotation;
   return PM_LEVELS[L].days;
 }
 function levelName(asset, L) {
-  return L === "W" && levelDays(asset, L) === 14 ? "Fortnightly" : PM_LEVELS[L].name;
+  if (L === "W" && routine(asset)?.rotation) return "Rotation service";
+  return PM_LEVELS[L].name;
+}
+// move a date forward to the given weekday (0 = Sunday … 6 = Saturday)
+function toDow(dateStr, dow) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + ((dow - d.getDay() + 7) % 7));
+  return ymd(d);
+}
+// place a date on the machine's routine day (on-demand machines: any working day)
+function alignToRoutine(asset, dateStr) {
+  const r = routine(asset);
+  return r ? toDow(dateStr, r.dow) : skipSunday(dateStr);
 }
 function skipSunday(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
   if (d.getDay() === 0) d.setDate(d.getDate() + 1);
   return ymd(d);
 }
-// next due date after a PM done on `date`, placed in the machine's PM window
+// next due date after a PM done on `date`, placed on the machine's routine day
 function nextPmDate(asset, date, L) {
-  const d = addDays(date, levelDays(asset, L));
-  return pmWindow(asset) === "SUN" ? toSunday(d) : skipSunday(d);
+  return alignToRoutine(asset, addDays(date, levelDays(asset, L)));
 }
 
 /* ---------------- scheduling helpers ---------------- */

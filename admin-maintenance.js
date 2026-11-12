@@ -2,7 +2,7 @@
    ADMIN – MAINTENANCE TABS (PM Schedule, PM Records, Assets & RCM, Earthing)
    Uses pm-library.js and helpers from admin.html (downloadCSV, sortByDate).
    ===================================================================== */
-let mAssets = {}, mRecords = [], mTpm = [], mPits = {}, mEarth = [];
+let mAssets = {}, mRecords = [], mTpm = [], mPits = {}, mEarth = [], mGemba = {};
 
 function loadMaintenance() {
   db.ref("assets").on("value", s => { mAssets = s.val() || {}; fillAreaFilters(); refreshMaintenance(); });
@@ -18,6 +18,7 @@ function loadMaintenance() {
       Object.entries(recs || {}).forEach(([k, r]) => mTpm.push({ key: k, ...r, assetId: r.assetId || aid })));
     refreshMaintenance();
   });
+  db.ref("gembaWalks").on("value", s => { mGemba = s.val() || {}; renderGemba(); });
   db.ref("earthPits").on("value", s => { mPits = s.val() || {}; renderEarthing(); });
   db.ref("earthingReports").on("value", s => {
     mEarth = [];
@@ -117,7 +118,7 @@ function renderPmPlan() {
         <td><b>${esc(j.asset.name)}</b></td><td>${esc(j.asset.id)}</td><td>${esc(j.asset.area)}</td>
         <td>${critBadge(j.asset)}</td>
         <td>${esc(levelName(j.asset, j.level))}${j.covers.length ? `<br><small>includes ${j.covers.map(l => l === "W" ? levelName(j.asset, l) : PM_LEVELS[l].short).join(", ")}</small>` : ""}
-          <br><small style="color:var(--muted)">${pmWindow(j.asset) === "SUN" ? "Sunday shutdown" : "Weekday"}</small></td>
+          <br><small style="color:var(--muted)">${esc(routineText(j.asset))}</small></td>
         <td>${tasksFor(j.asset.category, j.level).length}</td>
         <td><small>${esc(strategyFor(j.asset).code)}</small></td>
         <td>${esc(j.lastDone || "–")}</td>
@@ -192,6 +193,33 @@ function closeFollow(aid, key) {
   db.ref(`pmRecords/${aid}/${key}`).update({ followStatus: "Closed", followClosedBy: by, followClosedAt: new Date().toISOString() });
 }
 
+/* ---------------- GEMBA WALKS ---------------- */
+function renderGemba() {
+  const walks = Object.entries(mGemba).map(([k, g]) => ({ key: k, ...g })).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const mon = (() => { const d = new Date(ymd(new Date()) + "T00:00:00"); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); })();
+  const thisWeek = walks.filter(w => w.date >= mon && w.date <= addDays(mon, 6)).length;
+  const open = [];
+  walks.forEach(w => (w.observations || []).forEach((o, i) => { if (o.status !== "Closed") open.push({ w, o, i }); }));
+  const late = open.filter(x => x.o.target && x.o.target < ymd(new Date())).length;
+  document.getElementById("gembaSummary").innerHTML = `
+    <div class="summary-card"><div class="summary-title">Walks this week</div><div class="summary-value" style="color:${thisWeek >= 2 ? "#067a35" : "#b42318"}">${thisWeek} / 2</div></div>
+    <div class="summary-card"><div class="summary-title">Open observations</div><div class="summary-value">${open.length}</div></div>
+    <div class="summary-card"><div class="summary-title">Past target date</div><div class="summary-value" style="color:${late ? "#b42318" : "inherit"}">${late}</div></div>
+    <div class="summary-card"><div class="summary-title">Total walks</div><div class="summary-value">${walks.length}</div></div>`;
+  document.getElementById("gembaTable").innerHTML = open.length
+    ? `<table><tr><th>Walk date</th><th>Observation</th><th>Type</th><th>Equipment</th><th>Action</th><th>Responsible</th><th>Target</th><th></th></tr>` +
+      open.map(({ w, o, i }) => `<tr><td style="white-space:nowrap;">${esc(w.date)}</td><td><b>${esc(o.text)}</b></td><td>${esc(o.type)}</td>
+        <td>${esc(o.equipment ? o.equipmentName : "General")}</td><td>${esc(o.action)}</td><td>${esc(o.responsible)}</td>
+        <td style="white-space:nowrap;">${esc(o.target || "")} ${o.target && o.target < ymd(new Date()) ? '<span class="badge badge-bad">Late</span>' : ""}</td>
+        <td><button class="secondary-btn" onclick="closeGemba('${w.key}',${i})">Close</button></td></tr>`).join("") + "</table>"
+    : `<p>${walks.length ? "All Gemba observations are closed." : "No Gemba walks recorded yet."}</p>`;
+}
+function closeGemba(key, i) {
+  const by = prompt("Closed by (name) and what was done:");
+  if (!by) return;
+  db.ref(`gembaWalks/${key}/observations/${i}`).update({ status: "Closed", closedBy: by, closedAt: new Date().toISOString() });
+}
+
 /* ---------------- PM RECORDS ---------------- */
 function renderPmRecords() {
   const qa = document.getElementById("prAsset").value.trim().toLowerCase();
@@ -261,7 +289,10 @@ function renderStrategyInfo() {
         <h3 style="border:none;padding:0;margin:6px 0;">3 · TPM pillars in this system</h3>
         <p style="font-size:13.5px;margin:0;">
           <b>Autonomous Maintenance</b> – operators scan the machine QR daily: Clean · Lubricate · Inspect · Tighten, red/white tags.<br>
-          <b>Planned Maintenance</b> – weekly → yearly PM on Sunday shutdown windows, workload levelled.<br>
+          <b>Planned Maintenance</b> – fixed weekly routines: sand plant greasing &amp; oiling every Friday, molding machines
+          every Saturday night, all cranes every Sunday, one compressor every 2 weeks; monthly → yearly checks ride on the
+          routine day. Core &amp; CO₂ section, workshop and urgent jobs are added by the HOD to the weekly plan.<br>
+          <b>Gemba walk</b> – two walks a week on the sand plant (mechanical team + one electrical person).<br>
           <b>Focused Improvement</b> – RCA of top faults drives the tasks; MTBF per machine on its QR page.<br>
           <b>Safety</b> – LOTO and Permit to Work mandatory in every PM work order (crane work = work at height).<br>
           <b>Training</b> – RCM (4-11-26) and Condition Monitoring (11-11-26) trainings support the readings.</p>
