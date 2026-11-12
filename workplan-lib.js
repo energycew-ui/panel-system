@@ -197,6 +197,11 @@ function buildTasks(data, mods, from, to, dept, opts) {
   if (mods.includes("gemba")) gembaTasks(from, to, (opts || {}).gembaDates).forEach(t => tasks.push(t));
   return sortTasks(tasks);
 }
+// order by the date the assigned person must complete it (overdue and urgent first)
+function sortByTarget(tasks) {
+  return tasks.sort((a, b) => (b.overdue - a.overdue) || (!!b.urgent - !!a.urgent) ||
+    (a.target || a.due).localeCompare(b.target || b.due) || WP_ORDER.indexOf(a.mod) - WP_ORDER.indexOf(b.mod));
+}
 function sortTasks(tasks) {
   return tasks.sort((a, b) => (b.overdue - a.overdue) || (!!b.urgent - !!a.urgent) || a.due.localeCompare(b.due) ||
                               WP_ORDER.indexOf(a.mod) - WP_ORDER.indexOf(b.mod));
@@ -217,27 +222,62 @@ function hodTask(opt, data, dept) {
 }
 
 /* ---------------- completion: was the task done in its window? ---------------- */
-function taskDone(t, data, plan) {
+// was the task done in its window, and by whom?  → { date, by }
+function taskDoneInfo(t, data, plan) {
   // window: from the plan start (or 15 days before due) until 15 days after due, never before the plan start
   const start = t.overdue ? plan.from : (addDays(t.due, -15) > plan.from ? addDays(t.due, -15) : plan.from);
   const end = addDays(t.due < plan.from ? plan.to : t.due, 15);
   const inWin = d => d && d >= start && d <= end;
-  let date = "";
-  if (t.mod === "db") { const p = data.panels[t.ref]; date = p && p.lastInspection ? ymd(new Date(p.lastInspection)) : ""; }
-  if (t.mod === "tr") { const x = data.trs[t.ref]; date = x && x.lastInspection ? ymd(new Date(x.lastInspection)) : ""; }
-  if (t.mod === "earth") date = data.earth.filter(r => r.pitId === t.ref && inWin(r.date)).map(r => r.date).sort()[0] || "";
-  if (t.mod === "lux") date = data.lux.filter(r => (r.samplingLocation || "").trim() === t.ref && inWin(r.sampleDate)).map(r => r.sampleDate).sort()[0] || "";
-  if (t.mod === "pm" || (t.mod === "hod" && t.kind === "machine")) date = data.pm.filter(r => r._parent === t.ref && inWin(r.date) &&
-      LEVEL_ORDER.indexOf(r.level) >= LEVEL_ORDER.indexOf(t.level)).map(r => r.date).sort()[0] || "";
-  return inWin(date) ? date : "";
+  const first = (recs, dateOf, byOf) => {
+    const r = recs.filter(x => inWin(dateOf(x))).sort((a, b) => dateOf(a).localeCompare(dateOf(b)))[0];
+    return r ? { date: dateOf(r), by: byOf(r) || "" } : { date: "", by: "" };
+  };
+  if (t.mod === "db" || t.mod === "tr") {
+    const x = (t.mod === "db" ? data.panels : data.trs)[t.ref];
+    const d = x && x.lastInspection ? ymd(new Date(x.lastInspection)) : "";
+    return inWin(d) ? { date: d, by: x.lastInspectedBy || "" } : { date: "", by: "" };
+  }
+  if (t.mod === "earth") return first(data.earth.filter(r => r.pitId === t.ref), r => r.date, r => r.testedBy);
+  if (t.mod === "lux") return first(data.lux.filter(r => (r.samplingLocation || "").trim() === t.ref), r => r.sampleDate, r => r.collectedBy);
+  if (t.mod === "pm" || (t.mod === "hod" && t.kind === "machine"))
+    return first(data.pm.filter(r => r._parent === t.ref && LEVEL_ORDER.indexOf(r.level) >= LEVEL_ORDER.indexOf(t.level)),
+                 r => r.date, r => [r.technician, r.helper].filter(Boolean).join(" + "));
+  return { date: "", by: "" };
+}
+function taskDone(t, data, plan) { return taskDoneInfo(t, data, plan).date; }
+
+// same person? (names are typed – compare loosely, "Engr Touseef" ≈ "Engr Touseef Ghalib")
+function samePerson(a, b) {
+  const n = s => (s || "").toLowerCase().replace(/^engr\.?\s*/, "").replace(/[^a-z]/g, "");
+  const x = n(a), y = n(b);
+  return !!x && !!y && (x === y || x.includes(y) || y.includes(x));
+}
+
+/* duty report: per assigned person – assigned, done by them, done by someone else, not performed, late */
+function dutyReport(plan, pr) {
+  const today = ymd(new Date());
+  const rows = {};
+  (plan.tasks || []).forEach((t, i) => {
+    const who = t.assignee || "– Not assigned –";
+    const r = rows[who] = rows[who] || { person: who, assigned: 0, done: 0, other: 0, pending: 0, late: 0, pendingList: [] };
+    r.assigned++;
+    const d = pr.status[i], by = pr.by[i];
+    if (d) { (!t.assignee || !by || by.split(" + ").some(b => samePerson(b, t.assignee))) ? r.done++ : r.other++; }
+    else {
+      r.pending++;
+      if ((t.target || t.due) < today) r.late++;
+      r.pendingList.push(`${t.name} (${(t.target || t.due).slice(8, 10)}-${(t.target || t.due).slice(5, 7)})`);
+    }
+  });
+  return Object.values(rows).sort((a, b) => b.pending - a.pending || a.person.localeCompare(b.person));
 }
 
 // day heading row used to group a plan's tasks by the day they should be done
-function dayKey(t) { return t.overdue ? "0-overdue" : t.due; }
+function dayKey(t) { return t.overdue ? "0-overdue" : (t.target || t.due); }
 function dayHeaderRow(t, count, cols) {
   if (t.overdue) return `<tr><td colspan="${cols}" style="background:#fde8e7;color:#b42318;font-weight:800;">
     ⚠ OVERDUE – do these first (${count})</td></tr>`;
-  const d = new Date(t.due + "T00:00:00");
+  const d = new Date((t.target || t.due) + "T00:00:00");
   const label = d.toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short" });
   const sun = d.getDay() === 0;
   return `<tr><td colspan="${cols}" style="background:#1a1410;color:#fff;font-weight:700;">
@@ -266,15 +306,21 @@ function planProgress(plan, data) {
   const today = ymd(new Date());
   let done = 0, overdue = 0;
   // Gemba: the walks recorded in the plan period tick off the gemba tasks in date order
-  const walks = (data.gemba || []).map(g => g.date).filter(d => d >= plan.from && d <= addDays(plan.to, 2)).sort();
+  const walks = (data.gemba || []).filter(g => g.date >= plan.from && g.date <= addDays(plan.to, 2))
+    .sort((a, b) => a.date.localeCompare(b.date));
   let gi = 0;
+  const by = [];
   const status = tasks.map((t, i) => {
-    let d = "";
-    if (t.mod === "gemba") d = walks[gi++] || "";
-    else if (t.mod === "hod" && t.kind === "free") d = (plan.manualDone || {})[i] || "";
-    else d = taskDone(t, data, plan);
-    if (d) done++; else if (t.due < today) overdue++;
-    return d;
+    let info = { date: "", by: "" };
+    if (t.mod === "gemba") { const w = walks[gi++]; if (w) info = { date: w.date, by: (w.team || []).map(m => m.name).join(" + ") }; }
+    else if (t.mod === "hod" && t.kind === "free") {
+      const m = (plan.manualDone || {})[i];
+      if (m) info = typeof m === "string" ? { date: m, by: "" } : m;
+    }
+    else info = taskDoneInfo(t, data, plan);
+    by.push(info.by);
+    if (info.date) done++; else if ((t.target || t.due) < today) overdue++;
+    return info.date;
   });
-  return { total: tasks.length, done, overdue, pending: tasks.length - done, pct: tasks.length ? Math.round(done / tasks.length * 100) : 0, status };
+  return { total: tasks.length, done, overdue, pending: tasks.length - done, pct: tasks.length ? Math.round(done / tasks.length * 100) : 0, status, by };
 }

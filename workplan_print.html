@@ -49,7 +49,7 @@ const review = qp.get("review") === "1";
   if (!plan) { document.getElementById("content").textContent = "Plan not found."; return; }
   let pr = null;
   if (review) pr = planProgress(plan, await loadWPData());
-  const tasks = (plan.tasks || []).map((t, i) => ({ ...t, doneOn: pr ? pr.status[i] : "" }));
+  const tasks = (plan.tasks || []).map((t, i) => ({ ...t, doneOn: pr ? pr.status[i] : "", doneBy: pr ? pr.by[i] : "" }));
   const mods = WP_ORDER.filter(m => (plan.mods || []).includes(m));
   const sumHtml = mods.map(m => {
     const ts = tasks.filter(t => t.mod === m);
@@ -57,19 +57,34 @@ const review = qp.get("review") === "1";
     return `<div>${esc(WP_MODULES[m].name)}<b>${ts.length}</b>${extra}</div>`;
   }).join("") + (review ? `<div>Completion<b style="color:${pr.pct >= 90 ? "#067a35" : pr.pct >= 60 ? "#a15c00" : "#b42318"}">${pr.pct}%</b>${pr.done}/${pr.total} done</div>` : "");
 
+  const dm = s => s ? s.slice(8, 10) + "-" + s.slice(5, 7) : "";
   const sections = mods.map(m => {
-    const ts = tasks.filter(t => t.mod === m);
+    const ts = sortByTarget(tasks.filter(t => t.mod === m));
     if (!ts.length) return "";
-    return `<h2>${esc(WP_MODULES[m].name)} – ${ts.length} task(s) · Responsible: ${esc(wpResp(plan.dept, m))}</h2>
-      <table><tr><th style="width:26px">#</th><th style="width:52px">Due</th><th style="width:18%">Item</th><th style="width:12%">Area / Location</th><th>Task / Checks to perform</th>
-        ${review ? "<th style='width:90px'>Status</th>" : "<th style='width:90px'>Done by</th><th style='width:60px'>Date</th><th style='width:60px'>Sign</th>"}</tr>
-      ${groupedRows(ts, review ? 6 : 8, (t, i) => `<tr class="${t.overdue && !t.doneOn ? "od" : ""}"><td>${i + 1}</td>
-        <td>${esc(t.due.slice(8, 10) + "-" + t.due.slice(5, 7))}${t.overdue ? "<br><b style='color:#b42318'>OVERDUE</b>" : ""}</td>
+    return `<h2>${esc(WP_MODULES[m].name)} – ${ts.length} task(s)</h2>
+      <table><tr><th style="width:24px">#</th><th style="width:48px">Target</th><th style="width:17%">Item</th><th style="width:11%">Area</th><th>Task / Checks to perform</th>
+        <th style="width:96px">Assigned to</th>
+        ${review ? "<th style='width:120px'>Status / Done by</th>" : "<th style='width:52px'>Date</th><th style='width:60px'>Sign</th>"}</tr>
+      ${groupedRows(ts, review ? 7 : 8, (t, i) => {
+        const other = t.doneOn && t.assignee && t.doneBy && !t.doneBy.split(" + ").some(b => samePerson(b, t.assignee));
+        return `<tr class="${t.overdue && !t.doneOn ? "od" : ""}"><td>${i + 1}</td>
+        <td>${esc(dm(t.target || t.due))}${t.overdue ? "<br><b style='color:#b42318'>OVERDUE</b>" : ""}</td>
         <td><b>${esc(t.name)}</b>${m === "pm" || t.kind === "machine" ? `<br>${esc(t.ref)}` : ""}${t.urgent ? "<br><b style='color:#b42318'>URGENT</b>" : ""}</td><td>${esc(t.area)}</td><td>${taskCellHtml(t)}</td>
-        ${review ? `<td>${t.doneOn ? `<span class="done">✓ Done ${esc(t.doneOn.slice(8, 10) + "-" + t.doneOn.slice(5, 7))}</span>` : `<span class="pend">✗ Pending</span>`}</td>`
-                 : "<td></td><td></td><td></td>"}</tr>`)}
+        <td><b>${esc(t.assignee || "–")}</b></td>
+        ${review ? `<td>${t.doneOn ? `<span class="done">✓ Done ${esc(dm(t.doneOn))}</span>${t.doneBy ? `<br><small>by ${esc(t.doneBy)}</small>` : ""}${other ? "<br><b style='color:#a15c00'>done by someone else</b>" : ""}`
+                                   : `<span class="pend">✗ Not performed</span>`}</td>`
+                 : "<td></td><td></td>"}</tr>`;
+      })}
       </table>`;
   }).join("");
+
+  // per-person duty summary (review): who has not performed their assigned work
+  const duty = review ? dutyReport(plan, pr) : [];
+  const dutyHtml = review ? `<h2>Duty Summary – by assigned person</h2>
+    <table><tr><th>Person</th><th>Assigned</th><th>Done by them</th><th>Done by someone else</th><th>Not performed</th><th>Late</th><th>Not performed – tasks</th></tr>
+    ${duty.map(d => `<tr${d.pending ? ' style="background:#fff3f2;"' : ""}><td><b>${esc(d.person)}</b></td><td>${d.assigned}</td>
+      <td class="done">${d.done}</td><td>${d.other}</td><td class="${d.pending ? "pend" : ""}">${d.pending}</td><td>${d.late}</td>
+      <td style="font-size:11px;">${esc(d.pendingList.join("; "))}</td></tr>`).join("")}</table>` : "";
 
   document.getElementById("content").innerHTML = `
     <div class="head">
@@ -87,6 +102,7 @@ const review = qp.get("review") === "1";
     ${review ? "" : `<div class="instr"><b>Instructions:</b> Complete every task by scanning the QR code on the DB / machine / earth pit and submitting the form –
       the system marks the task done automatically. Overdue items (shaded) are carried over from earlier and have priority.
       Weekly and longer PMs are done in the Sunday shutdown window. Write name, date and sign against each task and return this plan to the HOD at the end of the week.</div>`}
+    ${dutyHtml}
     ${sections}
     <h2>Sign-off</h2>
     <table class="sign">

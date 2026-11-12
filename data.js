@@ -137,6 +137,7 @@ function saveTransformerInspection(trId, data, callback) {
       // 🔥 Force update transformer root
       return db.ref("transformers/" + trId).update({
           lastInspection: now.toISOString(),
+          lastInspectedBy: data.electricianName || "",
           nextInspectionDue: next.toISOString()
       });
 

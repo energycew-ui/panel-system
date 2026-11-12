@@ -199,6 +199,7 @@ function submitInspection(){
       .ref("panels/"+dbId)
       .update({
         lastInspection:today.toISOString(),
+        lastInspectedBy:name,
         nextInspectionDue:nextDue.toISOString()
       })
       .then(()=>{

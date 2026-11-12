@@ -68,7 +68,7 @@ async function wpGenerate() {
   // HOD-added tasks stay in the plan when it is regenerated
   wpManual.forEach(m => tasks.push(hodTask(m, data, dept)));
   const allMods = wpManual.length ? [...mods, "hod"] : mods;
-  wpCurrent = { ...p, id: p.id + modsSuffix(dept, mods), dept, mods: allMods, tasks: sortTasks(tasks) };
+  wpCurrent = { ...p, id: p.id + modsSuffix(dept, mods), dept, mods: allMods, tasks: wpApplyAssign(tasks) };
   wpRender(wpCurrent);
 }
 
@@ -160,8 +160,11 @@ function wpCloseTasks(id) {
   const ans = prompt("Which tasks are completed? Enter numbers separated by commas:\n\n" +
     open.map((x, n) => `${n + 1}. ${x.t.name} (${x.t.due})`).join("\n"));
   if (!ans) return;
+  const by = prompt("Who performed these task(s)?", open[0].t.assignee || "");
+  if (by === null) return;
   const upd = {};
-  ans.split(",").map(s => parseInt(s.trim(), 10) - 1).filter(n => open[n]).forEach(n => upd[open[n].i] = ymd(new Date()));
+  ans.split(",").map(s => parseInt(s.trim(), 10) - 1).filter(n => open[n])
+    .forEach(n => upd[open[n].i] = { date: ymd(new Date()), by: by.trim() || open[n].t.assignee || "" });
   db.ref(`workPlans/${id}/manualDone`).update(upd);
 }
 
@@ -187,14 +190,83 @@ function wpRender(plan) {
           ${WP_ORDER.filter(m => plan.mods.includes(m)).map(m => `<td>${ts.filter(t => t.mod === m).length}</td>`).join("")}<td><b>${ts.length}</b></td></tr>`;
       }).join("") + "</table><div style='height:14px'></div>";
   }
-  html += `<table><tr><th>Due</th><th>Report</th><th>Item</th><th>Area / Location</th><th>Task</th><th>Responsible</th></tr>` +
-    groupedRows(tasks.slice(0, 1500), 6, t => `<tr${t.overdue ? ' style="background:#fff3f2;"' : ""}>
+  // bulk assignment bar (HOD assigns each task to a person and a date)
+  const people = TEAM.map(t => t[0]);
+  const days = [...new Set(tasks.map(t => t.target || t.due))].sort();
+  const assigned = tasks.filter(t => t.assignee).length;
+  html += `<div class="filterBox" style="margin-top:10px;">
+    <div style="flex-basis:100%;font-weight:800;">👤 Assign tasks <small style="font-weight:500;color:var(--muted)">
+      ${assigned} of ${tasks.length} assigned${plan.editing ? ` · editing issued plan <b>${esc(plan.id)}</b>` : ""}</small></div>
+    <label class="f"><span>Tasks</span><select id="bulkScope">
+      <option value="unassigned">All unassigned</option><option value="all">All tasks</option>
+      ${WP_ORDER.filter(m => plan.mods.includes(m)).map(m => `<option value="mod:${m}">${esc(WP_MODULES[m].name)}</option>`).join("")}
+      ${days.map(d => `<option value="day:${d}">${new Date(d + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short" })}</option>`).join("")}
+    </select></label>
+    <label class="f"><span>Assign to</span><select id="bulkPerson">${people.map(p => `<option>${esc(p)}</option>`).join("")}</select></label>
+    <button class="secondary-btn" onclick="wpBulkAssign()">Apply</button>
+    ${plan.editing ? `<button class="primary-btn" style="background:var(--brand)!important;" onclick="wpSaveAssignments()">💾 Save to ${esc(plan.id)}</button>
+      <button class="secondary-btn" onclick="wpCancelEdit()">Cancel</button>` : ""}
+  </div>`;
+  const sel = (i, v) => `<select onchange="wpSetAssign(${i},'assignee',this.value)" style="min-width:140px;padding:6px;border-radius:6px;border:1px solid ${v ? "#d6cfc6" : "#fd0000"};">
+      <option value="">– assign –</option>${people.map(p => `<option ${p === v ? "selected" : ""}>${esc(p)}</option>`).join("")}</select>`;
+  html += `<table><tr><th>Due</th><th>Report</th><th>Item</th><th>Area / Location</th><th>Task</th><th>Assigned to</th><th>Target date</th></tr>` +
+    groupedRows(sortByTarget(tasks.map((t, i) => ({ ...t, _i: i }))).slice(0, 1500), 7, t => `<tr${t.overdue ? ' style="background:#fff3f2;"' : ""}>
       <td style="white-space:nowrap;"><b>${esc(t.due)}</b>${t.overdue ? '<br><span class="badge badge-bad">Overdue</span>' : ""}</td>
       <td>${esc(WP_MODULES[t.mod].name)}${t.urgent ? '<br><span class="badge badge-bad">URGENT</span>' : ""}</td>
       <td><b>${esc(t.name)}</b>${t.mod === "pm" || t.kind === "machine" ? `<br><small>${esc(t.ref)}</small>` : ""}</td>
-      <td>${esc(t.area)}</td><td style="min-width:280px;">${taskCellHtml(t)}</td><td><small>${esc(wpResp(plan.dept, t.mod))}</small></td></tr>`) + "</table>";
+      <td>${esc(t.area)}</td><td style="min-width:260px;">${taskCellHtml(t)}</td>
+      <td>${sel(t._i, t.assignee)}</td>
+      <td><input type="date" value="${esc(t.target || t.due)}" onchange="wpSetAssign(${t._i},'target',this.value)" style="padding:6px;border-radius:6px;border:1px solid #d6cfc6;"></td></tr>`) + "</table>";
   if (tasks.length > 1500) html += `<p>Showing first 1500 of ${tasks.length} tasks – the printed plan contains all.</p>`;
   document.getElementById("wpTable").innerHTML = html;
+}
+
+/* ---------------- assignments ---------------- */
+let wpAssign = {};   // task key → { assignee, target }  (kept when the plan is regenerated)
+const wpKey = t => [t.mod, t.ref, t.due, t.level || "", t.name].join("|");
+function wpApplyAssign(tasks) {
+  tasks.forEach(t => {
+    const a = wpAssign[wpKey(t)] || {};
+    t.assignee = a.assignee !== undefined ? a.assignee : (t.assignee || (t.mod === "lux" ? "Mansab Ali" : ""));
+    t.target = a.target || t.target || t.due;
+  });
+  return tasks;   // order kept – the table shows a view sorted by target date
+}
+function wpSetAssign(i, field, value) {
+  const t = wpCurrent.tasks[i];
+  t[field] = value;
+  wpAssign[wpKey(t)] = { assignee: t.assignee, target: t.target };
+  if (field === "target") wpRender(wpCurrent);
+}
+function wpBulkAssign() {
+  const scope = document.getElementById("bulkScope").value, person = document.getElementById("bulkPerson").value;
+  wpCurrent.tasks.forEach(t => {
+    const hit = scope === "all" || (scope === "unassigned" && !t.assignee) ||
+      (scope.startsWith("mod:") && t.mod === scope.slice(4)) || (scope.startsWith("day:") && (t.target || t.due) === scope.slice(4));
+    if (hit) { t.assignee = person; wpAssign[wpKey(t)] = { assignee: t.assignee, target: t.target }; }
+  });
+  wpRender(wpCurrent);
+}
+// HOD can change assignments after the plan was issued
+function wpEditIssued(id) {
+  const p = wpPlans[id];
+  wpAssign = {};
+  wpCurrent = { ...p, editing: true, tasks: wpApplyAssign((p.tasks || []).map(t => ({ ...t }))) };
+  wpRender(wpCurrent);
+  document.getElementById("wpTable").scrollIntoView({ behavior: "smooth" });
+}
+async function wpSaveAssignments() {
+  const id = wpCurrent.id;
+  const tasks = wpCurrent.tasks.map(({ editing, ...t }) => t);
+  // keep task positions stable for manualDone (free tasks) by saving the whole list
+  await db.ref("workPlans/" + id).update({ tasks, assignedAt: new Date().toISOString() });
+  alert(`Assignments saved to ${id}. Re-print the plan for the supervisor.`);
+  wpCancelEdit();
+}
+function wpCancelEdit() {
+  wpCurrent = null; wpAssign = {};
+  document.getElementById("wpHead").innerHTML = ""; document.getElementById("wpSummary").innerHTML = "";
+  document.getElementById("wpTable").innerHTML = "<p>Choose a period and press Generate Plan.</p>";
 }
 
 async function wpIssue() {
@@ -209,7 +281,8 @@ async function wpIssue() {
     mods: wpCurrent.mods, issuedBy: by, issuedTo: to, issuedAt: new Date().toISOString(),
     tasks: wpCurrent.tasks.map(t => ({ mod: t.mod, ref: t.ref, name: t.name, area: t.area, detail: t.detail,
                                         due: t.due, overdue: !!t.overdue, level: t.level || "", items: t.items || [],
-                                        kind: t.kind || "", urgent: !!t.urgent }))
+                                        kind: t.kind || "", urgent: !!t.urgent,
+                                        assignee: t.assignee || "", target: t.target || t.due }))
   };
   await db.ref("workPlans/" + plan.id).set(plan);
   window.open("workplan_print.html?id=" + encodeURIComponent(plan.id), "_blank");
@@ -237,6 +310,7 @@ async function wpRefreshProgress() {
           <small><b>${pr.pct}%</b> · ${pr.done}/${pr.total} done</small></td>
         <td>${pr.pending}${pr.overdue ? ` <span class="badge badge-bad">${pr.overdue} late</span>` : ""}</td>
         <td style="white-space:nowrap;">
+          <button class="secondary-btn" onclick="wpEditIssued('${esc(p.id)}')">👤 Assign</button>
           <button class="secondary-btn" onclick="window.open('workplan_print.html?id=${encodeURIComponent(p.id)}','_blank')">Print Plan</button>
           <button class="secondary-btn" onclick="window.open('workplan_print.html?id=${encodeURIComponent(p.id)}&review=1','_blank')">Review</button>
           ${(p.tasks || []).some(t => t.mod === "hod" && t.kind === "free") ? `<button class="secondary-btn" onclick="wpCloseTasks('${esc(p.id)}')">Close tasks</button>` : ""}
