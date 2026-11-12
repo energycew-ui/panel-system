@@ -115,7 +115,7 @@
       font-weight: bold;
     }
 
-    /* Electrician Menu buttons */
+    /* Technician Menu buttons */
     .btn-blue { background:#007bff; color:#fff; }
     .btn-gold { background:#ffb300; color:#000; }
     .btn-red  { background:#c40000; color:#fff; }
@@ -143,7 +143,7 @@
 
   <div class="menu-btn" onclick="selectElectrician()">
     <div class="icon">🛠️</div>
-    Electrician – Authorized Access
+    Technician – Authorized Access
   </div>
 </div>
 
@@ -191,8 +191,8 @@
 
 <!-- ELECTRICIAN LOGIN -->
 <div class="card" id="electricianLogin" style="display:none;">
-  <h2>Electrician Login</h2>
-  <input id="elecKey" type="password" placeholder="Enter Electrician Password"
+  <h2>Technician Login</h2>
+  <input id="elecKey" type="password" placeholder="Enter Technician Password"
          style="width:100%;padding:12px;font-size:17px;">
   <button class="btn btn-red" onclick="loginElec()">Login</button>
   <div id="loginError" style="color:red;margin-top:10px;"></div>
@@ -200,14 +200,14 @@
 
 <!-- ELECTRICIAN MENU -->
 <div class="card" id="electricianMenu" style="display:none;">
-  <h2>Electrician Menu</h2>
+  <h2>Technician Menu</h2>
 
   <button class="btn btn-blue" onclick="openModifyDB()">🔧 Modify DB</button>
   <button class="btn btn-blue" onclick="openInspection()">📋 DB Inspection</button>
   <button class="btn btn-red"  onclick="openFault()">⚡ Fault Report</button>
   <button class="btn btn-gold" onclick="openTransformer()">🔌 Transformer Inspection</button>
   <button class="btn btn-dark" onclick="openLux()">💡 LUX Monitoring</button>
-  <button class="btn btn-dark" onclick="location.href='forms.html'">📝 All Forms – Manual Entry (DB / machine without QR)</button>
+  <!-- manual entry (no QR) is HOD-only – reached from the Admin dashboard -->
 </div>
 
 <script>

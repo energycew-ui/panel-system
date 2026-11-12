@@ -248,26 +248,38 @@ function taskDone(t, data, plan) { return taskDoneInfo(t, data, plan).date; }
 
 // same person? (names are typed – compare loosely, "Engr Touseef" ≈ "Engr Touseef Ghalib")
 function samePerson(a, b) {
+  const ka = teamName(a), kb = teamName(b);
+  if (ka && kb) return ka === kb;   // both on the roster (old spellings handled)
   const n = s => (s || "").toLowerCase().replace(/^engr\.?\s*/, "").replace(/[^a-z]/g, "");
   const x = n(a), y = n(b);
   return !!x && !!y && (x === y || x.includes(y) || y.includes(x));
 }
+// did one of the assigned people perform it?  by = "A + B" (performers), assignee = "X, Y"
+function doneByAssignee(by, assignee) {
+  if (!assignee || !by) return true;
+  return by.split(" + ").some(b => assigneeList(assignee).some(a => samePerson(b, a)));
+}
 
-/* duty report: per assigned person – assigned, done by them, done by someone else, not performed, late */
+/* duty report: per assigned person – assigned, done by them, done by someone else, not performed, late.
+   A task given to several people counts for each of them. */
 function dutyReport(plan, pr) {
   const today = ymd(new Date());
   const rows = {};
   (plan.tasks || []).forEach((t, i) => {
-    const who = t.assignee || "– Not assigned –";
-    const r = rows[who] = rows[who] || { person: who, assigned: 0, done: 0, other: 0, pending: 0, late: 0, pendingList: [] };
-    r.assigned++;
+    const people = assigneeList(t.assignee);
     const d = pr.status[i], by = pr.by[i];
-    if (d) { (!t.assignee || !by || by.split(" + ").some(b => samePerson(b, t.assignee))) ? r.done++ : r.other++; }
-    else {
-      r.pending++;
-      if ((t.target || t.due) < today) r.late++;
-      r.pendingList.push(`${t.name} (${(t.target || t.due).slice(8, 10)}-${(t.target || t.due).slice(5, 7)})`);
-    }
+    (people.length ? people : ["– Not assigned –"]).forEach(who => {
+      const r = rows[who] = rows[who] || { person: who, assigned: 0, done: 0, other: 0, pending: 0, late: 0, pendingList: [] };
+      r.assigned++;
+      if (d) {
+        // done by this person, or by a team-mate on the same task → done; by somebody not assigned → "someone else"
+        (!people.length || !by || doneByAssignee(by, t.assignee)) ? r.done++ : r.other++;
+      } else {
+        r.pending++;
+        if ((t.target || t.due) < today) r.late++;
+        r.pendingList.push(`${t.name} (${(t.target || t.due).slice(8, 10)}-${(t.target || t.due).slice(5, 7)})`);
+      }
+    });
   });
   return Object.values(rows).sort((a, b) => b.pending - a.pending || a.person.localeCompare(b.person));
 }

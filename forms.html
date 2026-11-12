@@ -39,8 +39,20 @@
   <div class="title">Manual Entry – All Forms</div>
 </div>
 
-<div class="wrap">
-  <p class="note">Use this page when a QR code is missing, damaged or cannot be scanned. Choose the item and open its form – it is saved exactly as if the QR was scanned.</p>
+<!-- HOD-only: technicians must scan the QR code on the equipment -->
+<div class="card" id="hodLogin" style="display:none;margin-top:20px;">
+  <h2>🔒 HOD Access Only</h2>
+  <div class="access-note">Manual entry without a QR code is reserved for the <b>HOD</b> (Electrical / Mechanical).<br>
+    Technicians: please <b>scan the QR code</b> on the DB, machine, transformer or earth pit. If a QR code is missing or damaged, report it to your supervisor / HOD.</div>
+  <label>HOD password</label>
+  <input type="password" id="hodKey" placeholder="Enter HOD (admin) password" onkeydown="if(event.key==='Enter')hodLogin()">
+  <button class="btn btn-blue" style="width:100%;margin-top:12px;" onclick="hodLogin()">Unlock Manual Entry</button>
+  <div id="hodErr" style="color:var(--red);margin-top:10px;font-weight:600;"></div>
+</div>
+
+<div class="wrap" id="manualWrap" style="display:none;">
+  <p class="note">🔒 HOD mode · Use this page when a QR code is missing, damaged or cannot be scanned. Choose the item and open its form – it is saved exactly as if the QR was scanned.
+    <a href="#" onclick="sessionStorage.removeItem('adminDashboardLogged');location.reload();return false;" style="color:var(--red);font-weight:700;margin-left:6px;">Lock</a></p>
 
   <a class="bigbtn" href="gemba.html" style="margin-top:12px;background:var(--brand);">👣 Gemba Walk – Sand Plant</a>
   <div class="tabs" id="tabs">
@@ -167,14 +179,26 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
 });
 ["q", "area", "due"].forEach(id => document.getElementById(id).addEventListener("input", render));
 
-(async function () {
+const HOD_KEY = "1234";   // same as the Admin dashboard password
+function hodLogin() {
+  if (document.getElementById("hodKey").value.trim() === HOD_KEY) {
+    sessionStorage.setItem("adminDashboardLogged", "true");
+    startManual();
+  } else document.getElementById("hodErr").textContent = "Incorrect password – manual entry is for the HOD only.";
+}
+if (sessionStorage.getItem("adminDashboardLogged") === "true") startManual();
+else document.getElementById("hodLogin").style.display = "block";
+
+async function startManual() {
+  document.getElementById("hodLogin").style.display = "none";
+  document.getElementById("manualWrap").style.display = "block";
   const get = p => db.ref(p).once("value").then(s => s.val() || {});
   [data.panels, data.assets, data.pits, data.trs] = await Promise.all([get("panels"), get("assets"), get("earthPits"), get("transformers")]);
   const areas = [...new Set(Object.values(data.assets).map(a => a.area))].sort();
   document.getElementById("area").innerHTML += areas.map(a => `<option>${esc(a)}</option>`).join("");
   const t = new URLSearchParams(location.search).get("tab");
   if (t) document.querySelector(`#tabs button[data-t="${t}"]`)?.click(); else render();
-})();
+}
 </script>
 </body>
 </html>

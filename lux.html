@@ -213,7 +213,8 @@ function submitLux() {
   saveLuxReport(data, () => {
     const low = data.measurements.filter(m => m.remarks !== "Good").length;
     alert(low ? `LUX survey saved. ${low} point(s) below limit – report to the supervisor.` : "LUX survey saved. All points good.");
-    location.href = "forms.html?tab=lux";
+    // manual-entry list is HOD-only; technicians return to a fresh LUX form
+    location.href = sessionStorage.getItem("adminDashboardLogged") === "true" ? "forms.html?tab=lux" : "lux.html";
   });
 }
 </script>

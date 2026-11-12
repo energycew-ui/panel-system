@@ -42,7 +42,7 @@ button {
     background: #007bff;
 }
 
-/* Electrician Button */
+/* Technician Button */
 .elec-btn {
     background: #c40000;
 }
@@ -59,7 +59,7 @@ button {
 <div class="container">
     <button class="visitor-btn" onclick="goVisitor()">Visitor</button>
 
-    <button class="elec-btn" onclick="goElectrician()">Electrician</button>
+    <button class="elec-btn" onclick="goElectrician()">Technician</button>
 </div>
 
 <script>
@@ -79,7 +79,7 @@ function goVisitor() {
     location.href = "panel.html?id=" + id;
 }
 
-// Electrician button → open PIN page
+// Technician button → open PIN page
 function goElectrician() {
     const id = getPanelID();
     if (!id) {

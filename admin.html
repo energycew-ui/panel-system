@@ -357,7 +357,7 @@
 
         <div class="filterBox">
           <label class="f"><span>DB Number</span><input type="text" id="filterDB_i" placeholder="e.g. DB-06"></label>
-          <label class="f"><span>Electrician</span><input type="text" id="filterElec_i" placeholder="Name"></label>
+          <label class="f"><span>Technician</span><input type="text" id="filterElec_i" placeholder="Name"></label>
           <label class="f"><span>From</span><input type="date" id="filterFrom_i"></label>
           <label class="f"><span>To</span><input type="date" id="filterTo_i"></label>
           <label class="f sort"><span>Sort by date</span>
@@ -388,7 +388,7 @@
 
         <div class="filterBox">
           <label class="f"><span>DB Number</span><input type="text" id="filterDB_f" placeholder="e.g. DB-04"></label>
-          <label class="f"><span>Electrician</span><input type="text" id="filterElec_f" placeholder="Name"></label>
+          <label class="f"><span>Technician</span><input type="text" id="filterElec_f" placeholder="Name"></label>
           <label class="f"><span>From</span><input type="date" id="filterFrom_f"></label>
           <label class="f"><span>To</span><input type="date" id="filterTo_f"></label>
           <label class="f"><span>Production Loss</span>
@@ -426,7 +426,7 @@
 
         <div class="filterBox">
           <label class="f"><span>Transformer ID</span><input type="text" id="filterTR_id" placeholder="e.g. TR-004"></label>
-          <label class="f"><span>Electrician</span><input type="text" id="filterTR_elec" placeholder="Name"></label>
+          <label class="f"><span>Technician</span><input type="text" id="filterTR_elec" placeholder="Name"></label>
           <label class="f"><span>From</span><input type="date" id="filterTR_from"></label>
           <label class="f"><span>To</span><input type="date" id="filterTR_to"></label>
           <label class="f sort"><span>Sort by date</span>
@@ -457,7 +457,7 @@
 
         <div class="filterBox">
           <label class="f"><span>Area / Department</span><input type="text" id="filterLX_dept" placeholder="e.g. 6 ton"></label>
-          <label class="f"><span>Electrician</span><input type="text" id="filterLX_elec" placeholder="Name"></label>
+          <label class="f"><span>Technician</span><input type="text" id="filterLX_elec" placeholder="Name"></label>
           <label class="f"><span>From</span><input type="date" id="filterLX_from"></label>
           <label class="f"><span>To</span><input type="date" id="filterLX_to"></label>
           <label class="f sort"><span>Sort by date</span>
@@ -681,6 +681,7 @@
           <label class="f"><span>Search</span><input type="text" id="pmSearch" placeholder="Machine name / ID" oninput="renderPmPlan()"></label>
         </div>
         <div id="pmPlan" class="table-wrap"><p>Loading…</p></div>
+        <div id="pmRemoved"></div>
       </div>
 
       <div class="overview-grid">
@@ -1690,7 +1691,7 @@ function renderInspectionTable(list) {
     <tr>
         <th>Date</th>
         <th>DB</th>
-        <th>Electrician</th>
+        <th>Technician</th>
         <th>Breaker</th>
         <th>Clean</th>
         <th>Locked</th>
@@ -1779,7 +1780,7 @@ function renderFaultTable(list) {
     <tr>
         <th>Date</th>
         <th>DB</th>
-        <th>Electrician</th>
+        <th>Technician</th>
         <th>Fault Type</th>
         <th>Description / Extra</th>
         <th>Start</th>
@@ -2169,7 +2170,7 @@ function exportInspectionsCSV() {
     return;
   }
   const rows = [];
-  rows.push(["Timestamp","DB","Electrician","Breaker Status","Clean Status","Locked Status","Covered Status","Comments"]);
+  rows.push(["Timestamp","DB","Technician","Breaker Status","Clean Status","Locked Status","Covered Status","Comments"]);
   inspectionsGlobal.forEach(r => {
     rows.push([
       r.timestamp || "",
@@ -2193,7 +2194,7 @@ function exportFaultsCSV() {
     return;
   }
   const rows = [];
-  rows.push(["Timestamp","DB","Electrician","Fault Type","Description","Start Time","End Time","Downtime (min)","Production Loss","Production Loss Desc"]);
+  rows.push(["Timestamp","DB","Technician","Fault Type","Description","Start Time","End Time","Downtime (min)","Production Loss","Production Loss Desc"]);
   faultsGlobal.forEach(r => {
     rows.push([
       r.timestamp || "",
@@ -2540,7 +2541,7 @@ function renderTransformerTable(list) {
       <tr>
         <th>Date/Time</th>
         <th>Transformer</th>
-        <th>Electrician</th>
+        <th>Technician</th>
         <th>Oil</th>
         <th>Temp (Oil/Winding)</th>
         <th>IR (MΩ)</th>
@@ -2618,7 +2619,7 @@ function exportTransformersCSV() {
     alert("No transformer reports.");
     return;
   }
-  const rows = [["DateTime","Transformer","Electrician","OilCondition","OilLevel","OilTemp","WindingTemp","IR","EarthRes","LoadCurrent","Remarks"]];
+  const rows = [["DateTime","Transformer","Technician","OilCondition","OilLevel","OilTemp","WindingTemp","IR","EarthRes","LoadCurrent","Remarks"]];
 
   transformerReportsGlobal.forEach(r => {
     const dt = r.datetimeLocal 

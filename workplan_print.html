@@ -66,7 +66,7 @@ const review = qp.get("review") === "1";
         <th style="width:96px">Assigned to</th>
         ${review ? "<th style='width:120px'>Status / Done by</th>" : "<th style='width:52px'>Date</th><th style='width:60px'>Sign</th>"}</tr>
       ${groupedRows(ts, review ? 7 : 8, (t, i) => {
-        const other = t.doneOn && t.assignee && t.doneBy && !t.doneBy.split(" + ").some(b => samePerson(b, t.assignee));
+        const other = t.doneOn && t.assignee && t.doneBy && !doneByAssignee(t.doneBy, t.assignee);
         return `<tr class="${t.overdue && !t.doneOn ? "od" : ""}"><td>${i + 1}</td>
         <td>${esc(dm(t.target || t.due))}${t.overdue ? "<br><b style='color:#b42318'>OVERDUE</b>" : ""}</td>
         <td><b>${esc(t.name)}</b>${m === "pm" || t.kind === "machine" ? `<br>${esc(t.ref)}` : ""}${t.urgent ? "<br><b style='color:#b42318'>URGENT</b>" : ""}</td><td>${esc(t.area)}</td><td>${taskCellHtml(t)}</td>

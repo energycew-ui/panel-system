@@ -85,7 +85,7 @@
 
 <!-- LOGIN -->
 <div class="card" id="loginCard">
-  <h2>Electrician Login</h2>
+  <h2>Technician Login</h2>
   <input type="password" id="loginKey" placeholder="Enter Password">
   <button class="btn btn-red" onclick="login()">Login</button>
   <div id="loginError" style="color:red;margin-top:10px;"></div>
@@ -101,7 +101,7 @@
   <label>Date & Time</label>
   <input type="datetime-local" id="tr_datetime">
 
-  <label>Electrician Name</label>
+  <label>Technician Name</label>
   <input type="text" id="tr_name">
 
   <label>Oil Level</label>
@@ -243,7 +243,7 @@ function submitTransformer() {
   if (!trId) return alert("Select transformer.");
 
   const name = document.getElementById("tr_name").value.trim();
-  if (!name) return alert("Enter electrician name.");
+  if (!name) return alert("Enter technician name.");
 
   const tempOil = document.getElementById("temp_oil").value;
   const tempWinding = document.getElementById("temp_winding").value;

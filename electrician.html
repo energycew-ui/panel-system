@@ -37,12 +37,12 @@
 
 <div class="topbar">
   <img src="logo.png">
-  <div class="title">DB Inspection – Electrician</div>
+  <div class="title">DB Inspection – Technician</div>
 </div>
 
 <div class="card" id="loginCard">
-  <h2>Electrician Login</h2>
-  <input type="password" id="loginKey" placeholder="Enter Electrician Password">
+  <h2>Technician Login</h2>
+  <input type="password" id="loginKey" placeholder="Enter Technician Password">
   <button class="btn btn-red" onclick="doLogin()">Login</button>
   <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
@@ -54,7 +54,7 @@
   <label>Date & Time</label>
   <input type="datetime-local" id="insp_datetime">
 
-  <label>Electrician Name</label>
+  <label>Technician Name</label>
   <input type="text" id="insp_name">
 
   <div class="section-title">Panel Condition</div>
@@ -169,7 +169,7 @@ function showPhoto(e,num){
 function submitInspection(){
 
   const name=document.getElementById("insp_name").value.trim();
-  if(!name){alert("Enter electrician name.");return;}
+  if(!name){alert("Enter technician name.");return;}
 
   const data={
     timestamp:new Date().toISOString(),

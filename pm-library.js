@@ -22,14 +22,60 @@ const PM_LEVELS = {
 };
 const LEVEL_ORDER = ["W", "M", "Q", "H", "Y"];   // maintenance levels (D is operator TPM)
 
+/* Team roster (from the attendance sheets, Nov 2026)
+   [ name, designation, dept (E = Foundry Electric, P = Power House, M = Foundry Maintenance / Mechanical), staff code, other spellings ] */
 const TEAM = [
-  ["Engr Touseef", "Deputy Manager Electrical (HOD)"], ["Engr Ahtasham Khurshid", "Deputy Manager Mechanical (HOD)"],
-  ["Fazal Maqsood", "Electrical Supervisor"],
-  ["Mansab Ali", "Asst. Supervisor Electrical"], ["Suleman Akram", "Electrician"], ["Zubair Arshad", "Electrician"],
-  ["Arslan", "Electrician"], ["M.Nawaz", "Electrician"], ["Zeeshan Ashraf", "Electrician"],
-  ["M. Saddique", "Electrician"], ["Aziz Ur Rehman", "Mechanical Foreman"],
-  ["Safdar Shahzad", "Asst. Supervisor Mechanical"], ["Sohail Ahmad", "Asst. Supervisor Mechanical"]
+  ["Engr Touseef", "Deputy Manager Electrical (HOD)", "E", "05401", ["Touseef Ghalib", "Engr Touseef Ghalib"]],
+  ["Fazal Maqsood", "Deputy Supervisor Electrical", "E", "08434"],
+  ["Mansab Ali", "Asst. Supervisor Electrical", "E", "07365"],
+  ["M. Nawaz", "Senior Technician", "E", "04511", ["M.Nawaz", "Muhammad Nawaz"]],
+  ["Suleman Akram", "Technician", "E", "09029"],
+  ["M. Zubair", "Technician", "E", "05675", ["Zubair Arshad", "Zubair", "Muhammad Zubair"]],
+  ["Zeeshan Ashraf", "Technician", "E", "10213"],
+  ["Muhammad Shoaib", "Technician (Trainee)", "E", "11681", ["M. Shoaib", "Shoaib"]],
+  ["Muhammad Zohaib Akram", "Asst. Motor Winder", "E", "11780", ["Zohaib Akram", "Zohaib"]],
+  ["Muhammad Subhan Ali", "Semi Technician", "E", "11092", ["Subhan Ali", "Subhan"]],
+  ["Muhammad Siddique", "Electrical Helper", "E", "10555", ["M. Saddique", "M. Siddique", "Saddique", "Siddique"]],
+  ["Talha Afzal", "Compressor Operator", "E", "11285"],
+  ["Qamar U Zaman", "Deputy Supervisor Generator", "P", "07715", ["Qamar Uz Zaman", "Qamar Zaman"]],
+  ["M. Arslan", "Sr. Quality Inspector (Power House)", "P", "06093", ["Arslan", "Muhammad Arslan"]],
+  ["Engr Ahtasham Khurshid", "Deputy Manager Mechanical (HOD)", "M", "07723", ["Syed Ahtasham Khurshid", "Ahtasham Khurshid"]],
+  ["Aziz Ur Rehman", "Supervisor Maintenance (Mechanical Foreman)", "M", "04277"],
+  ["Safdar Shahzad", "Asst. Supervisor Mechanical", "M", "01543"],
+  ["Muhammad Sohail", "Asst. Supervisor Mechanical", "M", "00046", ["Sohail Ahmad", "Sohail", "M. Sohail"]],
+  ["M. Suleman", "Technician (Mechanical)", "M", "06811", ["M Suleman"]],
+  ["Bilal Shahzad", "Fitter", "M", "08105"],
+  ["Nazir Ahmed", "Welder", "M", "06702"],
+  ["Khalid Mahmood", "Welder", "M", "00091"],
+  ["Afzaal Shahzad", "Fitter", "M", "09394"],
+  ["Usman Butt", "Machinist", "M", "10425"],
+  ["M. Aslam", "Fitter", "M", "03376", ["M Aslam", "Muhammad Aslam"]],
+  ["Zain Ul Abideen", "Technician (Mechanical)", "M", "09540"],
+  ["Muhammad Shareef", "Welder", "M", "11713", ["M. Shareef"]],
+  ["Aqib Rashid", "Fitter", "M", "10474"],
+  ["Rameez Saleem", "Welder", "M", "10015"],
+  ["Abdul Hanan Ahmad", "Semi Fitter", "M", "09637", ["Abdul Hanan"]]
 ];
+const TEAM_GROUPS = { E: "Electrical – Foundry Electric", P: "Electrical – Power House", M: "Mechanical – Foundry Maintenance" };
+const isElectrical = t => t[2] === "E" || t[2] === "P";
+// team in display order for a department: own department first
+function teamFor(dept) {
+  const order = dept === "M" ? ["M", "E", "P"] : ["E", "P", "M"];
+  return order.map(g => ({ group: g, label: TEAM_GROUPS[g], people: TEAM.filter(t => t[2] === g) }));
+}
+// match a typed name to the roster (handles old spellings) → roster name or ""
+function teamName(s) {
+  const n = v => (v || "").toLowerCase().replace(/^engr\.?\s*/, "").replace(/[^a-z]/g, "");
+  const x = n(s);
+  if (!x) return "";
+  const keys = TEAM.map(t => [t[0], [t[0], ...(t[4] || [])].map(n)]);
+  const exact = keys.find(k => k[1].includes(x));
+  if (exact) return exact[0];
+  const part = keys.filter(k => k[1].some(y => y.length >= 5 && x.length >= 5 && (y.includes(x) || x.includes(y))));
+  return part.length === 1 ? part[0][0] : "";
+}
+// a task can be assigned to several people: stored as "Name A, Name B"
+function assigneeList(v) { return (v || "").split(/\s*,\s*/).filter(Boolean); }
 
 /* ---------------- condition-monitoring parameters ----------------
    good / alert: thresholds.  dir "up" = higher is worse, "down" = lower is worse.

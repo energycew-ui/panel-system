@@ -76,7 +76,7 @@
 
 <script>
 const KEY = "9999";
-const electrical = t => /electric/i.test(t[1]) && !/mechanical/i.test(t[1]);
+const electrical = t => isElectrical(t);
 let sandAssets = [];
 
 if (sessionStorage.getItem("electricianLogged") === "true") showForm();

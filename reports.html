@@ -122,7 +122,7 @@ tr:nth-child(even) { background: #f9f9f9; }
 <h2>Filters</h2>
 <div class="filterBox">
     <input type="text" id="filterDB" placeholder="Filter by DB Number">
-    <input type="text" id="filterElec" placeholder="Filter by Electrician">
+    <input type="text" id="filterElec" placeholder="Filter by Technician">
     <input type="date" id="filterDate">
     <button onclick="applyFilters()">Apply Filters</button>
 </div>
@@ -213,7 +213,7 @@ function renderInspectionTable(list) {
         <tr>
             <th>Date</th>
             <th>DB</th>
-            <th>Electrician</th>
+            <th>Technician</th>
             <th>Breaker</th>
             <th>Clean</th>
             <th>Locked</th>
@@ -254,7 +254,7 @@ function renderFaultTable(list) {
         <tr>
             <th>Date</th>
             <th>DB</th>
-            <th>Electrician</th>
+            <th>Technician</th>
             <th>Fault Type</th>
             <th>Description</th>
             <th>Start</th>

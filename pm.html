@@ -52,7 +52,7 @@
 </div>
 
 <div class="card" id="loginCard">
-  <h2>Electrician / Technician Login</h2>
+  <h2>Technician Login</h2>
   <input type="password" id="loginKey" placeholder="Enter password">
   <button class="btn btn-red" onclick="doLogin()" style="width:100%;margin-top:12px;">Login</button>
   <div id="loginError" style="color:#b42318;margin-top:10px;"></div>
@@ -295,7 +295,10 @@ async function submitPM() {
   const upd = {};
   levelsToReschedule(asset, level).forEach(L => {
     upd[`pmStatus/${L}/lastDone`] = date;
+    // a level the HOD removed from the schedule stays removed (unless this PM is that level)
+    if ((st[L] || {}).removed && L !== level) return;
     upd[`pmStatus/${L}/nextDue`] = nextPmDate(asset, date, L);
+    upd[`pmStatus/${L}/removed`] = null;
   });
   upd.lastPm = date;
   upd.lastCondition = rec.condition;

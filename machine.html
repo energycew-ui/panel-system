@@ -109,7 +109,7 @@ function render(a, records, tpm, faults) {
         <button class="action" onclick="location.href='tpm.html?id=${encodeURIComponent(a.id)}'" ${oos ? "disabled" : ""}>
           <span class="ico">🧑‍🏭</span><span>Operator Daily Check (TPM)<small>Clean · Lubricate · Inspect · Tighten – raise a red tag</small></span></button>
         <button class="action primary" onclick="location.href='pm.html?id=${encodeURIComponent(a.id)}'" ${oos ? "disabled" : ""}>
-          <span class="ico">🛠️</span><span>Preventive Maintenance Work Order<small>Electrician / technician – checklist and condition readings</small></span></button>
+          <span class="ico">🛠️</span><span>Preventive Maintenance Work Order<small>Technician – checklist and condition readings</small></span></button>
         ${a.linkedDb ? `<button class="action" onclick="location.href='safety.html?id=${encodeURIComponent(a.linkedDb)}'">
           <span class="ico">⚡</span><span>Report Electrical Breakdown<small>Permit to work, then fault report on ${esc(a.linkedDb)}</small></span></button>` : ""}
       </div>

@@ -87,8 +87,8 @@
 
 <!-- LOGIN -->
 <div class="card" id="loginCard">
-  <h2>Electrician Login</h2>
-  <input type="password" id="loginKey" placeholder="Enter Electrician Password">
+  <h2>Technician Login</h2>
+  <input type="password" id="loginKey" placeholder="Enter Technician Password">
   <button class="btn" onclick="doLogin()">Login</button>
   <div id="loginError" style="color:red;margin-top:10px;"></div>
 </div>
@@ -101,7 +101,7 @@
   <label>Date & Time</label>
   <input type="datetime-local" id="fault_datetime">
 
-  <label>Electrician Name</label>
+  <label>Technician Name</label>
   <input type="text" id="fault_name">
 
   <label>Fault Type</label>
@@ -241,7 +241,7 @@ function previewPhoto(e,num){
 function submitFault(){
 
   const name=document.getElementById("fault_name").value.trim();
-  if(!name) return alert("Enter electrician name.");
+  if(!name) return alert("Enter technician name.");
 
   const start=document.getElementById("fault_start").value;
   const end=document.getElementById("fault_end").value;

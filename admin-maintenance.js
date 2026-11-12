@@ -125,9 +125,81 @@ function renderPmPlan() {
         <td style="white-space:nowrap;">
           <button class="secondary-btn" onclick="window.open('pm.html?id=${encodeURIComponent(j.asset.id)}&level=${j.level}','_blank')">Work Order</button>
           <button class="secondary-btn" onclick="window.open('machine.html?id=${encodeURIComponent(j.asset.id)}','_blank')">Machine</button>
+          <button class="icon-btn danger" title="HOD: skip or remove this PM" onclick="pmDeleteJob('${esc(j.asset.id)}','${j.level}')">🗑</button>
         </td></tr>`;
     }).join("") + "</table>";
+  renderPmRemoved();
 }
+
+/* ---------------- HOD: skip / remove a PM schedule ---------------- */
+function pmDeleteJob(aid, L) {
+  const a = mAssets[aid];
+  const j = pmJobs().find(x => x.asset.id === aid && x.level === L);
+  if (!a || !j) return;
+  const levels = [L, ...j.covers];
+  const next = nextPmDate(a, j.nextDue, L);
+  uiModal({
+    title: `${a.name} – ${levelName(a, L)} PM`,
+    body: `<p style="margin:0 0 10px;">Due <b>${esc(j.nextDue)}</b>${j.covers.length ? ` (includes ${j.covers.map(l => PM_LEVELS[l].short).join(", ")})` : ""}. What do you want to do?</p>
+      <label class="f" style="display:block;"><span>Reason (kept in the record)</span>
+        <input type="text" id="pmDelReason" placeholder="e.g. machine under breakdown repair / shutdown / done with overhaul" style="width:100%;"></label>`,
+    buttons: [
+      { label: `⏭ Skip this one – next due ${next}`, cls: "secondary-btn", fn: () => pmApplyDelete(aid, levels, "skip", next) },
+      { label: "🗑 Remove this PM from the schedule", cls: "primary-btn danger-btn", fn: () => pmApplyDelete(aid, levels, "remove") }
+    ]
+  });
+}
+async function pmApplyDelete(aid, levels, mode, next) {
+  const reason = (document.getElementById("pmDelReason") || {}).value || "";
+  const a = mAssets[aid];
+  const upd = {};
+  const now = new Date().toISOString();
+  levels.forEach(L => {
+    const s = (a.pmStatus || {})[L] || {};
+    if (mode === "skip") upd[`assets/${aid}/pmStatus/${L}/nextDue`] = nextPmDate(a, s.nextDue || next, L);
+    else upd[`assets/${aid}/pmStatus/${L}`] = { lastDone: s.lastDone || "", removed: true, removedAt: now, prevNextDue: s.nextDue || "", reason };
+  });
+  const key = db.ref().push().key;
+  upd[`pmScheduleLog/${key}`] = { assetId: aid, assetName: a.name, levels, action: mode, reason, at: now, newDue: mode === "skip" ? next : "" };
+  await db.ref().update(upd);
+  uiModalClose();
+}
+// removed schedules can be restored
+function renderPmRemoved() {
+  const el = document.getElementById("pmRemoved");
+  if (!el) return;
+  const rows = [];
+  Object.values(mAssets).forEach(a => Object.entries(a.pmStatus || {}).forEach(([L, s]) => { if (s && s.removed) rows.push({ a, L, s }); }));
+  el.innerHTML = rows.length ? `<details class="removed-box"><summary>🗑 Removed PM schedules (${rows.length}) – click to view / restore</summary>
+    <table><tr><th>Machine</th><th>Level</th><th>Removed on</th><th>Reason</th><th></th></tr>
+    ${rows.map(r => `<tr><td><b>${esc(r.a.name)}</b><br><small>${esc(r.a.id)}</small></td><td>${esc(levelName(r.a, r.L))}</td>
+      <td>${esc((r.s.removedAt || "").slice(0, 10))}</td><td>${esc(r.s.reason || "–")}</td>
+      <td><button class="secondary-btn" onclick="pmRestore('${esc(r.a.id)}','${r.L}')">↩ Restore</button></td></tr>`).join("")}</table></details>` : "";
+}
+function pmRestore(aid, L) {
+  const a = mAssets[aid], s = a.pmStatus[L];
+  const due = s.prevNextDue && s.prevNextDue >= ymd(new Date()) ? s.prevNextDue : alignToRoutine(a, ymd(new Date()));
+  db.ref(`assets/${aid}/pmStatus/${L}`).set({ lastDone: s.lastDone || "", nextDue: due });
+}
+
+/* small modal dialog used by HOD actions */
+function uiModal({ title, body, buttons }) {
+  uiModalClose();
+  const m = document.createElement("div");
+  m.id = "uiModal";
+  m.className = "modal-back";
+  m.innerHTML = `<div class="modal-card"><div class="modal-head"><b>${esc(title)}</b><button class="icon-btn" onclick="uiModalClose()">✕</button></div>
+    <div class="modal-body">${body}</div><div class="modal-foot"></div></div>`;
+  const foot = m.querySelector(".modal-foot");
+  [...buttons, { label: "Cancel", cls: "secondary-btn", fn: uiModalClose }].forEach(b => {
+    const el = document.createElement("button");
+    el.className = b.cls; el.textContent = b.label; el.onclick = b.fn;
+    foot.appendChild(el);
+  });
+  m.addEventListener("mousedown", e => { if (e.target === m) uiModalClose(); });
+  document.body.appendChild(m);
+}
+function uiModalClose() { const m = document.getElementById("uiModal"); if (m) m.remove(); }
 
 function printPmPlan() {
   const jobs = pmJobs().filter(j => j.days <= 7);

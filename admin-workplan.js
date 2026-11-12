@@ -41,6 +41,7 @@ function wpDeptChanged() {
   });
   wpCurrent = null;
   wpManual = [];
+  wpRemoved = new Set();
   wpRenderManual();
   wpGembaToggle();
   document.getElementById("wpHead").innerHTML = "";
@@ -190,41 +191,123 @@ function wpRender(plan) {
           ${WP_ORDER.filter(m => plan.mods.includes(m)).map(m => `<td>${ts.filter(t => t.mod === m).length}</td>`).join("")}<td><b>${ts.length}</b></td></tr>`;
       }).join("") + "</table><div style='height:14px'></div>";
   }
-  // bulk assignment bar (HOD assigns each task to a person and a date)
-  const people = TEAM.map(t => t[0]);
+  // bulk assignment bar (HOD assigns each task to one or more people and a date)
   const days = [...new Set(tasks.map(t => t.target || t.due))].sort();
   const assigned = tasks.filter(t => t.assignee).length;
-  html += `<div class="filterBox" style="margin-top:10px;">
-    <div style="flex-basis:100%;font-weight:800;">👤 Assign tasks <small style="font-weight:500;color:var(--muted)">
-      ${assigned} of ${tasks.length} assigned${plan.editing ? ` · editing issued plan <b>${esc(plan.id)}</b>` : ""}</small></div>
-    <label class="f"><span>Tasks</span><select id="bulkScope">
+  html += `<div class="assign-bar">
+    <div class="assign-bar-head">👤 Assign tasks
+      <span class="assign-count ${assigned === tasks.length ? "ok" : ""}">${assigned} of ${tasks.length} assigned</span>
+      ${plan.editing ? `<span class="badge badge-warn">Editing issued plan ${esc(plan.id)}</span>` : ""}</div>
+    <label class="f"><span>Which tasks</span><select id="bulkScope">
       <option value="unassigned">All unassigned</option><option value="all">All tasks</option>
       ${WP_ORDER.filter(m => plan.mods.includes(m)).map(m => `<option value="mod:${m}">${esc(WP_MODULES[m].name)}</option>`).join("")}
       ${days.map(d => `<option value="day:${d}">${new Date(d + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short" })}</option>`).join("")}
     </select></label>
-    <label class="f"><span>Assign to</span><select id="bulkPerson">${people.map(p => `<option>${esc(p)}</option>`).join("")}</select></label>
+    <label class="f"><span>Assign to (one or more)</span>
+      <button type="button" class="pick-btn ${wpBulkPeople.length ? "" : "empty"}" onclick="wpOpenPicker(this,'bulk')">${wpChips(wpBulkPeople.join(", "), "Choose people ▾")}</button></label>
+    <label class="f"><span>Mode</span><select id="bulkMode"><option value="replace">Replace</option><option value="add">Add to existing</option></select></label>
     <button class="secondary-btn" onclick="wpBulkAssign()">Apply</button>
-    ${plan.editing ? `<button class="primary-btn" style="background:var(--brand)!important;" onclick="wpSaveAssignments()">💾 Save to ${esc(plan.id)}</button>
+    ${plan.editing ? `<span style="flex:1"></span><button class="primary-btn" onclick="wpSaveAssignments()">💾 Save to ${esc(plan.id)}</button>
       <button class="secondary-btn" onclick="wpCancelEdit()">Cancel</button>` : ""}
   </div>`;
-  const sel = (i, v) => `<select onchange="wpSetAssign(${i},'assignee',this.value)" style="min-width:140px;padding:6px;border-radius:6px;border:1px solid ${v ? "#d6cfc6" : "#fd0000"};">
-      <option value="">– assign –</option>${people.map(p => `<option ${p === v ? "selected" : ""}>${esc(p)}</option>`).join("")}</select>`;
-  html += `<table><tr><th>Due</th><th>Report</th><th>Item</th><th>Area / Location</th><th>Task</th><th>Assigned to</th><th>Target date</th></tr>` +
-    groupedRows(sortByTarget(tasks.map((t, i) => ({ ...t, _i: i }))).slice(0, 1500), 7, t => `<tr${t.overdue ? ' style="background:#fff3f2;"' : ""}>
+  html += `<div class="table-scroll"><table class="wp-table"><tr><th>Due</th><th>Report</th><th>Item</th><th>Area / Location</th><th>Task</th><th>Assigned to</th><th>Target date</th><th></th></tr>` +
+    groupedRows(sortByTarget(tasks.map((t, i) => ({ ...t, _i: i }))).slice(0, 1500), 8, t => `<tr${t.overdue ? ' class="row-overdue"' : ""}>
       <td style="white-space:nowrap;"><b>${esc(t.due)}</b>${t.overdue ? '<br><span class="badge badge-bad">Overdue</span>' : ""}</td>
       <td>${esc(WP_MODULES[t.mod].name)}${t.urgent ? '<br><span class="badge badge-bad">URGENT</span>' : ""}</td>
       <td><b>${esc(t.name)}</b>${t.mod === "pm" || t.kind === "machine" ? `<br><small>${esc(t.ref)}</small>` : ""}</td>
       <td>${esc(t.area)}</td><td style="min-width:260px;">${taskCellHtml(t)}</td>
-      <td>${sel(t._i, t.assignee)}</td>
-      <td><input type="date" value="${esc(t.target || t.due)}" onchange="wpSetAssign(${t._i},'target',this.value)" style="padding:6px;border-radius:6px;border:1px solid #d6cfc6;"></td></tr>`) + "</table>";
+      <td><button type="button" class="pick-btn ${t.assignee ? "" : "empty"}" onclick="wpOpenPicker(this,${t._i})">${wpChips(t.assignee, "– assign ▾")}</button></td>
+      <td><input type="date" class="date-in" value="${esc(t.target || t.due)}" onchange="wpSetAssign(${t._i},'target',this.value)"></td>
+      <td><button type="button" class="icon-btn danger" title="Remove this task from the plan" onclick="wpDeleteTask(${t._i})">🗑</button></td></tr>`) + "</table></div>";
   if (tasks.length > 1500) html += `<p>Showing first 1500 of ${tasks.length} tasks – the printed plan contains all.</p>`;
   document.getElementById("wpTable").innerHTML = html;
 }
 
+/* ---------------- people picker (drop-down with tick boxes, several people per task) ---------------- */
+let wpBulkPeople = [];
+function wpChips(v, empty) {
+  const list = assigneeList(v);
+  if (!list.length) return `<span class="pick-ph">${esc(empty)}</span>`;
+  return list.map(p => `<span class="chip">${esc(p)}</span>`).join("") + '<span class="pick-caret">▾</span>';
+}
+function wpOpenPicker(btn, target) {
+  wpClosePicker();
+  const cur = assigneeList(target === "bulk" ? wpBulkPeople.join(", ") : wpCurrent.tasks[target].assignee);
+  const box = document.createElement("div");
+  box.id = "wpPicker";
+  box.className = "picker";
+  box.innerHTML = `<input type="search" class="picker-search" placeholder="Search name or code…" oninput="wpFilterPicker(this.value)">
+    <div class="picker-list">${teamFor(wpCurrent.dept).map(g => `<div class="picker-group" data-g="${g.group}">
+      <div class="picker-group-h">${esc(g.label)}</div>
+      ${g.people.map(t => `<label class="picker-item" data-s="${esc((t[0] + " " + t[1] + " " + t[3]).toLowerCase())}">
+        <input type="checkbox" value="${esc(t[0])}" ${cur.some(c => samePerson(c, t[0])) ? "checked" : ""}>
+        <span><b>${esc(t[0])}</b><small>${esc(t[1])} · ${esc(t[3])}</small></span></label>`).join("")}</div>`).join("")}</div>
+    <div class="picker-foot"><button type="button" class="secondary-btn" onclick="wpPickerSet([])">Clear</button>
+      <span class="picker-sel"></span><button type="button" class="primary-btn" onclick="wpClosePicker()">Done</button></div>`;
+  document.body.appendChild(box);
+  box._target = target;
+  box._btn = btn;
+  wpPlacePicker();
+  const update = () => {
+    const names = [...box.querySelectorAll("input[type=checkbox]:checked")].map(c => c.value);
+    box.querySelector(".picker-sel").textContent = names.length ? names.length + " selected" : "";
+    if (target === "bulk") wpBulkPeople = names;
+    else wpSetAssign(target, "assignee", names.join(", "));
+    btn.innerHTML = wpChips(names.join(", "), target === "bulk" ? "Choose people ▾" : "– assign ▾");
+    btn.classList.toggle("empty", !names.length);
+  };
+  box._update = update;
+  box.addEventListener("change", update);
+  box.querySelector(".picker-sel").textContent = cur.length ? cur.length + " selected" : "";
+  box.querySelector(".picker-search").focus();
+  setTimeout(() => document.addEventListener("mousedown", wpPickerOutside), 0);
+  document.addEventListener("scroll", wpPickerScroll, true);
+}
+// keep the drop-down next to its button (fixed on screen); close only when the button scrolls out of sight
+function wpPlacePicker() {
+  const box = document.getElementById("wpPicker");
+  if (!box) return;
+  const r = box._btn.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > window.innerHeight) return wpClosePicker();
+  const w = Math.min(340, window.innerWidth - 16);
+  box.style.width = w + "px";
+  box.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + "px";
+  const below = window.innerHeight - r.bottom;
+  if (below > 320 || below > r.top) { box.style.top = (r.bottom + 4) + "px"; box.style.bottom = ""; }
+  else { box.style.bottom = (window.innerHeight - r.top + 4) + "px"; box.style.top = ""; }
+}
+function wpPickerScroll(e) {
+  const box = document.getElementById("wpPicker");
+  if (box && !box.contains(e.target)) wpPlacePicker();
+}
+function wpPickerOutside(e) {
+  const box = document.getElementById("wpPicker");
+  if (box && !box.contains(e.target) && e.target !== box._btn && !box._btn.contains(e.target)) wpClosePicker();
+}
+function wpPickerSet(names) {
+  const box = document.getElementById("wpPicker");
+  box.querySelectorAll("input[type=checkbox]").forEach(c => c.checked = names.includes(c.value));
+  box._update();
+}
+function wpFilterPicker(q) {
+  q = q.trim().toLowerCase();
+  const box = document.getElementById("wpPicker");
+  box.querySelectorAll(".picker-item").forEach(el => el.style.display = !q || el.dataset.s.includes(q) ? "" : "none");
+  box.querySelectorAll(".picker-group").forEach(g => g.style.display = [...g.querySelectorAll(".picker-item")].some(i => i.style.display !== "none") ? "" : "none");
+}
+function wpClosePicker() {
+  const box = document.getElementById("wpPicker");
+  if (box) box.remove();
+  document.removeEventListener("mousedown", wpPickerOutside);
+  document.removeEventListener("scroll", wpPickerScroll, true);
+}
+
 /* ---------------- assignments ---------------- */
 let wpAssign = {};   // task key → { assignee, target }  (kept when the plan is regenerated)
+let wpRemoved = new Set();   // tasks the HOD deleted from the plan being prepared
 const wpKey = t => [t.mod, t.ref, t.due, t.level || "", t.name].join("|");
 function wpApplyAssign(tasks) {
+  tasks = tasks.filter(t => !wpRemoved.has(wpKey(t)));
   tasks.forEach(t => {
     const a = wpAssign[wpKey(t)] || {};
     t.assignee = a.assignee !== undefined ? a.assignee : (t.assignee || (t.mod === "lux" ? "Mansab Ali" : ""));
@@ -237,34 +320,91 @@ function wpSetAssign(i, field, value) {
   t[field] = value;
   wpAssign[wpKey(t)] = { assignee: t.assignee, target: t.target };
   if (field === "target") wpRender(wpCurrent);
+  else wpUpdateCount();
+}
+function wpUpdateCount() {
+  const el = document.querySelector(".assign-count");
+  if (!el) return;
+  const n = wpCurrent.tasks.filter(t => t.assignee).length;
+  el.textContent = `${n} of ${wpCurrent.tasks.length} assigned`;
+  el.classList.toggle("ok", n === wpCurrent.tasks.length);
 }
 function wpBulkAssign() {
-  const scope = document.getElementById("bulkScope").value, person = document.getElementById("bulkPerson").value;
+  const scope = document.getElementById("bulkScope").value, mode = document.getElementById("bulkMode").value;
+  if (!wpBulkPeople.length) return alert("Choose at least one person.");
+  let n = 0;
   wpCurrent.tasks.forEach(t => {
     const hit = scope === "all" || (scope === "unassigned" && !t.assignee) ||
       (scope.startsWith("mod:") && t.mod === scope.slice(4)) || (scope.startsWith("day:") && (t.target || t.due) === scope.slice(4));
-    if (hit) { t.assignee = person; wpAssign[wpKey(t)] = { assignee: t.assignee, target: t.target }; }
+    if (!hit) return;
+    const list = mode === "add" ? [...assigneeList(t.assignee)] : [];
+    wpBulkPeople.forEach(p => { if (!list.some(x => samePerson(x, p))) list.push(p); });
+    t.assignee = list.join(", ");
+    wpAssign[wpKey(t)] = { assignee: t.assignee, target: t.target };
+    n++;
   });
   wpRender(wpCurrent);
+  wpToast(`${n} task(s) assigned to ${wpBulkPeople.join(", ")}`);
 }
-// HOD can change assignments after the plan was issued
+// HOD removes a task from the plan (plan being prepared, or an issued plan being edited)
+function wpDeleteTask(i) {
+  const t = wpCurrent.tasks[i];
+  if (!confirm(`Remove this task from the plan?\n\n${t.name} – ${WP_MODULES[t.mod].name} (${t.target || t.due})` +
+               (wpCurrent.editing ? "\n\nPress 'Save' afterwards to update the issued plan." : ""))) return;
+  if (!wpCurrent.editing) {
+    wpRemoved.add(wpKey(t));
+    // an HOD-added task is also dropped from the add-list
+    if (t.mod === "hod") {
+      const k = wpManual.findIndex(m => m.due === t.due && (m.kind === "machine" ? m.ref === t.ref : m.text === t.name));
+      if (k >= 0) { wpManual.splice(k, 1); wpRenderManual(); }
+    }
+  }
+  wpCurrent.tasks.splice(i, 1);
+  wpRender(wpCurrent);
+  wpToast("Task removed" + (wpCurrent.editing ? " – press Save to update the issued plan" : ""));
+}
+function wpToast(msg) {
+  let el = document.getElementById("wpToastEl");
+  if (!el) { el = document.createElement("div"); el.id = "wpToastEl"; el.className = "toast"; document.body.appendChild(el); }
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("show"), 2600);
+}
+// HOD can change assignments, dates or remove tasks after the plan was issued
 function wpEditIssued(id) {
   const p = wpPlans[id];
   wpAssign = {};
-  wpCurrent = { ...p, editing: true, tasks: wpApplyAssign((p.tasks || []).map(t => ({ ...t }))) };
+  wpCurrent = { ...p, editing: true, tasks: wpApplyAssign((p.tasks || []).map((t, i) => ({ ...t, _orig: i }))) };
   wpRender(wpCurrent);
   document.getElementById("wpTable").scrollIntoView({ behavior: "smooth" });
 }
 async function wpSaveAssignments() {
   const id = wpCurrent.id;
-  const tasks = wpCurrent.tasks.map(({ editing, ...t }) => t);
-  // keep task positions stable for manualDone (free tasks) by saving the whole list
-  await db.ref("workPlans/" + id).update({ tasks, assignedAt: new Date().toISOString() });
-  alert(`Assignments saved to ${id}. Re-print the plan for the supervisor.`);
+  const old = wpPlans[id] || {};
+  // free tasks closed by hand are stored by position – move them to the new positions
+  const manualDone = {};
+  wpCurrent.tasks.forEach((t, i) => { const m = (old.manualDone || {})[t._orig]; if (m !== undefined) manualDone[i] = m; });
+  const tasks = wpCurrent.tasks.map(({ editing, _orig, _i, ...t }) => t);
+  if (!tasks.length) {
+    if (!confirm(`All tasks were removed. Delete plan ${id} completely?`)) return;
+    await db.ref("workPlans/" + id).remove();
+  } else {
+    await db.ref("workPlans/" + id).update({ tasks, manualDone, assignedAt: new Date().toISOString() });
+  }
+  alert(tasks.length ? `Changes saved to ${id}. Re-print the plan for the supervisor.` : `Plan ${id} deleted.`);
   wpCancelEdit();
 }
+// delete a whole issued plan
+async function wpDeletePlan(id) {
+  const p = wpPlans[id];
+  if (!confirm(`Delete issued plan ${id}?\n\n${modsTitle(p.mods)} · ${p.label} · ${(p.tasks || []).length} task(s)\n\nThis cannot be undone.`)) return;
+  await db.ref("workPlans/" + id).remove();
+  if (wpCurrent && wpCurrent.id === id && wpCurrent.editing) wpCancelEdit();
+  wpToast(`Plan ${id} deleted`);
+}
 function wpCancelEdit() {
-  wpCurrent = null; wpAssign = {};
+  wpCurrent = null; wpAssign = {}; wpRemoved = new Set();
   document.getElementById("wpHead").innerHTML = ""; document.getElementById("wpSummary").innerHTML = "";
   document.getElementById("wpTable").innerHTML = "<p>Choose a period and press Generate Plan.</p>";
 }
@@ -310,10 +450,11 @@ async function wpRefreshProgress() {
           <small><b>${pr.pct}%</b> · ${pr.done}/${pr.total} done</small></td>
         <td>${pr.pending}${pr.overdue ? ` <span class="badge badge-bad">${pr.overdue} late</span>` : ""}</td>
         <td style="white-space:nowrap;">
-          <button class="secondary-btn" onclick="wpEditIssued('${esc(p.id)}')">👤 Assign</button>
+          <button class="secondary-btn" onclick="wpEditIssued('${esc(p.id)}')">👤 Assign / Edit</button>
           <button class="secondary-btn" onclick="window.open('workplan_print.html?id=${encodeURIComponent(p.id)}','_blank')">Print Plan</button>
           <button class="secondary-btn" onclick="window.open('workplan_print.html?id=${encodeURIComponent(p.id)}&review=1','_blank')">Review</button>
           ${(p.tasks || []).some(t => t.mod === "hod" && t.kind === "free") ? `<button class="secondary-btn" onclick="wpCloseTasks('${esc(p.id)}')">Close tasks</button>` : ""}
+          <button class="icon-btn danger" title="Delete this plan" onclick="wpDeletePlan('${esc(p.id)}')">🗑</button>
         </td></tr>`;
     }).join("") + "</table>";
   wpBanner(rows);
